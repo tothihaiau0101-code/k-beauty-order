@@ -800,8 +800,15 @@ class KBeautyBot:
 
     def run(self) -> None:
         """Start the bot."""
-        if not self.token or not self.chat_id:
-            logger.error("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID")
+        # HTTP-only mode (no Telegram token set)
+        if not self.token or self.token == "dummy":
+            logger.warning("Running in HTTP-only mode — set TELEGRAM_BOT_TOKEN for Telegram notifications")
+            self._run_server()  # blocking
+            return
+
+        if not self.chat_id or self.chat_id == "0":
+            logger.error("Missing TELEGRAM_CHAT_ID")
+            self._run_server()
             return
 
         # Start Webhook Server Thread
@@ -818,16 +825,25 @@ class KBeautyBot:
 
 def main() -> None:
     """Entry point."""
-    # Load Env
+    # Load from .env file (local dev) — Railway uses actual env vars
     env_path = os.path.join(os.path.dirname(__file__), ".env")
     config = load_env(env_path)
-    
+
+    # Railway env vars take priority over .env file
+    for key in ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "WEBHOOK_PORT",
+                "WEBHOOK_SECRET", "DATA_DIR"]:
+        val = os.environ.get(key)
+        if val:
+            config[key] = val
+
     if not config.get("TELEGRAM_BOT_TOKEN"):
-        print("Error: TELEGRAM_BOT_TOKEN not found. Please configure .env file.")
-        sys.exit(1)
+        logger.warning("TELEGRAM_BOT_TOKEN not set — running in HTTP-only mode (no Telegram notifications)")
+        # Still run the HTTP server so the API works
+        config["TELEGRAM_BOT_TOKEN"] = "dummy"
+        config["TELEGRAM_CHAT_ID"] = "0"
 
     bot = KBeautyBot(config)
-    
+
     # Graceful Shutdown
     def signal_handler(sig: Any, frame: Any) -> None:
         logger.info("Received exit signal")

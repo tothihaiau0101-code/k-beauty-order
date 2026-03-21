@@ -427,7 +427,71 @@
         }
       });
     }).catch(() => {});
+
+    // ─── SHOPPING CART LOGIC ───
+    let cart = JSON.parse(localStorage.getItem('kbeauty_cart')) || {};
+
+    function updateCartUI() {
+      const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+      const cartEl = document.getElementById('floatingCart');
+      const badgeEl = document.getElementById('cartBadge');
+      if (count > 0) {
+        cartEl.style.display = 'flex';
+        badgeEl.textContent = count;
+      } else {
+        cartEl.style.display = 'none';
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    document.querySelectorAll('.btn-order').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (btn.textContent === 'Hết hàng' || btn.style.pointerEvents === 'none') {
+          e.preventDefault();
+          return;
+        }
+        
+        // If it's a specific product link (has ?select=)
+        const href = btn.getAttribute('href') || '';
+        const match = href.match(/select=([^&]+)/);
+        if (match) {
+          e.preventDefault(); // Don't navigate
+          const productId = match[1];
+          cart[productId] = (cart[productId] || 0) + 1;
+          localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
+          updateCartUI();
+          showToast('🛍️ Đã thêm vào giỏ hàng!');
+          
+          // Small animation on button
+          btn.style.transform = 'scale(0.9)';
+          setTimeout(() => btn.style.transform = '', 150);
+        }
+        // If it's a combo/presale button that just goes to order-form.html without select=
+        // allow normal navigation unless we want to handle combos in cart too.
+      });
+    });
+
+    // Init UI
+    updateCartUI();
   </script>
+
+  <!-- FLOATING CART -->
+  <a href="order-form.html" class="floating-cart" id="floatingCart" style="display: none;">
+    <div class="floating-cart-icon">
+      🛒
+      <div class="floating-cart-badge" id="cartBadge">0</div>
+    </div>
+    <span>Thanh toán</span>
+  </a>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">Đã thêm vào giỏ hàng</div>
 
   <!-- FOOTER -->
   <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid var(--border);">

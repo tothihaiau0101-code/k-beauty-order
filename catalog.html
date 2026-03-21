@@ -23,6 +23,9 @@
         <a href="#combos">🎁 Combo</a>
         <a href="order-form.html">📩 Đặt Hàng</a>
         <a href="policy.html">📋 Chính Sách</a>
+        <a href="order-form.html" class="nav-cart" id="navCart" style="display:none;">
+          🛒<span class="nav-cart-badge" id="navCartBadge">0</span>
+        </a>
       </div>
     </div>
   </nav>
@@ -435,11 +438,17 @@
       const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
       const cartEl = document.getElementById('floatingCart');
       const badgeEl = document.getElementById('cartBadge');
+      const navCartEl = document.getElementById('navCart');
+      const navBadgeEl = document.getElementById('navCartBadge');
+      
       if (count > 0) {
-        cartEl.style.display = 'flex';
-        badgeEl.textContent = count;
+        if (cartEl) cartEl.style.display = 'flex';
+        if (badgeEl) badgeEl.textContent = count;
+        if (navCartEl) navCartEl.style.display = 'flex';
+        if (navBadgeEl) navBadgeEl.textContent = count;
       } else {
-        cartEl.style.display = 'none';
+        if (cartEl) cartEl.style.display = 'none';
+        if (navCartEl) navCartEl.style.display = 'none';
       }
     }
 

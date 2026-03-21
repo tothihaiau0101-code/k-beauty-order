@@ -85,7 +85,10 @@
           <span class="price">420,000₫</span>
           <span class="price-compare">550,000₫</span>
         </div>
-        <a href="order-form.html?select=cosrx-snail" class="btn-order btn-order-pink">Order Ngay</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=cosrx-snail" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="cosrx-snail">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -97,7 +100,10 @@
           <span class="price">380,000₫</span>
           <span class="price-compare">500,000₫</span>
         </div>
-        <a href="order-form.html?select=boj-sun" class="btn-order btn-order-pink">Order Ngay</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=boj-sun" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="boj-sun">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -109,7 +115,10 @@
           <span class="price">450,000₫</span>
           <span class="price-compare">600,000₫</span>
         </div>
-        <a href="order-form.html?select=anua-toner" class="btn-order btn-order-pink">Order Ngay</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=anua-toner" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="anua-toner">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -121,7 +130,10 @@
           <span class="price">400,000₫</span>
           <span class="price-compare">520,000₫</span>
         </div>
-        <a href="order-form.html?select=torriden-serum" class="btn-order btn-order-pink">Order Ngay</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=torriden-serum" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="torriden-serum">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -132,7 +144,10 @@
           <span class="price">420,000₫</span>
           <span class="price-compare">550,000₫</span>
         </div>
-        <a href="order-form.html?select=skin1004" class="btn-order btn-order-pink">Order Ngay</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=skin1004" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="skin1004">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -143,7 +158,10 @@
           <span class="price">300,000₫</span>
           <span class="price-compare">400,000₫</span>
         </div>
-        <a href="order-form.html?select=mediheal" class="btn-order btn-order-pink">Order Ngay</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=mediheal" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="mediheal">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -154,7 +172,10 @@
           <span class="price">380,000₫</span>
           <span class="price-compare">480,000₫</span>
         </div>
-        <a href="order-form.html?select=roundlab" class="btn-order btn-order-pink">Order Ngay</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=roundlab" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="roundlab">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -166,7 +187,10 @@
           <span class="price">250,000₫</span>
           <span class="price-compare">350,000₫</span>
         </div>
-        <a href="order-form.html?select=romand" class="btn-order btn-order-pink">Order Ngay</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=romand" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="romand">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
     </div>
@@ -567,6 +591,21 @@
           e.preventDefault();
         }
         e.stopPropagation();
+      });
+    });
+
+    // ─── BTN-ADD-CART: Add to cart directly from card ───
+    document.querySelectorAll('.btn-add-cart').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        if (!id) return;
+        cart[id] = (cart[id] || 0) + 1;
+        localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
+        updateCartUI();
+        showToast('🛍️ Đã thêm vào giỏ hàng!');
+        btn.style.transform = 'scale(0.92)';
+        setTimeout(() => btn.style.transform = '', 200);
       });
     });
 

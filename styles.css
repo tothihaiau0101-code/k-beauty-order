@@ -451,6 +451,35 @@ body {
   transform: scale(0.95);
 }
 
+/* ─── Dual Button Card Actions ─── */
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+.card-actions .btn-order {
+  flex: 1;
+  text-align: center;
+  font-size: 0.78rem;
+  padding: 10px 6px;
+}
+.btn-buy-now {
+  background: linear-gradient(135deg, #ff5a92, #ec4899);
+  color: #fff;
+}
+.btn-add-cart {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-add-cart:hover {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
 /* ========================================================
    Shopping Cart UI
    ======================================================== */

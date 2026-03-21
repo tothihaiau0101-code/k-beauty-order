@@ -4,540 +4,145 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tra Cứu Đơn Hàng — K-Beauty & K-Pop Order</title>
-  <meta name="description" content="Theo dõi trạng thái đơn hàng của bạn. Nhập mã đơn để xem tiến trình xử lý và vận chuyển.">
-  <meta property="og:title" content="Tra Cứu Đơn Hàng — K-Beauty & K-Pop Order">
-  <meta property="og:description" content="Kiểm tra trạng thái đơn hàng của bạn.">
-  <meta property="og:type" content="website">
+  <meta name="description" content="Tra cứu trạng thái đơn hàng K-Beauty & K-Pop Order bằng mã đơn hoặc số điện thoại.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
   <style>
-    :root {
-      --bg-primary: #0f0f1a;
+    .track-container { max-width: 560px; margin: 0 auto; padding: 20px 16px; }
+    .track-form { display: flex; gap: 8px; margin: 24px 0; }
+    .track-form input {
+      flex: 1; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-primary); font-family: inherit; font-size: 0.9rem; outline: none;
     }
-
-    .tracking-wrap {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 30px 16px 60px;
+    .track-form input:focus { border-color: var(--accent-purple); }
+    .track-form button {
+      padding: 14px 24px; border: none; border-radius: 14px;
+      background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer;
     }
-
-    .tracking-header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .tracking-header h1 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 2rem;
-      font-weight: 900;
-      background: var(--gradient-pink);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .tracking-header .sub {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      margin-top: 8px;
-    }
-
-    /* Form */
-    .tracking-form {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 32px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      margin-bottom: 10px;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 14px 18px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text-primary);
-      font-size: 1rem;
-      font-family: 'Inter', sans-serif;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-
-    .form-input:focus {
-      outline: none;
-      border-color: var(--accent-pink);
-      box-shadow: 0 0 0 3px rgba(255, 90, 146, 0.15);
-    }
-
-    .form-input::placeholder {
-      color: var(--text-muted);
-    }
-
-    .btn-track {
-      width: 100%;
-      margin-top: 16px;
-      padding: 14px;
-      border: none;
-      border-radius: var(--radius-sm);
-      background: var(--gradient-pink);
-      color: #fff;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .btn-track:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(255, 90, 146, 0.3);
-    }
-
-    .btn-track:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Messages */
-    .message {
-      padding: 14px 18px;
-      border-radius: var(--radius-sm);
-      font-size: 0.9rem;
-      margin-top: 16px;
-      display: none;
-    }
-
-    .message.error {
-      background: rgba(255, 107, 107, 0.1);
-      border: 1px solid rgba(255, 107, 107, 0.3);
-      color: var(--accent-coral);
-    }
-
-    .message.success {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: var(--accent-green);
-    }
-
-    /* Order Info */
+    .track-result { display: none; margin-top: 24px; }
+    .track-result.show { display: block; }
     .order-info {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 24px;
-      display: none;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 20px; margin-bottom: 20px;
     }
-
-    .order-info h3 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 12px;
-      color: var(--text-primary);
-    }
-
-    .order-detail {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.85rem;
-    }
-
-    .order-detail:last-child {
-      border-bottom: none;
-    }
-
-    .order-detail .label {
-      color: var(--text-secondary);
-    }
-
-    .order-detail .value {
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    /* Timeline */
-    .timeline {
-      position: relative;
-      padding: 24px 0;
-      display: none;
-    }
-
+    .order-info h3 { font-family: 'Outfit', sans-serif; color: var(--accent-pink); margin: 0 0 12px; }
+    .order-info p { color: var(--text-secondary); font-size: 0.85rem; margin: 6px 0; }
+    .order-info strong { color: var(--text-primary); }
+    .timeline { position: relative; padding-left: 32px; }
     .timeline::before {
-      content: '';
-      position: absolute;
-      left: 20px;
-      top: 24px;
-      bottom: 24px;
-      width: 2px;
-      background: var(--border);
+      content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px;
+      background: rgba(255,255,255,0.06);
     }
-
-    .timeline-step {
-      position: relative;
-      padding-left: 56px;
-      margin-bottom: 28px;
-      opacity: 0.4;
-      transition: opacity 0.4s, transform 0.4s;
-    }
-
-    .timeline-step:last-child {
-      margin-bottom: 0;
-    }
-
-    .timeline-step.active,
-    .timeline-step.completed {
-      opacity: 1;
-    }
-
-    .timeline-step.completed {
-      transform: translateX(4px);
-    }
-
+    .timeline-step { position: relative; padding: 12px 0; }
     .timeline-dot {
-      position: absolute;
-      left: 0;
-      top: 2px;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      transition: all 0.3s;
+      position: absolute; left: -32px; top: 14px; width: 22px; height: 22px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; border: 2px solid rgba(255,255,255,0.1); background: var(--bg-primary);
     }
-
-    .timeline-step.active .timeline-dot {
-      border-color: var(--accent-pink);
-      box-shadow: 0 0 20px rgba(255, 90, 146, 0.4);
-      background: rgba(255, 90, 146, 0.1);
-    }
-
-    .timeline-step.completed .timeline-dot {
-      border-color: var(--accent-green);
-      background: rgba(16, 185, 129, 0.1);
-    }
-
-    .timeline-content {
-      padding-top: 6px;
-    }
-
-    .timeline-step h4 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 600;
-      margin-bottom: 4px;
-      color: var(--text-primary);
-    }
-
-    .timeline-step.completed h4 {
-      color: var(--accent-green);
-    }
-
-    .timeline-step.active h4 {
-      color: var(--accent-pink);
-    }
-
-    .timeline-step .time {
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-    }
-
-    .timeline-step .desc {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 6px;
-    }
-
-    /* Footer */
-    .site-footer {
-      text-align: center;
-      padding: 30px 16px;
-      margin-top: 40px;
-      border-top: 1px solid var(--border);
-    }
-
-    .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-
-    .footer-links a {
-      color: var(--text-secondary);
-      text-decoration: none;
-      font-size: 0.78rem;
-      transition: color 0.2s;
-    }
-
-    .footer-links a:hover {
-      color: var(--accent-pink);
-    }
-
-    .footer-copy {
-      font-size: 0.7rem;
-      color: var(--text-secondary);
-    }
-
-    /* Loading spinner */
-    .spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 0.8s linear infinite;
-      margin-right: 8px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    .timeline-dot.done { background: #10b981; border-color: #10b981; }
+    .timeline-dot.active { background: #a855f7; border-color: #a855f7; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.4); } 50% { box-shadow: 0 0 0 8px rgba(168,85,247,0); } }
+    .timeline-title { font-weight: 700; color: var(--text-primary); font-size: 0.88rem; }
+    .timeline-title.done { color: #10b981; }
+    .timeline-title.active { color: #a855f7; }
+    .timeline-time { color: var(--text-secondary); font-size: 0.75rem; margin-top: 2px; }
+    .no-result { text-align: center; color: var(--text-secondary); padding: 40px 20px; }
   </style>
 </head>
 <body>
-  <!-- NAV -->
+
   <nav class="nav-bar">
     <div class="nav-inner">
-      <a href="catalog.html" class="nav-logo">🇰🇷 K-Beauty Order</a>
+      <a href="catalog.html" class="nav-brand">🇰🇷 K-Beauty</a>
       <div class="nav-links">
-        <a href="catalog.html">📦 Catalog</a>
+        <a href="catalog.html">🧴 Catalog</a>
         <a href="order-form.html">📩 Đặt Hàng</a>
-        <a href="tracking.html" class="active">🔍 Tra Cứu</a>
+        <a href="tracking.html" class="active">📦 Tra Cứu</a>
+        <a href="policy.html">📋 Chính Sách</a>
       </div>
     </div>
   </nav>
 
-  <div class="tracking-wrap">
-    <div class="tracking-header">
-      <h1>🔍 Tra Cứu Đơn Hàng</h1>
-      <p class="sub">Nhập mã đơn hàng để theo dõi tiến trình xử lý</p>
+  <div class="track-container">
+    <h1 style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:800;text-align:center;color:var(--text-primary);margin-top:20px;">📦 Tra Cứu Đơn Hàng</h1>
+    <p style="text-align:center;color:var(--text-secondary);font-size:0.85rem;">Nhập mã đơn hoặc số điện thoại để xem trạng thái</p>
+
+    <div class="track-form">
+      <input type="text" id="trackInput" placeholder="Mã đơn (KB-XXXX) hoặc SĐT...">
+      <button onclick="trackOrder()">🔍 Tra cứu</button>
     </div>
 
-    <div class="tracking-form">
-      <label class="form-label" for="orderCode">Mã đơn hàng</label>
-      <input
-        type="text"
-        id="orderCode"
-        class="form-input"
-        placeholder="VD: KB2026001, KB2026002..."
-        autocomplete="off"
-      >
-      <button class="btn-track" id="btnTrack" onclick="trackOrder()">
-        🔍 Kiểm Tra Trạng Thái
-      </button>
-      <div class="message error" id="errorMsg"></div>
-      <div class="message success" id="successMsg"></div>
-    </div>
-
-    <div class="order-info" id="orderInfo">
-      <h3>📋 Thông Tin Đơn Hàng</h3>
-      <div class="order-detail">
-        <span class="label">Mã đơn:</span>
-        <span class="value" id="infoCode">-</span>
-      </div>
-      <div class="order-detail">
-        <span class="label">Tên khách:</span>
-        <span class="value" id="infoName">-</span>
-      </div>
-      <div class="order-detail">
-        <span class="label">Tổng tiền:</span>
-        <span class="value" id="infoTotal">-</span>
-      </div>
-      <div class="order-detail">
-        <span class="label">Ngày đặt:</span>
-        <span class="value" id="infoDate">-</span>
-      </div>
-    </div>
-
-    <div class="timeline" id="timeline">
-      <!-- Step 1: Đặt hàng -->
-      <div class="timeline-step" id="step1">
-        <div class="timeline-dot">📝</div>
-        <div class="timeline-content">
-          <h4>Đã Đặt Hàng</h4>
-          <div class="time" id="time1">Chờ xử lý</div>
-          <div class="desc">Đơn hàng đã được tiếp nhận vào hệ thống</div>
-        </div>
-      </div>
-
-      <!-- Step 2: Xác nhận -->
-      <div class="timeline-step" id="step2">
-        <div class="timeline-dot">✅</div>
-        <div class="timeline-content">
-          <h4>Đã Xác Nhận</h4>
-          <div class="time" id="time2">Chờ xác nhận</div>
-          <div class="desc">Đơn hàng đã được xác nhận với nhà cung cấp</div>
-        </div>
-      </div>
-
-      <!-- Step 3: Vận chuyển -->
-      <div class="timeline-step" id="step3">
-        <div class="timeline-dot">🚢</div>
-        <div class="timeline-content">
-          <h4>Đang Vận Chuyển</h4>
-          <div class="time" id="time3">Chờ vận chuyển</div>
-          <div class="desc">Hàng đang được vận chuyển từ Hàn Quốc về Việt Nam</div>
-        </div>
-      </div>
-
-      <!-- Step 4: Giao hàng -->
-      <div class="timeline-step" id="step4">
-        <div class="timeline-dot">📦</div>
-        <div class="timeline-content">
-          <h4>Đã Giao Hàng</h4>
-          <div class="time" id="time4">Chờ giao hàng</div>
-          <div class="desc">Đơn hàng đã được giao thành công</div>
-        </div>
-      </div>
-    </div>
+    <div id="trackResult" class="track-result"></div>
   </div>
 
-  <!-- FOOTER -->
-  <footer class="site-footer">
-    <div class="footer-links">
-      <a href="catalog.html">📦 Catalog</a>
-      <a href="order-form.html">📩 Đặt Hàng</a>
-      <a href="policy.html">📋 Chính Sách</a>
-      <a href="tracking.html">🔍 Tra Cứu</a>
+  <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid var(--border);">
+    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📦 Catalog</a>
+      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📩 Đặt Hàng</a>
+      <a href="tracking.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📦 Tra Cứu</a>
+      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📋 Chính Sách</a>
     </div>
-    <div class="footer-copy">© 2026 K-Beauty & K-Pop Order • Mỹ phẩm Hàn Quốc chính hãng</div>
+    <p style="font-size:0.72rem;color:var(--text-secondary);margin:0;">© 2025 K-Beauty & K-Pop Order. Made with 💜</p>
   </footer>
 
   <script>
-    function formatCurrency(amount) {
-      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-    }
+    const DEMO_ORDERS = {
+      'KB-A1B2': {
+        id: 'KB-A1B2', name: 'Nguyễn Thị Lan', phone: '0901234567',
+        items: 'COSRX Snail Mucin x1, BOJ Sun SPF50+ x1',
+        total: '800,000₫', date: '2026-03-18', status: 2,
+        steps: [
+          { title: 'Đặt hàng', time: '18/03 — 14:30' },
+          { title: 'Xác nhận', time: '18/03 — 16:00' },
+          { title: 'Đang giao', time: '19/03 — 09:00' },
+          { title: 'Hoàn thành', time: '' }
+        ]
+      },
+      'KB-C3D4': {
+        id: 'KB-C3D4', name: 'Trần Minh Anh', phone: '0912345678',
+        items: 'Anua Heartleaf Toner x1, Romand Juicy Tint x2',
+        total: '950,000₫', date: '2026-03-20', status: 3,
+        steps: [
+          { title: 'Đặt hàng', time: '20/03 — 10:15' },
+          { title: 'Xác nhận', time: '20/03 — 11:00' },
+          { title: 'Đang giao', time: '20/03 — 14:30' },
+          { title: 'Hoàn thành', time: '21/03 — 09:00' }
+        ]
+      },
+      'KB-E5F6': {
+        id: 'KB-E5F6', name: 'Lê Hà My', phone: '0987654321',
+        items: 'Combo Skincare Starter x1',
+        total: '1,100,000₫', date: '2026-03-21', status: 0,
+        steps: [
+          { title: 'Đặt hàng', time: '21/03 — 15:00' },
+          { title: 'Xác nhận', time: '' },
+          { title: 'Đang giao', time: '' },
+          { title: 'Hoàn thành', time: '' }
+        ]
+      }
+    };
 
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    function trackOrder() {
+      const q = document.getElementById('trackInput').value.trim().toUpperCase();
+      const el = document.getElementById('trackResult');
+      if (!q) { el.className = 'track-result'; return; }
+      let order = DEMO_ORDERS[q];
+      if (!order) order = Object.values(DEMO_ORDERS).find(o => o.phone === q);
+      if (!order) {
+        el.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng.<br><span style="font-size:0.78rem;">Kiểm tra lại mã đơn hoặc SĐT.</span></div>';
+        el.className = 'track-result show'; return;
+      }
+      const icons = ['📝', '✅', '🚚', '🎉'];
+      let html = `<div class="order-info"><h3>Đơn hàng ${order.id}</h3><p><strong>Khách:</strong> ${order.name}</p><p><strong>SĐT:</strong> ${order.phone}</p><p><strong>Sản phẩm:</strong> ${order.items}</p><p><strong>Tổng:</strong> <span style="color:#ff5a92;font-weight:700;">${order.total}</span></p></div><div class="timeline">`;
+      order.steps.forEach((step, i) => {
+        const isDone = i < order.status, isActive = i === order.status;
+        html += `<div class="timeline-step"><div class="timeline-dot ${isDone?'done':isActive?'active':''}">${icons[i]}</div><div class="timeline-title ${isDone?'done':isActive?'active':''}">${step.title}</div><div class="timeline-time">${step.time||(isActive?'Đang xử lý...':'—')}</div></div>`;
       });
+      html += '</div>';
+      el.innerHTML = html;
+      el.className = 'track-result show';
     }
-
-    function updateTimeline(status, timestamps) {
-      // Reset all steps
-      for (let i = 1; i <= 4; i++) {
-        document.getElementById(`step${i}`).classList.remove('active', 'completed');
-      }
-
-      const stepMap = {
-        'pending': 1,
-        'confirmed': 2,
-        'shipping': 3,
-        'shipped': 3,
-        'delivered': 4,
-        'completed': 4
-      };
-
-      const activeStep = stepMap[status] || 1;
-
-      // Mark completed steps
-      for (let i = 1; i < activeStep; i++) {
-        document.getElementById(`step${i}`).classList.add('completed');
-        const timeEl = document.getElementById(`time${i}`);
-        if (timeEl && timestamps[`step${i}`]) {
-          timeEl.textContent = formatDate(timestamps[`step${i}`]);
-        }
-      }
-
-      // Mark active step
-      document.getElementById(`step${activeStep}`).classList.add('active');
-      const activeTime = document.getElementById(`time${activeStep}`);
-      if (activeTime && timestamps[`step${activeStep}`]) {
-        activeTime.textContent = formatDate(timestamps[`step${activeStep}`]);
-      }
-    }
-
-    async function trackOrder() {
-      const orderCode = document.getElementById('orderCode').value.trim();
-      const btnTrack = document.getElementById('btnTrack');
-      const errorMsg = document.getElementById('errorMsg');
-      const successMsg = document.getElementById('successMsg');
-      const orderInfo = document.getElementById('orderInfo');
-      const timeline = document.getElementById('timeline');
-
-      // Reset messages
-      errorMsg.style.display = 'none';
-      successMsg.style.display = 'none';
-      orderInfo.style.display = 'none';
-      timeline.style.display = 'none';
-
-      if (!orderCode) {
-        errorMsg.textContent = '⚠️ Vui lòng nhập mã đơn hàng';
-        errorMsg.style.display = 'block';
-        return;
-      }
-
-      // Loading state
-      btnTrack.disabled = true;
-      btnTrack.innerHTML = '<span class="spinner"></span> Đang kiểm tra...';
-
-      try {
-        const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:5000' : 'https://web-production-46a5.up.railway.app';
-        const response = await fetch(_API + '/api/orders/' + orderCode);
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Không tìm thấy đơn hàng với mã: ' + orderCode);
-          }
-          throw new Error('Lỗi kết nối API. Vui lòng thử lại sau.');
-        }
-
-        const data = await response.json();
-
-        // Display order info
-        document.getElementById('infoCode').textContent = data.code || data.ma_don || orderCode;
-        document.getElementById('infoName').textContent = data.customer_name || data.ten_khach || 'N/A';
-        document.getElementById('infoTotal').textContent = formatCurrency(data.total_amount || data.tong_tien || 0);
-        document.getElementById('infoDate').textContent = formatDate(data.created_at || data.ngay_dat || new Date());
-
-        orderInfo.style.display = 'block';
-        timeline.style.display = 'block';
-
-        // Update timeline
-        updateTimeline(data.status || 'pending', data.timestamps || {});
-
-        successMsg.textContent = '✓ Đã tìm thấy đơn hàng!';
-        successMsg.style.display = 'block';
-
-      } catch (error) {
-        errorMsg.textContent = error.message;
-        errorMsg.style.display = 'block';
-      } finally {
-        btnTrack.disabled = false;
-        btnTrack.innerHTML = '🔍 Kiểm Tra Trạng Thái';
-      }
-    }
-
-    // Allow Enter key to trigger search
-    document.getElementById('orderCode').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        trackOrder();
-      }
-    });
   </script>
 </body>
 </html>

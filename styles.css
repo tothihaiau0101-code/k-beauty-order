@@ -448,10 +448,83 @@ body {
   color: white;
 }
 .btn-order:hover {
-  transform: scale(1.03);
-  box-shadow: 0 4px 20px rgba(255,90,146,0.25);
+  transform: scale(0.95);
 }
 
+/* ========================================================
+   Shopping Cart UI
+   ======================================================== */
+.floating-cart {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  padding: 15px 20px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: var(--shadow-glow-pink);
+  transition: all 0.3s var(--ease-spring);
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.floating-cart:hover {
+  transform: translateY(-5px);
+  background: var(--bg-card-hover);
+  border-color: var(--accent-pink-soft);
+}
+
+.floating-cart-icon {
+  font-size: 1.5rem;
+  position: relative;
+}
+
+.floating-cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--accent-pink);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.toast {
+  position: fixed;
+  bottom: 90px;
+  right: 30px;
+  background: var(--accent-green);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+  z-index: 101;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s var(--ease-spring);
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
 /* ---- COMBO SECTION ---- */
 .combo-grid {
   display: grid;

@@ -313,7 +313,11 @@
     };
 
     // ---- STATE ----
-    const cart = {}; // { productId: qty }
+    let cart = JSON.parse(localStorage.getItem('kbeauty_cart')) || {};
+
+    function saveCart() {
+      localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
+    }
 
     // ---- RENDER PRODUCTS ----
     function renderProducts(containerId, items) {
@@ -331,7 +335,7 @@
           </div>
           <div class="qty-control">
             <button type="button" class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}', -1)">−</button>
-            <span class="qty-num" id="qty-${p.id}">1</span>
+            <span class="qty-num" id="qty-${p.id}">${cart[p.id] || 1}</span>
             <button type="button" class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">+</button>
           </div>
         </div>
@@ -347,6 +351,7 @@
       } else {
         cart[id] = 1;
       }
+      saveCart();
       updateUI();
     }
 
@@ -354,6 +359,7 @@
       if (!cart[id]) return;
       cart[id] = Math.max(1, (cart[id] || 1) + delta);
       document.getElementById('qty-' + id).textContent = cart[id];
+      saveCart();
       updateCart();
     }
 
@@ -488,6 +494,10 @@
       // Hide form
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('cartBar').style.display = 'none';
+      
+      // Clear Cart
+      localStorage.removeItem('kbeauty_cart');
+      
       document.getElementById('orderId').textContent = orderId;
       document.getElementById('transferNote').textContent = orderId;
       document.getElementById('displayAmount').textContent = formatPrice(total);
@@ -501,21 +511,37 @@
     renderProducts('picker-kpop', PRODUCTS.kpop);
     renderProducts('picker-combo', PRODUCTS.combo);
 
-    // ─── AUTO-SELECT FROM CATALOG ───
+    // ─── AUTO-SELECT FROM URL OR CART ───
     (function() {
       const params = new URLSearchParams(window.location.search);
       const selectId = params.get('select');
-      if (!selectId) return;
-      setTimeout(() => {
-        const card = document.querySelector(`.pick-card[data-id="${selectId}"]`);
+      
+      // If URL has select, add it to cart
+      if (selectId) {
+        cart[selectId] = (cart[selectId] || 0) + 1;
+        saveCart();
+      }
+
+      // Visually select all items in cart
+      let firstCard = null;
+      Object.keys(cart).forEach(id => {
+        const card = document.querySelector(`.pick-card[data-id="${id}"]`);
         if (card) {
-          toggleProduct(selectId);
-          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          card.style.transition = 'box-shadow 0.3s';
-          card.style.boxShadow = '0 0 24px rgba(236,72,153,0.6)';
-          setTimeout(() => { card.style.boxShadow = ''; }, 2500);
+          if (!firstCard) firstCard = card;
         }
-      }, 300);
+      });
+      
+      updateUI();
+
+      // Scroll to the first selected item
+      if (firstCard) {
+        setTimeout(() => {
+          firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstCard.style.transition = 'box-shadow 0.3s';
+          firstCard.style.boxShadow = '0 0 24px rgba(236,72,153,0.6)';
+          setTimeout(() => { firstCard.style.boxShadow = ''; }, 2500);
+        }, 300);
+      }
     })();
 
     // ─── REAL-TIME STOCK SYNC ───

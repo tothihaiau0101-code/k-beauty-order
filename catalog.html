@@ -80,6 +80,11 @@
     </div>
   </div>
 
+  <!-- SEARCH BAR -->
+  <div style="max-width:900px;margin:0 auto 8px;padding:0 16px;">
+    <input type="text" id="catalogSearch" placeholder="🔍 Tìm sản phẩm..." oninput="filterProducts()" style="width:100%;padding:12px 18px;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-family:inherit;font-size:0.9rem;outline:none;transition:border-color 0.3s;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--border)'">
+  </div>
+
   <!-- K-BEAUTY SECTION -->
   <section class="section" id="k-beauty">
     <h2 class="section-title reveal">🧴 Mỹ Phẩm K-Beauty</h2>
@@ -683,6 +688,15 @@
       updateCartUI();
       showToast('🛍️ Đã thêm vào giỏ hàng!');
       closeProductModal();
+    }
+
+    // ─── SEARCH FILTER (M42) ───
+    function filterProducts() {
+      const q = document.getElementById('catalogSearch').value.toLowerCase().trim();
+      document.querySelectorAll('.product-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(q) ? '' : 'none';
+      });
     }
 
     // Init

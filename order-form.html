@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đặt Hàng — K-Beauty & K-Pop Order</title>
+  <meta name="description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút.">
+  <meta property="og:title" content="Đặt Hàng — K-Beauty & K-Pop Order">
+  <meta property="og:description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .form-section { max-width: 640px; margin: 0 auto; padding: 30px 16px 60px; }
+    .form-header { text-align: center; margin-bottom: 28px; }
+    .form-header h1 {
+      font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 900;
+      background: var(--gradient-pink); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 6px;
+    }
+    .form-header .subtitle { color: var(--text-secondary); font-size: 0.9rem; }
+
+    /* Form inputs */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 12px 14px; border-radius: var(--radius-sm);
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-primary); font-family: inherit; font-size: 0.9rem;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(168,85,247,0.1);
+    }
+    .form-group textarea { min-height: 50px; resize: vertical; }
+    .form-group .error-msg { color: var(--accent-pink); font-size: 0.75rem; margin-top: 3px; display: none; }
+    .form-group.has-error input { border-color: var(--accent-pink); }
+    .form-group.has-error .error-msg { display: block; }
+
+    /* ---- PRODUCT PICKER ---- */
+    .picker-section { margin: 24px 0 20px; }
+    .picker-title {
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem;
+      color: var(--text-primary); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .picker-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 480px) { .picker-grid { grid-template-columns: 1fr; } }
+
+    /* Product pick card */
+    .pick-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.3s var(--ease-out);
+      position: relative;
+      user-select: none;
+    }
+    .pick-card:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
+    .pick-card.selected {
+      border-color: var(--accent-pink);
+      background: rgba(255,90,146,0.06);
+      box-shadow: 0 0 16px rgba(255,90,146,0.1);
+    }
+    .pick-card.selected .pick-check { opacity: 1; transform: scale(1); }
+
+    .pick-check {
+      position: absolute; top: 8px; right: 8px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent-green); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700;
+      opacity: 0; transform: scale(0.5);
+      transition: all 0.25s var(--ease-spring);
+    }
+
+    .pick-card .pick-icon { font-size: 1.6rem; margin-bottom: 6px; }
+    .pick-card .pick-name {
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.82rem;
+      line-height: 1.3; margin-bottom: 2px;
+    }
+    .pick-card .pick-brand { font-size: 0.68rem; color: var(--text-muted); margin-bottom: 8px; }
+    .pick-card .pick-price {
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.95rem;
+      color: var(--accent-green);
+    }
+    .pick-card .pick-price-old {
+      font-size: 0.72rem; color: var(--text-muted); text-decoration: line-through; margin-left: 6px;
+    }
+    .pick-card .pick-tag {
+      position: absolute; top: 8px; left: 8px;
+      font-size: 0.55rem; padding: 2px 7px; border-radius: 6px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .pick-tag-hot { background: rgba(255,90,146,0.2); color: var(--accent-pink); }
+    .pick-tag-new { background: rgba(59,130,246,0.2); color: var(--accent-blue); }
+
+    /* Quantity control */
+    .qty-control {
+      display: none; /* shown when selected */
+      align-items: center; gap: 10px; margin-top: 10px;
+    }
+    .pick-card.selected .qty-control { display: flex; }
+    .qty-btn {
+      width: 28px; height: 28px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.08); color: var(--text-primary);
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .qty-btn:hover { background: rgba(255,255,255,0.15); }
+    .qty-num {
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem;
+      min-width: 20px; text-align: center;
+    }
+
+    /* ---- CART SUMMARY (sticky) ---- */
+    .cart-bar {
+      position: sticky; bottom: 0; left: 0; right: 0;
+      background: rgba(6,6,14,0.95); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 14px 16px;
+      display: none; /* shown when items selected */
+      z-index: 50;
+    }
+    .cart-bar.show { display: block; }
+    .cart-inner { max-width: 640px; margin: 0 auto; }
+    .cart-summary {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .cart-count { font-size: 0.85rem; color: var(--text-secondary); }
+    .cart-count strong { color: var(--text-primary); }
+    .cart-total {
+      font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.3rem;
+      color: var(--accent-green);
+    }
+    .cart-items-preview {
+      font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .btn-submit {
+      width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
+      background: var(--gradient-pink); color: white; font-size: 0.95rem;
+      font-weight: 700; cursor: pointer; transition: all 0.3s var(--ease-spring);
+    }
+    .btn-submit:hover { transform: scale(1.02); box-shadow: 0 4px 24px rgba(255,90,146,0.3); }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .back-link {
+      display: block; text-align: center; margin-top: 12px;
+      color: var(--text-muted); font-size: 0.82rem; text-decoration: none;
+    }
+    .back-link:hover { color: var(--text-primary); }
+
+    /* Success */
+    .success-card {
+      display: none; text-align: center; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 24px;
+    }
+    .success-card.show { display: block; animation: fadeIn 0.5s var(--ease-out); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .success-card .check { font-size: 3rem; margin-bottom: 12px; }
+    .success-card h2 { font-family: 'Outfit', sans-serif; color: var(--accent-green); margin-bottom: 8px; }
+    .success-card .order-id { color: var(--accent-purple); font-family: 'Outfit', monospace; font-weight: 700; font-size: 1.2rem; }
+    .qr-section {
+      margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.03);
+      border-radius: var(--radius-sm); border: 1px solid var(--border);
+    }
+    .qr-section img { border-radius: 8px; margin: 10px 0; }
+    .qr-section .amount { font-family: 'Outfit', sans-serif; color: var(--accent-green); font-weight: 800; font-size: 1.3rem; }
+    .qr-section .bank-info { font-size: 0.82rem; color: var(--text-secondary); margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <a href="catalog.html" class="nav-logo">🇰🇷 K-Beauty Order</a>
+      <div class="nav-links">
+        <a href="catalog.html#k-beauty">🧴 K-Beauty</a>
+        <a href="catalog.html#k-pop">🎵 K-Pop</a>
+        <a href="catalog.html#combos">🎁 Combo</a>
+        <a href="#" class="active">📩 Đặt Hàng</a>
+        <a href="policy.html">📋 Chính Sách</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="form-section">
+    <div class="form-header">
+      <h1>📩 Đặt Hàng</h1>
+      <p class="subtitle">Chọn sản phẩm → Điền thông tin → Xong! 🎉</p>
+    </div>
+
+    <form id="orderForm">
+      <!-- Customer Info -->
+      <div class="form-group" id="fg-name">
+        <label>Họ tên *</label>
+        <input type="text" id="name" placeholder="Nguyễn Văn A" required>
+        <div class="error-msg">Vui lòng nhập họ tên</div>
+      </div>
+      <div class="form-group" id="fg-phone">
+        <label>Số điện thoại *</label>
+        <input type="tel" id="phone" placeholder="0901234567" required>
+        <div class="error-msg">SĐT phải có 10 số (bắt đầu bằng 0)</div>
+      </div>
+      <div class="form-group" id="fg-address">
+        <label>Địa chỉ nhận hàng *</label>
+        <input type="text" id="address" placeholder="123 Đường ABC, Quận 1, TP.HCM" required>
+        <div class="error-msg">Vui lòng nhập địa chỉ</div>
+      </div>
+
+      <!-- PRODUCT PICKER: K-Beauty -->
+      <div class="picker-section">
+        <div class="picker-title">🧴 Mỹ Phẩm K-Beauty</div>
+        <div class="picker-grid" id="picker-beauty">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+
+      <!-- PRODUCT PICKER: K-Pop -->
+      <div class="picker-section">
+        <div class="picker-title">🎵 Album K-Pop</div>
+        <div class="picker-grid" id="picker-kpop">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+
+      <!-- PRODUCT PICKER: Combo -->
+      <div class="picker-section">
+        <div class="picker-title">🎁 Combo Thử Nghiệm</div>
+        <div class="picker-grid" id="picker-combo">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div class="form-group" style="margin-top: 8px;">
+        <label>Ghi chú (tuỳ chọn)</label>
+        <textarea id="note" placeholder="Version album, màu son, yêu cầu đặc biệt..."></textarea>
+      </div>
+
+      <a href="catalog.html" class="back-link">← Xem lại Catalog</a>
+    </form>
+
+    <!-- SUCCESS -->
+    <div class="success-card" id="successCard">
+      <div class="check">✅</div>
+      <h2>Đặt Hàng Thành Công!</h2>
+      <p>Mã đơn: <span class="order-id" id="orderId">KB-0000</span></p>
+      <p style="color:var(--text-secondary); margin-top:10px;">Mình sẽ inbox xác nhận trong 30 phút 💕</p>
+      <div class="qr-section">
+        <p style="font-weight:600;">Chuyển khoản thanh toán:</p>
+        <div class="amount" id="displayAmount">0₫</div>
+        <img id="qrCode" src="" alt="QR" width="180" height="180">
+        <div class="bank-info">
+          <p><strong>NH:</strong> Vietcombank &nbsp;|&nbsp; <strong>STK:</strong> 1234567890</p>
+          <p><strong>Chủ TK:</strong> NGUYEN VAN A</p>
+          <p style="margin-top:6px; color:var(--accent-pink);">Nội dung CK: <strong id="transferNote">KB-0000</strong></p>
+        </div>
+      </div>
+      <a href="catalog.html" class="btn-order btn-order-pink" style="margin-top:20px; display:inline-block; padding:12px 32px;">← Quay lại Catalog</a>
+    </div>
+  </section>
+
+  <!-- STICKY CART BAR -->
+  <div class="cart-bar" id="cartBar">
+    <div class="cart-inner">
+      <div class="cart-summary">
+        <span class="cart-count"><strong id="cartCount">0</strong> sản phẩm</span>
+        <span class="cart-total" id="cartTotal">0₫</span>
+      </div>
+      <div class="cart-items-preview" id="cartPreview"></div>
+      <button type="submit" form="orderForm" class="btn-submit" id="submitBtn" disabled>🛒 Xác Nhận Đặt Hàng</button>
+    </div>
+  </div>
+
+  <script>
+    // ---- PRODUCT DATA ----
+    const PRODUCTS = {
+      beauty: [
+        { id: 'cosrx-snail', icon: '🧴', name: 'COSRX Snail Mucin', spec: '100ml', price: 420000, oldPrice: 550000, tag: 'hot', tagLabel: '#1 Bestseller' },
+        { id: 'boj-sun', icon: '☀️', name: 'BoJ Relief Sun SPF50+', spec: '50ml', price: 380000, oldPrice: 500000, tag: 'hot', tagLabel: 'Bestseller' },
+        { id: 'anua-toner', icon: '💧', name: 'Anua Heartleaf Toner', spec: '250ml', price: 450000, oldPrice: 600000, tag: 'hot', tagLabel: 'Bestseller' },
+        { id: 'torriden-serum', icon: '💦', name: 'Torriden Dive-In HA Serum', spec: '50ml', price: 400000, oldPrice: 520000, tag: 'new', tagLabel: 'New' },
+        { id: 'skin1004', icon: '🌿', name: 'SKIN1004 Centella Ampoule', spec: '100ml', price: 420000, oldPrice: 550000 },
+        { id: 'mediheal', icon: '🧹', name: 'Mediheal Blemish Pad', spec: '100 miếng', price: 300000, oldPrice: 400000 },
+        { id: 'roundlab', icon: '🫧', name: 'Round Lab 1025 Dokdo Toner', spec: '200ml', price: 380000, oldPrice: 480000 },
+        { id: 'romand', icon: '💄', name: 'Romand Juicy Lasting Tint', spec: '5.5g', price: 250000, oldPrice: 350000, tag: 'new', tagLabel: 'Hot 🔥' },
+      ],
+      kpop: [
+        { id: 'txt-7th', icon: '💎', name: 'TXT — 7TH YEAR', spec: '8th Mini Album · 13/04', price: 500000, tag: 'new', tagLabel: 'Pre-order' },
+        { id: 'bts-arirang', icon: '🌟', name: 'BTS — ARIRANG', spec: '5th Album · 2026', price: 600000, tag: 'new', tagLabel: 'Pre-order' },
+        { id: 'babymonster', icon: '🐾', name: 'BABYMONSTER — CHOOM', spec: 'Mini Album · 05/2026', price: 500000, tag: 'new', tagLabel: 'New 🔥' },
+        { id: 'kissoflife', icon: '💋', name: 'KISS OF LIFE — Comeback', spec: '04/2026', price: 480000 },
+        { id: 'nctwish', icon: '⭐', name: 'NCT WISH — Full Album', spec: '04/2026', price: 450000 },
+      ],
+      combo: [
+        { id: 'combo-skincare', icon: '🎀', name: 'Skincare Starter', spec: '3 samples', price: 150000, tag: 'hot', tagLabel: 'Phổ biến' },
+        { id: 'combo-sun', icon: '🌞', name: 'Sun & Glow', spec: 'Mini sun + pads', price: 120000 },
+        { id: 'combo-kpop', icon: '🎶', name: 'K-Pop Surprise', spec: 'Photocard + Sticker', price: 200000 },
+        { id: 'combo-mix', icon: '🎁', name: 'Mix Box', spec: '2 mỹ phẩm + 1 album', price: 300000, tag: 'new', tagLabel: 'Best value' },
+      ]
+    };
+
+    // ---- STATE ----
+    const cart = {}; // { productId: qty }
+
+    // ---- RENDER PRODUCTS ----
+    function renderProducts(containerId, items) {
+      const grid = document.getElementById(containerId);
+      grid.innerHTML = items.map(p => `
+        <div class="pick-card" data-id="${p.id}" onclick="toggleProduct('${p.id}')">
+          ${p.tag ? `<span class="pick-tag pick-tag-${p.tag}">${p.tagLabel}</span>` : ''}
+          <div class="pick-check">✓</div>
+          <div class="pick-icon">${p.icon}</div>
+          <div class="pick-name">${p.name}</div>
+          <div class="pick-brand">${p.spec}</div>
+          <div>
+            <span class="pick-price">${formatPrice(p.price)}</span>
+            ${p.oldPrice ? `<span class="pick-price-old">${formatPrice(p.oldPrice)}</span>` : ''}
+          </div>
+          <div class="qty-control">
+            <button type="button" class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}', -1)">−</button>
+            <span class="qty-num" id="qty-${p.id}">1</span>
+            <button type="button" class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">+</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function formatPrice(n) { return n.toLocaleString('vi-VN') + '₫'; }
+
+    // ---- TOGGLE & QUANTITY ----
+    function toggleProduct(id) {
+      if (cart[id]) {
+        delete cart[id];
+      } else {
+        cart[id] = 1;
+      }
+      updateUI();
+    }
+
+    function changeQty(id, delta) {
+      if (!cart[id]) return;
+      cart[id] = Math.max(1, (cart[id] || 1) + delta);
+      document.getElementById('qty-' + id).textContent = cart[id];
+      updateCart();
+    }
+
+    function findProduct(id) {
+      for (const group of Object.values(PRODUCTS)) {
+        const p = group.find(x => x.id === id);
+        if (p) return p;
+      }
+      return null;
+    }
+
+    // ---- UPDATE UI ----
+    function updateUI() {
+      // Update card states
+      document.querySelectorAll('.pick-card').forEach(card => {
+        const id = card.dataset.id;
+        card.classList.toggle('selected', !!cart[id]);
+        const qtyEl = card.querySelector('.qty-num');
+        if (qtyEl) qtyEl.textContent = cart[id] || 1;
+      });
+      updateCart();
+    }
+
+    function updateCart() {
+      const ids = Object.keys(cart);
+      let total = 0;
+      let count = 0;
+      const lines = [];
+
+      ids.forEach(id => {
+        const p = findProduct(id);
+        if (!p) return;
+        const qty = cart[id];
+        count += qty;
+        total += p.price * qty;
+        lines.push(`${p.icon} ${p.name} x${qty}`);
+      });
+
+      // Cart bar
+      const bar = document.getElementById('cartBar');
+      bar.classList.toggle('show', count > 0);
+      document.getElementById('cartCount').textContent = count;
+      document.getElementById('cartTotal').textContent = formatPrice(total);
+      document.getElementById('cartPreview').textContent = lines.join(' · ');
+      document.getElementById('submitBtn').disabled = count === 0;
+    }
+
+    // ---- VALIDATION ----
+    function validate() {
+      let ok = true;
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const address = document.getElementById('address').value.trim();
+
+      document.getElementById('fg-name').classList.toggle('has-error', !name);
+      if (!name) ok = false;
+      const phoneOk = /^0\d{9}$/.test(phone);
+      document.getElementById('fg-phone').classList.toggle('has-error', !phoneOk);
+      if (!phoneOk) ok = false;
+      document.getElementById('fg-address').classList.toggle('has-error', !address);
+      if (!address) ok = false;
+
+      if (Object.keys(cart).length === 0) ok = false;
+      return ok;
+    }
+
+    // ---- SUBMIT ----
+    function generateOrderId() {
+      return 'KB-' + Date.now().toString(36).toUpperCase().slice(-4) + Math.random().toString(36).toUpperCase().slice(-2);
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validate()) return;
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Đang xử lý...';
+
+      const orderId = generateOrderId();
+      const items = [];
+      let total = 0;
+
+      Object.entries(cart).forEach(([id, qty]) => {
+        const p = findProduct(id);
+        if (!p) return;
+        items.push({ name: `${p.name} ${p.spec}`, price: p.price, qty });
+        total += p.price * qty;
+      });
+
+      const data = {
+        orderId,
+        name: document.getElementById('name').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        items,
+        products: items.map(i => `${i.name} x${i.qty}`).join(', '),
+        total,
+        note: document.getElementById('note').value.trim(),
+        timestamp: new Date().toISOString()
+      };
+
+      // Webhook
+      try {
+        const res = await fetch('http://localhost:5000/webhook/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Webhook-Secret': '' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          console.log('✅ Webhook sent');
+          // Show payment modal
+          document.getElementById('modalOrderId').textContent = orderId;
+          document.getElementById('modalTransferNote').textContent = orderId;
+          document.getElementById('modalQrCode').src =
+            `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('BIDV-0123456789')}`;
+          document.getElementById('paymentModal').style.display = 'flex';
+        }
+        else console.warn('⚠️ Webhook:', res.status);
+      } catch (err) {
+        console.warn('⚠️ Bot not running:', err.message);
+        // Still show modal even if bot is offline
+        document.getElementById('modalOrderId').textContent = orderId;
+        document.getElementById('modalTransferNote').textContent = orderId;
+        document.getElementById('modalQrCode').src =
+          `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('BIDV-0123456789')}`;
+        document.getElementById('paymentModal').style.display = 'flex';
+      }
+
+      // Hide form
+      document.getElementById('orderForm').style.display = 'none';
+      document.getElementById('cartBar').style.display = 'none';
+      document.getElementById('orderId').textContent = orderId;
+      document.getElementById('transferNote').textContent = orderId;
+      document.getElementById('displayAmount').textContent = formatPrice(total);
+      document.getElementById('qrCode').src =
+        `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`1234567890|Vietcombank|${total}|${orderId}`)}`;
+      document.getElementById('successCard').classList.add('show');
+    });
+
+    // ---- INIT ----
+    renderProducts('picker-beauty', PRODUCTS.beauty);
+    renderProducts('picker-kpop', PRODUCTS.kpop);
+    renderProducts('picker-combo', PRODUCTS.combo);
+
+    // ─── AUTO-SELECT FROM CATALOG ───
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const selectId = params.get('select');
+      if (!selectId) return;
+      setTimeout(() => {
+        const card = document.querySelector(`.pick-card[data-id="${selectId}"]`);
+        if (card) {
+          toggleProduct(selectId);
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.style.transition = 'box-shadow 0.3s';
+          card.style.boxShadow = '0 0 24px rgba(236,72,153,0.6)';
+          setTimeout(() => { card.style.boxShadow = ''; }, 2500);
+        }
+      }, 300);
+    })();
+
+    // ─── REAL-TIME STOCK SYNC ───
+    const STOCK_TO_PICKER = {
+      'KB001': 'cosrx-snail', 'KB002': 'boj-sun', 'KB003': 'anua-toner',
+      'KB004': 'torriden-serum', 'KB005': 'skin1004', 'KB006': 'mediheal',
+      'KB007': 'roundlab', 'KB008': 'romand',
+      'ALB001': 'txt-7th', 'ALB002': 'bts-arirang', 'ALB003': 'babymonster',
+      'ALB004': 'kissoflife', 'ALB005': 'nctwish'
+    };
+    fetch('http://localhost:5000/api/inventory').then(r => r.json()).then(stock => {
+      stock.forEach(item => {
+        const pickerId = STOCK_TO_PICKER[item.id];
+        if (!pickerId) return;
+        const card = document.querySelector(`.pick-card[data-id="${pickerId}"]`);
+        if (!card) return;
+        if (item.stock === 0) {
+          card.style.opacity = '0.35';
+          card.style.pointerEvents = 'none';
+          card.setAttribute('onclick', '');
+          const nameEl = card.querySelector('.pick-name');
+          if (nameEl) nameEl.innerHTML += '<div style="color:#ef4444;font-size:0.7rem;margin-top:4px;">Hết hàng — liên hệ pre-order</div>';
+        } else if (item.stock <= 2) {
+          const brand = card.querySelector('.pick-brand');
+          if (brand) brand.innerHTML += ` <span style="color:#eab308;font-size:0.65rem;">• Còn ${item.stock}</span>`;
+        }
+      });
+    }).catch(() => {});
+  </script>
+
+  <!-- PAYMENT MODAL -->
+  <div id="paymentModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;padding:32px 24px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(255,90,146,0.2);border:1px solid rgba(255,255,255,0.1);text-align:center;">
+      <h2 style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:8px;">✅ Đặt hàng thành công!</h2>
+      <p style="color:rgba(255,255,255,0.6);font-size:0.85rem;margin-bottom:16px;">Mã đơn: <span id="modalOrderId" style="color:#a855f7;font-weight:700;font-family:'Outfit',monospace;">KB-0000</span></p>
+      <img id="modalQrCode" src="" alt="QR Code" style="width:180px;height:180px;border-radius:12px;background:#fff;padding:8px;margin:16px 0;box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+      <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin:16px 0;">
+        <p style="color:#fff;font-size:0.9rem;margin:0;"><strong style="color:#a855f7;">NH:</strong> BIDV</p>
+        <p style="color:#fff;font-size:0.9rem;margin:6px 0 0;"><strong style="color:#a855f7;">STK:</strong> 0123456789</p>
+        <p style="color:#fff;font-size:0.9rem;margin:6px 0 0;"><strong style="color:#a855f7;">Chủ TK:</strong> NGUYEN VAN A</p>
+      </div>
+      <p style="color:rgba(255,255,255,0.5);font-size:0.75rem;margin-top:12px;">Ghi chú CK: <span id="modalTransferNote" style="color:#a855f7;font-weight:700;">KB-0000</span></p>
+      <button onclick="document.getElementById('paymentModal').style.display='none'" style="margin-top:20px;width:100%;padding:14px;border:none;border-radius:8px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.3s;">✓ Đã chuyển khoản</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid var(--border);">
+    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📦 Catalog</a>
+      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📩 Đặt Hàng</a>
+      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📋 Chính Sách</a>
+    </div>
+    <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 K-Beauty & K-Pop Order • Mỹ phẩm Hàn Quốc chính hãng</div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — K-Beauty Order</title>
+  <meta name="description" content="Quản lý đơn hàng K-Beauty & K-Pop Order">
+  <meta property="og:title" content="Admin Dashboard — K-Beauty Order">
+  <meta property="og:description" content="Quản lý đơn hàng K-Beauty & K-Pop Order">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ─── ADMIN LAYOUT ─── */
+    .admin-wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+    .admin-header { text-align: center; margin-bottom: 24px; }
+    .admin-header h1 {
+      font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 900;
+      background: var(--gradient-pink); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .admin-header .sub { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
+
+    /* ─── KPI CARDS ─── */
+    .kpi-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;
+    }
+    @media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 16px; text-align: center; transition: transform 0.2s, border-color 0.3s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); border-color: var(--accent-purple); }
+    .kpi-icon { font-size: 1.5rem; margin-bottom: 6px; }
+    .kpi-value {
+      font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800;
+      background: var(--gradient-pink); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .kpi-label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ─── TOOLBAR ─── */
+    .toolbar {
+      display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+    }
+    .toolbar input[type="text"] {
+      flex: 1; min-width: 200px; padding: 10px 14px; border-radius: var(--radius-sm);
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
+      font-family: inherit; font-size: 0.85rem;
+    }
+    .toolbar input:focus { outline: none; border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(168,85,247,0.1); }
+    .toolbar select {
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
+      font-family: inherit; font-size: 0.85rem; cursor: pointer;
+    }
+    .toolbar select:focus { outline: none; border-color: var(--accent-purple); }
+    .btn-export {
+      padding: 10px 18px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.8rem;
+      background: var(--gradient-pink); color: #fff; transition: opacity 0.2s;
+    }
+    .btn-export:hover { opacity: 0.85; }
+
+    /* ─── ORDER TABLE ─── */
+    .order-table-wrap {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      overflow-x: auto;
+    }
+    .order-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .order-table th {
+      text-align: left; padding: 12px 14px; font-weight: 600; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);
+      border-bottom: 1px solid var(--border); cursor: pointer; user-select: none;
+      white-space: nowrap;
+    }
+    .order-table th:hover { color: var(--accent-pink); }
+    .order-table td {
+      padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--text-primary); white-space: nowrap;
+    }
+    .order-table tr { transition: background 0.15s; cursor: pointer; }
+    .order-table tbody tr:hover { background: rgba(168,85,247,0.06); }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+    }
+    .status-pending { background: rgba(234,179,8,0.15); color: #eab308; }
+    .status-confirmed { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .status-shipping { background: rgba(168,85,247,0.15); color: #a855f7; }
+    .status-completed { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .status-cancelled { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 1000; justify-content: center; align-items: center; padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+      max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 24px;
+      animation: modalIn 0.25s ease-out;
+    }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .modal-close {
+      float: right; background: none; border: none; color: var(--text-secondary); font-size: 1.4rem;
+      cursor: pointer; padding: 0; line-height: 1; transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--accent-pink); }
+    .modal h2 {
+      font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+    .modal-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+    .modal-row .label { color: var(--text-secondary); }
+    .modal-row .value { color: var(--text-primary); font-weight: 500; text-align: right; max-width: 60%; }
+    .modal-items { margin: 14px 0; }
+    .modal-items .item-line { padding: 6px 0; font-size: 0.85rem; color: var(--text-primary); display: flex; justify-content: space-between; }
+    .modal-items .item-line .item-total { color: var(--accent-pink); font-weight: 600; }
+    .modal-divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+    /* Status action buttons */
+    .status-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .status-btn {
+      flex: 1; min-width: 90px; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-primary); font-family: 'Outfit', sans-serif;
+      font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .status-btn:hover { border-color: var(--accent-purple); background: rgba(168,85,247,0.08); }
+    .status-btn.active { background: var(--gradient-pink); border-color: transparent; color: #fff; pointer-events: none; }
+
+    /* ─── FOOTER ─── */
+    .admin-footer { text-align: center; margin-top: 30px; font-size: 0.75rem; color: var(--text-secondary); }
+    .admin-footer a { color: var(--accent-pink); text-decoration: none; }
+
+    /* Refresh indicator */
+    .refreshing { opacity: 0.5; pointer-events: none; }
+    .last-refresh { font-size: 0.72rem; color: var(--text-secondary); text-align: right; margin-bottom: 8px; }
+
+    /* ─── REVENUE CHART ─── */
+    .chart-section {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 20px; margin-bottom: 24px;
+      display: none; overflow: hidden;
+      animation: chartSlideDown 0.35s ease-out;
+    }
+    .chart-section.visible { display: block; }
+    @keyframes chartSlideDown { from { opacity: 0; max-height: 0; transform: translateY(-10px); } to { opacity: 1; max-height: 500px; transform: translateY(0); } }
+    .chart-title {
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.95rem;
+      color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .chart-container {
+      display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-top: 10px;
+      border-bottom: 1px solid var(--border); position: relative;
+    }
+    .chart-bar-wrap {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+      height: 100%; justify-content: flex-end; position: relative;
+    }
+    .chart-bar {
+      width: 100%; max-width: 50px; border-radius: 6px 6px 0 0;
+      background: linear-gradient(180deg, #ec4899 0%, #a855f7 100%);
+      transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+      min-height: 2px; cursor: pointer; position: relative;
+    }
+    .chart-bar:hover { opacity: 0.8; }
+    .chart-bar.empty { background: rgba(255,255,255,0.05); }
+    .chart-bar-label {
+      font-size: 0.65rem; color: var(--text-secondary); text-align: center;
+      padding-top: 6px; white-space: nowrap;
+    }
+    .chart-bar-value {
+      font-size: 0.62rem; font-weight: 700; color: var(--accent-pink);
+      position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+      white-space: nowrap; opacity: 0; transition: opacity 0.2s;
+    }
+    .chart-bar-wrap:hover .chart-bar-value { opacity: 1; }
+    .chart-bar.current { background: linear-gradient(180deg, #22c55e 0%, #059669 100%); }
+    .chart-legend {
+      display: flex; gap: 16px; margin-top: 12px; justify-content: center;
+    }
+    .chart-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--text-secondary); }
+    .chart-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+    .chart-legend-dot.past { background: linear-gradient(180deg, #ec4899, #a855f7); }
+    .chart-legend-dot.current { background: linear-gradient(180deg, #22c55e, #059669); }
+    .chart-summary {
+      display: flex; justify-content: space-around; margin-top: 14px; padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .chart-summary-item { text-align: center; }
+    .chart-summary-value {
+      font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem;
+      background: var(--gradient-pink); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .chart-summary-label { font-size: 0.68rem; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ─── TABS ─── */
+    .tab-bar {
+      display: flex; gap: 4px; margin-bottom: 20px;
+      background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); padding: 4px;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-secondary);
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.85rem;
+      cursor: pointer; border-radius: 8px; transition: all 0.2s;
+    }
+    .tab-btn.active { background: var(--gradient-pink); color: #fff; }
+    .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.05); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ─── STOCK TABLE ─── */
+    .stock-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; }
+    .stock-badge.in-stock { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .stock-badge.low-stock { background: rgba(234,179,8,0.15); color: #eab308; }
+    .stock-badge.out-stock { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .btn-stock {
+      padding: 4px 10px; border: none; border-radius: 6px; cursor: pointer;
+      font-size: 0.72rem; font-weight: 600; transition: opacity 0.2s;
+    }
+    .btn-stock:hover { opacity: 0.8; }
+    .btn-stock.btn-in { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .btn-stock.btn-out { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .history-action { padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+    .history-action.in { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .history-action.out { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+    /* ─── CUSTOMER TABLE ─── */
+    .tier-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; }
+    .tier-bronze { background: rgba(205,127,50,0.15); color: #cd7f32; }
+    .tier-silver { background: rgba(192,192,192,0.15); color: #c0c0c0; }
+    .tier-gold { background: rgba(255,215,0,0.15); color: #ffd700; }
+
+    /* Stock modal */
+    .stock-modal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; }
+    .stock-modal.show { display: flex; }
+    .stock-modal-box {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; width: 90%; max-width: 380px;
+    }
+    .stock-modal-box h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+    .stock-modal-box input, .stock-modal-box textarea {
+      width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-main); color: var(--text-primary); font-size: 0.85rem; margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .stock-modal-box textarea { resize: vertical; height: 60px; }
+    .stock-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+    .stock-modal-actions button {
+      padding: 8px 18px; border: none; border-radius: 8px; cursor: pointer;
+      font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.82rem;
+    }
+    .btn-cancel { background: rgba(255,255,255,0.05); color: var(--text-secondary); }
+    .btn-confirm-in { background: linear-gradient(135deg, #22c55e, #059669); color: #fff; }
+    .btn-confirm-out { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">🇰🇷 K-Beauty Admin</a>
+      <div class="nav-links">
+        <a href="catalog.html">📦 Catalog</a>
+        <a href="order-form.html">📩 Đặt Hàng</a>
+        <a href="policy.html">📋 Chính Sách</a>
+        <a href="#" class="active">⚙️ Admin</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="admin-wrap">
+    <!-- HEADER -->
+    <div class="admin-header">
+      <h1>⚙️ Quản Trị Admin</h1>
+      <p class="sub">Dashboard quản trị — K-Beauty & K-Pop Order</p>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('orders')">📋 Đơn hàng</button>
+      <button class="tab-btn" onclick="switchTab('stock')">📦 Tồn kho</button>
+      <button class="tab-btn" onclick="switchTab('customers')">👤 Khách hàng</button>
+    </div>
+
+    <!-- === ORDERS TAB === -->
+    <div class="tab-content active" id="tabOrders">
+    <!-- KPI CARDS -->
+    <div class="kpi-row" id="kpiRow">
+      <div class="kpi-card">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-value" id="kpiTotal">—</div>
+        <div class="kpi-label">Tổng đơn</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🟡</div>
+        <div class="kpi-value" id="kpiPending">—</div>
+        <div class="kpi-label">Chờ xác nhận</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🚚</div>
+        <div class="kpi-value" id="kpiShipping">—</div>
+        <div class="kpi-label">Đang giao</div>
+      </div>
+      <div class="kpi-card" id="kpiRevenueCard" onclick="toggleChart()" style="cursor:pointer;" title="Click để xem biểu đồ">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-value" id="kpiRevenue">—</div>
+        <div class="kpi-label">Doanh thu tháng ▼</div>
+      </div>
+    </div>
+
+    <!-- REVENUE CHART -->
+    <div class="chart-section">
+      <div class="chart-title">📊 Biểu Đồ Doanh Thu Theo Tháng</div>
+      <div class="chart-container" id="chartContainer"></div>
+      <div class="chart-legend">
+        <div class="chart-legend-item"><div class="chart-legend-dot past"></div> Tháng trước</div>
+        <div class="chart-legend-item"><div class="chart-legend-dot current"></div> Tháng hiện tại</div>
+      </div>
+      <div class="chart-summary" id="chartSummary"></div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="🔍 Tìm tên, SĐT, mã đơn...">
+      <select id="filterStatus">
+        <option value="">Tất cả trạng thái</option>
+        <option value="pending">🟡 Chờ xác nhận</option>
+        <option value="confirmed">🔵 Đã xác nhận</option>
+        <option value="shipping">🚚 Đang giao</option>
+        <option value="completed">✅ Hoàn thành</option>
+        <option value="cancelled">❌ Đã hủy</option>
+      </select>
+      <button class="btn-export" id="btnExport" onclick="exportCSV()">📥 Xuất CSV</button>
+    </div>
+
+    <!-- LAST REFRESH -->
+    <div class="last-refresh" id="lastRefresh"></div>
+
+    <!-- TABLE -->
+    <div class="order-table-wrap" id="tableWrap">
+      <table class="order-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('orderId')"># Mã đơn ↕</th>
+            <th onclick="sortBy('name')">Khách hàng ↕</th>
+            <th onclick="sortBy('phone')">SĐT</th>
+            <th onclick="sortBy('total')">Tổng ↕</th>
+            <th onclick="sortBy('status')">Trạng thái ↕</th>
+            <th onclick="sortBy('created_at')">Thời gian ↕</th>
+          </tr>
+        </thead>
+        <tbody id="orderBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="empty-icon">📭</div>
+        <p>Chưa có đơn hàng nào</p>
+        <p style="font-size:0.8rem;margin-top:8px;">Khi khách đặt hàng qua form, đơn sẽ hiện ở đây</p>
+      </div>
+    </div>
+
+    </div><!-- close tabOrders -->
+
+    <!-- === STOCK TAB === -->
+    <div class="tab-content" id="tabStock">
+      <!-- STOCK KPI -->
+      <div class="kpi-row" id="stockKpi">
+        <div class="kpi-card"><div class="kpi-icon">📦</div><div class="kpi-value" id="skuTotal">—</div><div class="kpi-label">Tổng SKU</div></div>
+        <div class="kpi-card"><div class="kpi-icon">✅</div><div class="kpi-value" id="skuInStock">—</div><div class="kpi-label">Còn hàng</div></div>
+        <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-value" id="skuLow">—</div><div class="kpi-label">Sắp hết (≤2)</div></div>
+        <div class="kpi-card"><div class="kpi-icon">🔴</div><div class="kpi-value" id="skuOut">—</div><div class="kpi-label">Hết hàng</div></div>
+      </div>
+
+      <!-- STOCK TABLE -->
+      <div class="order-table-wrap">
+        <table class="order-table">
+          <thead><tr>
+            <th>Mã</th><th>Sản phẩm</th><th>Danh mục</th><th>Tồn kho</th><th>Giá</th><th>Hành động</th>
+          </tr></thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+
+      <!-- HISTORY -->
+      <h3 style="margin-top:24px;font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;color:var(--text-primary);">📜 Lịch sử xuất nhập</h3>
+      <div class="order-table-wrap" style="margin-top:12px;">
+        <table class="order-table">
+          <thead><tr><th>Thời gian</th><th>Sản phẩm</th><th>Loại</th><th>SL</th><th>Ghi chú</th><th>Tồn sau</th></tr></thead>
+          <tbody id="historyBody"><tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Chưa có lịch sử</td></tr></tbody>
+        </table>
+      </div>
+    </div><!-- close tabStock -->
+
+    <!-- === CUSTOMERS TAB === -->
+    <div class="tab-content" id="tabCustomers">
+      <!-- CUSTOMER KPI -->
+      <div class="kpi-row" id="customerKpi">
+        <div class="kpi-card"><div class="kpi-icon">👥</div><div class="kpi-value" id="custTotal">—</div><div class="kpi-label">Tổng khách</div></div>
+        <div class="kpi-card"><div class="kpi-icon">🆕</div><div class="kpi-value" id="custNew">—</div><div class="kpi-label">Khách mới (30 ngày)</div></div>
+        <div class="kpi-card"><div class="kpi-icon">👑</div><div class="kpi-value" id="custVip">—</div><div class="kpi-label">Khách VIP (≥3 đơn)</div></div>
+      </div>
+
+      <!-- SEARCH -->
+      <div class="toolbar">
+        <input type="text" id="customerSearch" placeholder="🔍 Tìm theo tên hoặc SĐT..." oninput="renderCustomers()">
+      </div>
+
+      <!-- CUSTOMER TABLE -->
+      <div class="order-table-wrap">
+        <table class="order-table">
+          <thead><tr>
+            <th>STT</th><th>Tên</th><th>SĐT</th><th>Số đơn</th><th>Tổng chi tiêu</th><th>Lần mua cuối</th><th>Hạng</th>
+          </tr></thead>
+          <tbody id="customerBody"></tbody>
+        </table>
+        <div class="empty-state" id="customerEmpty" style="display:none;">
+          <div class="empty-icon">📭</div>
+          <p>Chưa có khách hàng nào</p>
+        </div>
+      </div>
+    </div><!-- close tabCustomers -->
+
+    <!-- FOOTER -->
+    <div class="admin-footer">
+      <p>K-Beauty & K-Pop Order Admin • API: <code>localhost:5000</code> • <a href="order-form.html">Trang đặt hàng</a></p>
+    </div>
+  </div>
+
+  <!-- ORDER MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <!-- STOCK MODAL -->
+  <div class="stock-modal" id="stockModal" onclick="if(event.target===this)closeStockModal()">
+    <div class="stock-modal-box">
+      <h3 id="stockModalTitle">Nhập hàng</h3>
+      <input type="number" id="stockQty" min="1" value="1" placeholder="Số lượng">
+      <textarea id="stockNote" placeholder="Ghi chú (VD: Nhập lot mới từ Olive Young)"></textarea>
+      <div class="stock-modal-actions">
+        <button class="btn-cancel" onclick="closeStockModal()">Hủy</button>
+        <button id="stockConfirmBtn" class="btn-confirm-in" onclick="confirmStock()">✅ Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:5000';
+    let allOrders = [];
+    let currentSort = { key: 'created_at', asc: false };
+
+    const STATUS_MAP = {
+      pending:   { label: 'Chờ xác nhận', icon: '🟡', cls: 'status-pending' },
+      confirmed: { label: 'Đã xác nhận',  icon: '🔵', cls: 'status-confirmed' },
+      shipping:  { label: 'Đang giao',    icon: '🚚', cls: 'status-shipping' },
+      completed: { label: 'Hoàn thành',   icon: '✅', cls: 'status-completed' },
+      cancelled: { label: 'Đã hủy',       icon: '❌', cls: 'status-cancelled' }
+    };
+
+    // ─── FETCH DATA ───
+    async function loadData() {
+      try {
+        const [ordersRes, statsRes] = await Promise.all([
+          fetch(`${API}/api/orders`),
+          fetch(`${API}/api/stats`)
+        ]);
+        if (ordersRes.ok) {
+          allOrders = await ordersRes.json();
+          renderTable();
+        }
+        if (statsRes.ok) {
+          const s = await statsRes.json();
+          document.getElementById('kpiTotal').textContent = s.total_orders;
+          document.getElementById('kpiPending').textContent = s.pending;
+          document.getElementById('kpiShipping').textContent = s.shipping;
+          document.getElementById('kpiRevenue').textContent = formatVND(s.revenue);
+        }
+        document.getElementById('lastRefresh').textContent = `Cập nhật: ${new Date().toLocaleTimeString('vi')}`;
+      } catch (e) {
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('emptyState').innerHTML =
+          '<div class="empty-icon">⚠️</div>' +
+          '<p>Không kết nối được server</p>' +
+          '<p style="font-size:0.8rem;margin-top:8px;">Chạy <code>cd tools && python telegram_bot.py</code> trước</p>';
+      }
+    }
+
+    // ─── RENDER TABLE ───
+    function renderTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const filterSt = document.getElementById('filterStatus').value;
+
+      let filtered = allOrders.filter(o => {
+        const name = (o.name || o.customer_name || '').toLowerCase();
+        const phone = (o.phone || '').toLowerCase();
+        const oid = (o.orderId || o.id || '').toLowerCase();
+        const matchSearch = !search || name.includes(search) || phone.includes(search) || oid.includes(search);
+        const matchStatus = !filterSt || (o.status || 'pending') === filterSt;
+        return matchSearch && matchStatus;
+      });
+
+      // Sort
+      filtered.sort((a, b) => {
+        let va = a[currentSort.key] || '';
+        let vb = b[currentSort.key] || '';
+        if (currentSort.key === 'total') {
+          va = parseFloat(a.total || a.total_amount || 0);
+          vb = parseFloat(b.total || b.total_amount || 0);
+        }
+        if (va < vb) return currentSort.asc ? -1 : 1;
+        if (va > vb) return currentSort.asc ? 1 : -1;
+        return 0;
+      });
+
+      const tbody = document.getElementById('orderBody');
+      const empty = document.getElementById('emptyState');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      tbody.innerHTML = filtered.map(o => {
+        const oid = o.orderId || o.id || '—';
+        const name = o.name || o.customer_name || '—';
+        const phone = o.phone || '—';
+        const total = o.total || o.total_amount || 0;
+        const status = o.status || 'pending';
+        const st = STATUS_MAP[status] || STATUS_MAP.pending;
+        const time = o.created_at ? o.created_at.slice(0,16).replace('T',' ') : '—';
+        return `<tr onclick="openModal('${oid}')">
+          <td><strong>${oid}</strong></td>
+          <td>${name}</td>
+          <td>${phone}</td>
+          <td style="color:var(--accent-pink);font-weight:600">${formatVND(total)}</td>
+          <td><span class="status-badge ${st.cls}">${st.icon} ${st.label}</span></td>
+          <td style="color:var(--text-secondary)">${time}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ─── SORT ───
+    function sortBy(key) {
+      if (currentSort.key === key) currentSort.asc = !currentSort.asc;
+      else { currentSort.key = key; currentSort.asc = true; }
+      renderTable();
+    }
+
+    // ─── MODAL ───
+    function openModal(oid) {
+      const o = allOrders.find(x => (x.orderId || x.id) === oid);
+      if (!o) return;
+
+      const status = o.status || 'pending';
+      const st = STATUS_MAP[status] || STATUS_MAP.pending;
+      const name = o.name || o.customer_name || '—';
+      const total = o.total || o.total_amount || 0;
+      const items = o.items || [];
+      const time = o.created_at ? o.created_at.slice(0,16).replace('T',' ') : '—';
+
+      let itemsHtml = '';
+      if (items.length > 0) {
+        itemsHtml = items.map(i =>
+          `<div class="item-line">
+            <span>▪️ ${i.name || 'Item'} x${i.qty || 1}</span>
+            <span class="item-total">${formatVND((i.price || 0) * (i.qty || 1))}</span>
+          </div>`
+        ).join('');
+      } else {
+        const prod = o.products || '';
+        itemsHtml = prod ? `<div class="item-line"><span>▪️ ${prod}</span></div>` : '<div style="color:var(--text-secondary)">Không có chi tiết</div>';
+      }
+
+      const statuses = ['pending','confirmed','shipping','completed','cancelled'];
+      const statusBtns = statuses.map(s => {
+        const sm = STATUS_MAP[s];
+        const isActive = s === status ? 'active' : '';
+        return `<button class="status-btn ${isActive}" onclick="updateStatus('${oid}','${s}')">${sm.icon} ${sm.label}</button>`;
+      }).join('');
+
+      document.getElementById('modalContent').innerHTML = `
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <h2>📦 Đơn #${oid}</h2>
+        <div class="modal-row"><span class="label">👤 Khách hàng</span><span class="value">${name}</span></div>
+        <div class="modal-row"><span class="label">📞 Số điện thoại</span><span class="value">${o.phone || '—'}</span></div>
+        <div class="modal-row"><span class="label">📍 Địa chỉ</span><span class="value">${o.address || '—'}</span></div>
+        <div class="modal-row"><span class="label">🕐 Thời gian</span><span class="value">${time}</span></div>
+        <div class="modal-row"><span class="label">📌 Trạng thái</span><span class="value"><span class="status-badge ${st.cls}">${st.icon} ${st.label}</span></span></div>
+        <div class="modal-divider"></div>
+        <div style="font-weight:600;font-size:0.85rem;margin-bottom:8px;">📦 Sản phẩm:</div>
+        <div class="modal-items">${itemsHtml}</div>
+        <div class="modal-divider"></div>
+        <div class="modal-row"><span class="label" style="font-weight:700;font-size:0.95rem;">💰 Tổng cộng</span><span class="value" style="font-size:1.1rem;color:var(--accent-pink);font-weight:800;">${formatVND(total)}</span></div>
+        ${o.note ? `<div class="modal-row"><span class="label">📝 Ghi chú</span><span class="value">${o.note}</span></div>` : ''}
+        <div class="modal-divider"></div>
+        <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Đổi trạng thái:</div>
+        <div class="status-actions">${statusBtns}</div>
+      `;
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    // ─── UPDATE STATUS ───
+    async function updateStatus(oid, newStatus) {
+      try {
+        const res = await fetch(`${API}/api/orders/${oid}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (res.ok) {
+          closeModal();
+          await loadData();
+          // Re-open modal with updated data
+          setTimeout(() => openModal(oid), 200);
+        }
+      } catch (e) {
+        alert('Lỗi kết nối server');
+      }
+    }
+
+    // ─── EXPORT CSV ───
+    function exportCSV() {
+      if (allOrders.length === 0) return alert('Không có dữ liệu');
+      const headers = ['Mã đơn','Ngày','Khách hàng','SĐT','Địa chỉ','Sản phẩm','Tổng tiền','Trạng thái'];
+      const rows = allOrders.map(o => {
+        const items = (o.items || []).map(i => `${i.name||''}x${i.qty||1}`).join('; ') || o.products || '';
+        const status = o.status || 'pending';
+        const statusLabel = STATUS_MAP[status]?.label || status;
+        return [
+          o.orderId || o.id || '',
+          (o.created_at||'').slice(0,10),
+          o.name || o.customer_name || '',
+          o.phone || '',
+          o.address || '',
+          items,
+          o.total || o.total_amount || 0,
+          statusLabel
+        ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+      });
+      const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `don-hang-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ─── HELPERS ───
+    function formatVND(n) {
+      n = parseFloat(n) || 0;
+      if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0','') + 'M';
+      if (n > 0) return n.toLocaleString('vi') + '₫';
+      return '0₫';
+    }
+
+    // ─── TOGGLE CHART ───
+    let chartLoaded = false;
+    function toggleChart() {
+      const section = document.querySelector('.chart-section');
+      const label = document.querySelector('#kpiRevenueCard .kpi-label');
+      if (section.classList.contains('visible')) {
+        section.classList.remove('visible');
+        label.textContent = 'Doanh thu tháng ▼';
+      } else {
+        section.classList.add('visible');
+        label.textContent = 'Doanh thu tháng ▲';
+        if (!chartLoaded) {
+          fetch(`${API}/api/revenue-monthly`).then(r => r.json()).then(renderChart);
+          chartLoaded = true;
+        }
+      }
+    }
+
+    // ─── RENDER CHART ───
+    function renderChart(data) {
+      const container = document.getElementById('chartContainer');
+      const summary = document.getElementById('chartSummary');
+      if (!data || data.length === 0) return;
+
+      const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
+      const currentMonth = new Date().toISOString().slice(0,7);
+      const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
+      const totalOrders = data.reduce((s, d) => s + d.orders, 0);
+      const avgRevenue = data.filter(d => d.revenue > 0).length > 0
+        ? totalRevenue / data.filter(d => d.revenue > 0).length : 0;
+
+      container.innerHTML = data.map((d, i) => {
+        const pct = maxRevenue > 0 ? (d.revenue / maxRevenue * 100) : 0;
+        const isCurrent = d.month === currentMonth;
+        const barClass = d.revenue === 0 ? 'empty' : (isCurrent ? 'current' : '');
+        return `<div class="chart-bar-wrap">
+          <div class="chart-bar-value">${d.revenue > 0 ? formatVND(d.revenue) : ''}</div>
+          <div class="chart-bar ${barClass}" style="height:0%" data-height="${Math.max(pct, d.revenue > 0 ? 3 : 1)}%"
+               title="${d.label}: ${formatVND(d.revenue)} — ${d.orders} đơn"></div>
+          <div class="chart-bar-label">${d.label}</div>
+        </div>`;
+      }).join('');
+
+      // Animate bars
+      setTimeout(() => {
+        container.querySelectorAll('.chart-bar').forEach((bar, i) => {
+          setTimeout(() => {
+            bar.style.height = bar.dataset.height;
+          }, i * 60);
+        });
+      }, 100);
+
+      summary.innerHTML = `
+        <div class="chart-summary-item">
+          <div class="chart-summary-value">${formatVND(totalRevenue)}</div>
+          <div class="chart-summary-label">Tổng 12 tháng</div>
+        </div>
+        <div class="chart-summary-item">
+          <div class="chart-summary-value">${totalOrders}</div>
+          <div class="chart-summary-label">Tổng đơn</div>
+        </div>
+        <div class="chart-summary-item">
+          <div class="chart-summary-value">${formatVND(avgRevenue)}</div>
+          <div class="chart-summary-label">Trung bình/tháng</div>
+        </div>
+      `;
+    }
+
+    // ─── EVENTS ───
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('filterStatus').addEventListener('change', renderTable);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeStockModal(); } });
+
+    // Auto-refresh every 30s
+    loadData();
+    setInterval(loadData, 30000);
+
+    // ─── TAB SWITCH ───
+    function switchTab(tab) {
+      const idx = tab === 'orders' ? 0 : tab === 'stock' ? 1 : 2;
+      document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+      document.getElementById('tabOrders').classList.toggle('active', tab === 'orders');
+      document.getElementById('tabStock').classList.toggle('active', tab === 'stock');
+      document.getElementById('tabCustomers').classList.toggle('active', tab === 'customers');
+      if (tab === 'stock') loadStock();
+      if (tab === 'customers') loadCustomers();
+    }
+
+    // ─── STOCK DATA ───
+    let stockData = [];
+    async function loadStock() {
+      try {
+        const [stockRes, histRes] = await Promise.all([
+          fetch(`${API}/api/inventory`),
+          fetch(`${API}/api/inventory/history`)
+        ]);
+        stockData = await stockRes.json();
+        const history = await histRes.json();
+        renderStockTable(stockData);
+        renderHistory(history);
+      } catch(e) { console.error('Load stock error', e); }
+    }
+
+    function renderStockTable(items) {
+      document.getElementById('skuTotal').textContent = items.length;
+      document.getElementById('skuInStock').textContent = items.filter(i => i.stock > 2).length;
+      document.getElementById('skuLow').textContent = items.filter(i => i.stock > 0 && i.stock <= 2).length;
+      document.getElementById('skuOut').textContent = items.filter(i => i.stock === 0).length;
+
+      document.getElementById('stockBody').innerHTML = items.map(p => {
+        const bc = p.stock === 0 ? 'out-stock' : p.stock <= 2 ? 'low-stock' : 'in-stock';
+        const bt = p.stock === 0 ? 'Hết hàng' : p.stock <= 2 ? `Còn ${p.stock}` : `${p.stock} sp`;
+        return `<tr>
+          <td><strong>${p.id}</strong></td>
+          <td>${p.name}</td>
+          <td>${p.category || ''}</td>
+          <td><span class="stock-badge ${bc}">${bt}</span></td>
+          <td>${formatVND(p.price)}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn-stock btn-in" onclick="openStockModal('${p.id}','in')">+ Nhập</button>
+            <button class="btn-stock btn-out" onclick="openStockModal('${p.id}','out')" ${p.stock === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>- Xuất</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderHistory(items) {
+      const body = document.getElementById('historyBody');
+      if (!items || items.length === 0) {
+        body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Chưa có lịch sử</td></tr>';
+        return;
+      }
+      body.innerHTML = items.slice(0, 20).map(h => `<tr>
+        <td>${(h.timestamp || '').slice(0, 16).replace('T', ' ')}</td>
+        <td>${h.name || h.id}</td>
+        <td><span class="history-action ${h.action}">${h.action === 'in' ? '📥 Nhập' : '📤 Xuất'}</span></td>
+        <td><strong>${h.qty}</strong></td>
+        <td>${h.note || '—'}</td>
+        <td>${h.stock_after}</td>
+      </tr>`).join('');
+    }
+
+    // ─── STOCK MODAL ───
+    let stockModalId = '', stockModalAction = '';
+    function openStockModal(id, action) {
+      stockModalId = id; stockModalAction = action;
+      const p = stockData.find(i => i.id === id);
+      document.getElementById('stockModalTitle').textContent = action === 'in' ? `📥 Nhập hàng: ${p?.name || id}` : `📤 Xuất hàng: ${p?.name || id}`;
+      document.getElementById('stockQty').value = 1;
+      document.getElementById('stockNote').value = '';
+      const btn = document.getElementById('stockConfirmBtn');
+      btn.className = action === 'in' ? 'btn-confirm-in' : 'btn-confirm-out';
+      btn.textContent = action === 'in' ? '✅ Nhập' : '📤 Xuất';
+      document.getElementById('stockModal').classList.add('show');
+    }
+    function closeStockModal() { document.getElementById('stockModal').classList.remove('show'); }
+    async function confirmStock() {
+      const qty = parseInt(document.getElementById('stockQty').value) || 0;
+      const note = document.getElementById('stockNote').value;
+      if (qty <= 0) return alert('Số lượng phải > 0');
+      try {
+        const res = await fetch(`${API}/api/inventory/${stockModalId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: stockModalAction, quantity: qty, note })
+        });
+        const result = await res.json();
+        if (result.error) return alert('Lỗi: ' + result.error);
+        closeStockModal();
+        loadStock();
+      } catch(e) { alert('Lỗi kết nối API'); }
+    }
+
+    // ─── CUSTOMERS DATA ───
+    let customerData = [];
+    async function loadCustomers() {
+      try {
+        const res = await fetch(`${API}/api/orders`);
+        if (!res.ok) return;
+        const orders = await res.json();
+
+        // Group by phone number
+        const customerMap = new Map();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        for (const o of orders) {
+          const phone = o.phone || '';
+          if (!phone) continue;
+
+          if (!customerMap.has(phone)) {
+            customerMap.set(phone, {
+              phone: phone,
+              name: o.name || o.customer_name || '—',
+              orders: 0,
+              totalSpent: 0,
+              lastOrder: null
+            });
+          }
+
+          const cust = customerMap.get(phone);
+          cust.orders += 1;
+          cust.totalSpent += parseFloat(o.total || o.total_amount || 0);
+
+          const orderDate = o.created_at ? new Date(o.created_at) : null;
+          if (orderDate && (!cust.lastOrder || orderDate > cust.lastOrder)) {
+            cust.lastOrder = orderDate;
+          }
+
+          // Check if new customer (first order within 30 days)
+          if (orderDate && orderDate < thirtyDaysAgo) {
+            cust.isNew = false;
+          }
+        }
+
+        // Mark customers as new if their first order is within 30 days
+        for (const cust of customerMap.values()) {
+          if (!cust.lastOrder || cust.lastOrder >= thirtyDaysAgo) {
+            cust.isNew = true;
+          }
+        }
+
+        customerData = Array.from(customerMap.values());
+        renderCustomers();
+      } catch(e) {
+        console.error('Load customers error', e);
+        document.getElementById('customerEmpty').style.display = 'block';
+      }
+    }
+
+    function getTier(orders) {
+      if (orders >= 6) return { label: '🥇 Gold', cls: 'tier-gold' };
+      if (orders >= 3) return { label: '🥈 Silver', cls: 'tier-silver' };
+      return { label: '🥉 Bronze', cls: 'tier-bronze' };
+    }
+
+    function renderCustomers() {
+      const search = document.getElementById('customerSearch').value.toLowerCase();
+
+      let filtered = customerData.filter(c => {
+        if (!search) return true;
+        return (c.name || '').toLowerCase().includes(search) || (c.phone || '').toLowerCase().includes(search);
+      });
+
+      // Update KPIs
+      const totalCustomers = customerData.length;
+      const newCustomers = customerData.filter(c => c.isNew).length;
+      const vipCustomers = customerData.filter(c => c.orders >= 3).length;
+
+      document.getElementById('custTotal').textContent = totalCustomers;
+      document.getElementById('custNew').textContent = newCustomers;
+      document.getElementById('custVip').textContent = vipCustomers;
+
+      const tbody = document.getElementById('customerBody');
+      const empty = document.getElementById('customerEmpty');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      // Sort by total spent desc
+      filtered.sort((a, b) => b.totalSpent - a.totalSpent);
+
+      tbody.innerHTML = filtered.map((c, i) => {
+        const tier = getTier(c.orders);
+        const lastOrderStr = c.lastOrder ? c.lastOrder.toISOString().slice(0, 16).replace('T', ' ') : '—';
+        return `<tr>
+          <td>${i + 1}</td>
+          <td>${c.name}</td>
+          <td>${c.phone}</td>
+          <td>${c.orders}</td>
+          <td style="color:var(--accent-pink);font-weight:600">${formatVND(c.totalSpent)}</td>
+          <td style="color:var(--text-secondary)">${lastOrderStr}</td>
+          <td><span class="tier-badge ${tier.cls}">${tier.label}</span></td>
+        </tr>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

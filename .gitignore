@@ -1,0 +1,23 @@
+# Environment & secrets
+tools/.env
+.env
+
+# Data files (orders, inventory history - private)
+tools/data/orders.json
+tools/data/inventory_history.json
+
+# Python
+*.pyc
+__pycache__/
+*.pyo
+.Python
+venv/
+.venv/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# IDE
+.vscode/
+.idea/

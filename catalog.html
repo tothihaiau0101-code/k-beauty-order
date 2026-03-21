@@ -85,6 +85,23 @@
     <input type="text" id="catalogSearch" placeholder="🔍 Tìm sản phẩm..." oninput="filterProducts()" style="width:100%;padding:12px 18px;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-family:inherit;font-size:0.9rem;outline:none;transition:border-color 0.3s;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--border)'">
   </div>
 
+  <!-- FILTER BAR (M45) -->
+  <div style="max-width:900px;margin:0 auto 16px;padding:0 16px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="filterCategory('all')" class="filter-btn active" data-cat="all">🌐 Tất cả</button>
+    <button onclick="filterCategory('skincare')" class="filter-btn" data-cat="skincare">🧴 Skincare</button>
+    <button onclick="filterCategory('makeup')" class="filter-btn" data-cat="makeup">💄 Makeup</button>
+    <button onclick="filterCategory('album')" class="filter-btn" data-cat="album">🎵 Album</button>
+    <button onclick="filterCategory('combo')" class="filter-btn" data-cat="combo">🎁 Combo</button>
+  </div>
+
+  <!-- SOCIAL FLOATING BAR (M4) -->
+  <div style="position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;gap:10px;">
+    <a href="https://zalo.me/" target="_blank" title="Zalo" style="width:40px;height:40px;border-radius:12px;background:rgba(0,132,255,0.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem;border:1px solid rgba(0,132,255,0.2);transition:all 0.2s;" onmouseover="this.style.background='rgba(0,132,255,0.3)'" onmouseout="this.style.background='rgba(0,132,255,0.15)'">💬</a>
+    <a href="https://facebook.com/" target="_blank" title="Facebook" style="width:40px;height:40px;border-radius:12px;background:rgba(66,103,178,0.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem;border:1px solid rgba(66,103,178,0.2);transition:all 0.2s;" onmouseover="this.style.background='rgba(66,103,178,0.3)'" onmouseout="this.style.background='rgba(66,103,178,0.15)'">📘</a>
+    <a href="https://instagram.com/" target="_blank" title="Instagram" style="width:40px;height:40px;border-radius:12px;background:rgba(225,48,108,0.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem;border:1px solid rgba(225,48,108,0.2);transition:all 0.2s;" onmouseover="this.style.background='rgba(225,48,108,0.3)'" onmouseout="this.style.background='rgba(225,48,108,0.15)'">📸</a>
+    <a href="https://tiktok.com/" target="_blank" title="TikTok" style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem;border:1px solid rgba(255,255,255,0.1);transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">🎵</a>
+  </div>
+
   <!-- K-BEAUTY SECTION -->
   <section class="section" id="k-beauty">
     <h2 class="section-title reveal">🧴 Mỹ Phẩm K-Beauty</h2>
@@ -749,6 +766,30 @@
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(q) ? '' : 'none';
       });
+    }
+
+    // ─── CATEGORY FILTER (M45) ───
+    function filterCategory(cat) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.filter-btn[data-cat="${cat}"]`).classList.add('active');
+      const sectionMap = { skincare:'k-beauty', makeup:'k-beauty', album:'k-pop', combo:'combos' };
+      if (cat === 'all') {
+        document.querySelectorAll('.section').forEach(s => s.style.display = '');
+        document.querySelectorAll('.product-card').forEach(c => c.style.display = '');
+      } else {
+        document.querySelectorAll('.section').forEach(s => {
+          s.style.display = s.id === sectionMap[cat] ? '' : 'none';
+        });
+        if (cat === 'skincare') {
+          document.querySelectorAll('#k-beauty .product-card').forEach(c => {
+            c.style.display = c.querySelector('h3')?.textContent.includes('Tint') ? 'none' : '';
+          });
+        } else if (cat === 'makeup') {
+          document.querySelectorAll('#k-beauty .product-card').forEach(c => {
+            c.style.display = c.querySelector('h3')?.textContent.includes('Tint') ? '' : 'none';
+          });
+        }
+      }
     }
 
     // Init

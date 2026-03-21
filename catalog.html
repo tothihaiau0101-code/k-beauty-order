@@ -511,8 +511,7 @@
       document.getElementById('modalOldPrice').textContent = data.oldPrice || '';
       document.getElementById('modalDesc').textContent = data.desc;
       document.getElementById('modalUsage').textContent = data.usage;
-      const addBtn = document.getElementById('modalAddCartBtn');
-      addBtn.setAttribute('data-id', productId);
+      document.getElementById('modalAddCartBtn').setAttribute('data-id', productId);
       document.getElementById('productModal').style.display = 'flex';
     }
     function closeProductModal() {
@@ -571,16 +570,17 @@
       });
     });
 
-    // ─── MODAL ADD TO CART ───
-    document.getElementById('modalAddCartBtn').addEventListener('click', () => {
-      const id = document.getElementById('modalAddCartBtn').getAttribute('data-id');
+    // ─── MODAL ADD TO CART (called via onclick from HTML) ───
+    function modalAddToCart() {
+      const btn = document.getElementById('modalAddCartBtn');
+      const id = btn ? btn.getAttribute('data-id') : null;
       if (!id) return;
       cart[id] = (cart[id] || 0) + 1;
       localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
       updateCartUI();
       showToast('🛍️ Đã thêm vào giỏ hàng!');
       closeProductModal();
-    });
+    }
 
     // Init
     updateCartUI();
@@ -610,7 +610,7 @@
             <div style="font-size:0.8rem;font-weight:700;color:#fbbf24;margin-bottom:6px;">💡 Hướng dẫn sử dụng</div>
             <p id="modalUsage" style="font-size:0.82rem;color:rgba(255,255,255,0.65);line-height:1.6;">...</p>
           </div>
-          <button id="modalAddCartBtn" data-id="" style="margin-top:auto;width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ff5a92 0%,#c084fc 100%);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 15px rgba(255,90,146,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">🛒 Thêm vào giỏ hàng</button>
+          <button id="modalAddCartBtn" data-id="" onclick="modalAddToCart()" style="margin-top:auto;width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ff5a92 0%,#c084fc 100%);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 15px rgba(255,90,146,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">🛒 Thêm vào giỏ hàng</button>
         </div>
       </div>
     </div>

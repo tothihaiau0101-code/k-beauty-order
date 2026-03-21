@@ -458,7 +458,9 @@
 
       // Webhook
       try {
-        const res = await fetch('http://localhost:5000/webhook/order', {
+        const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? 'http://localhost:5000' : 'https://k-beauty-api.up.railway.app';
+        const res = await fetch(_API + '/webhook/order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Webhook-Secret': '' },
           body: JSON.stringify(data)
@@ -524,7 +526,9 @@
       'ALB001': 'txt-7th', 'ALB002': 'bts-arirang', 'ALB003': 'babymonster',
       'ALB004': 'kissoflife', 'ALB005': 'nctwish'
     };
-    fetch('http://localhost:5000/api/inventory').then(r => r.json()).then(stock => {
+    const _API2 = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000' : 'https://k-beauty-api.up.railway.app';
+    fetch(_API2 + '/api/inventory').then(r => r.json()).then(stock => {
       stock.forEach(item => {
         const pickerId = STOCK_TO_PICKER[item.id];
         if (!pickerId) return;

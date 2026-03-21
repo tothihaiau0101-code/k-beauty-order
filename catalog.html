@@ -400,7 +400,9 @@
       'torriden-serum': 'KB004', 'skin1004': 'KB005', 'mediheal': 'KB006',
       'roundlab': 'KB007', 'romand': 'KB008'
     };
-    fetch('http://localhost:5000/api/inventory').then(r => r.json()).then(stock => {
+    const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000' : 'https://k-beauty-api.up.railway.app';
+    fetch(_API + '/api/inventory').then(r => r.json()).then(stock => {
       const stockById = {};
       stock.forEach(s => stockById[s.id] = s.stock);
       document.querySelectorAll('.btn-order').forEach(btn => {

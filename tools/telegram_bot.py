@@ -660,7 +660,7 @@ class KBeautyBot:
         self.config = config
         self.token = config.get("TELEGRAM_BOT_TOKEN", "")
         self.chat_id = config.get("TELEGRAM_CHAT_ID", "")
-        self.port = int(config.get("WEBHOOK_PORT", 5000))
+        self.port = int(os.environ.get("PORT") or config.get("WEBHOOK_PORT", 5000))
         self.secret = config.get("WEBHOOK_SECRET", "")
         
         # Data Paths

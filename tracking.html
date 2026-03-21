@@ -495,7 +495,9 @@
       btnTrack.innerHTML = '<span class="spinner"></span> Đang kiểm tra...';
 
       try {
-        const response = await fetch('http://localhost:5000/api/orders/' + orderCode);
+        const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? 'http://localhost:5000' : 'https://k-beauty-api.up.railway.app';
+        const response = await fetch(_API + '/api/orders/' + orderCode);
 
         if (!response.ok) {
           if (response.status === 404) {

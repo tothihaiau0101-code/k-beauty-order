@@ -280,6 +280,11 @@
         <span class="cart-total" id="cartTotal">0₫</span>
       </div>
       <div class="cart-items-preview" id="cartPreview"></div>
+      <div style="display:flex;gap:8px;margin:8px 0;">
+        <input type="text" id="voucherCode" placeholder="Nhập mã giảm giá..." style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-family:inherit;font-size:0.8rem;outline:none;">
+        <button type="button" onclick="applyVoucher()" style="padding:10px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">Áp dụng</button>
+      </div>
+      <div id="voucherResult" style="display:none;padding:6px 12px;border-radius:8px;font-size:0.78rem;margin-bottom:6px;"></div>
       <button type="submit" form="orderForm" class="btn-submit" id="submitBtn" disabled>🛒 Xác Nhận Đặt Hàng</button>
     </div>
   </div>
@@ -402,9 +407,50 @@
       const bar = document.getElementById('cartBar');
       bar.classList.toggle('show', count > 0);
       document.getElementById('cartCount').textContent = count;
-      document.getElementById('cartTotal').textContent = formatPrice(total);
+      // Apply voucher discount
+      let discountAmt = 0;
+      if (activeVoucher) {
+        if (activeVoucher.type === 'percent') {
+          discountAmt = Math.round(total * activeVoucher.value / 100);
+          if (activeVoucher.max) discountAmt = Math.min(discountAmt, activeVoucher.max);
+        } else {
+          discountAmt = activeVoucher.value;
+        }
+      }
+      const finalTotal = Math.max(0, total - discountAmt);
+      document.getElementById('cartTotal').textContent = formatPrice(finalTotal);
       document.getElementById('cartPreview').textContent = lines.join(' · ');
       document.getElementById('submitBtn').disabled = count === 0;
+    }
+
+    // ---- VOUCHER SYSTEM (M26) ----
+    const VOUCHERS = {
+      'WELCOME10': { label: 'Giảm 10%', type: 'percent', value: 10 },
+      'FREESHIP': { label: 'Giảm 30,000₫ ship', type: 'fixed', value: 30000 },
+      'KBEAUTY20': { label: 'Giảm 20% (max 100k)', type: 'percent', value: 20, max: 100000 }
+    };
+    let activeVoucher = null;
+
+    function applyVoucher() {
+      const code = document.getElementById('voucherCode').value.trim().toUpperCase();
+      const el = document.getElementById('voucherResult');
+      if (!code) { el.style.display = 'none'; return; }
+      const v = VOUCHERS[code];
+      if (v) {
+        activeVoucher = v;
+        el.style.display = 'block';
+        el.style.background = 'rgba(16,185,129,0.15)';
+        el.style.color = '#10b981';
+        el.textContent = '✅ ' + v.label + ' — Mã: ' + code;
+        updateUI();
+      } else {
+        activeVoucher = null;
+        el.style.display = 'block';
+        el.style.background = 'rgba(239,68,68,0.15)';
+        el.style.color = '#ef4444';
+        el.textContent = '❌ Mã không hợp lệ';
+        updateUI();
+      }
     }
 
     // ---- VALIDATION ----

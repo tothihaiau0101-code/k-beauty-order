@@ -430,15 +430,25 @@
 
     <!-- === ANALYTICS TAB (M50) === -->
     <div class="tab-content" id="tabAnalytics">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
           <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">📈 Conversion Rate</div>
-          <div style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:#10b981;" id="convRate">0%</div>
-          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Đơn hoàn thành / Tổng đơn</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:#10b981;" id="convRate">0%</div>
+          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Đơn hoàn thành / Tổng</div>
         </div>
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
-          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">💰 Giá trị trung bình</div>
-          <div style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:#a855f7;" id="avgOrder">0₫</div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">🚚 Giao thành công</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:#3b82f6;" id="deliveryRate">0%</div>
+          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Shipped → Completed</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">↩️ Đơn bị hoàn</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:#ef4444;" id="cancelRate">0%</div>
+          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Cancelled / Tổng</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">💰 Giá trị TB</div>
+          <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:#a855f7;" id="avgOrder">0₫</div>
           <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Trung bình mỗi đơn</div>
         </div>
       </div>
@@ -815,6 +825,10 @@
       const total = orders.length || 1;
       const completed = orders.filter(o => o.status === 'completed').length;
       document.getElementById('convRate').textContent = Math.round(completed / total * 100) + '%';
+      const cancelled = orders.filter(o => o.status === 'cancelled').length;
+      const shipped = orders.filter(o => o.status === 'shipping' || o.status === 'completed').length;
+      document.getElementById('deliveryRate').textContent = shipped ? Math.round(completed / shipped * 100) + '%' : '—';
+      document.getElementById('cancelRate').textContent = Math.round(cancelled / total * 100) + '%';
       const revenue = orders.reduce((s, o) => s + (o.total || 0), 0);
       document.getElementById('avgOrder').textContent = Math.round(revenue / total).toLocaleString('vi') + '₫';
       // Top products

@@ -231,6 +231,12 @@
     .history-action.in { background: rgba(34,197,94,0.15); color: #22c55e; }
     .history-action.out { background: rgba(239,68,68,0.15); color: #ef4444; }
 
+    /* ─── CUSTOMER TABLE ─── */
+    .tier-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; }
+    .tier-bronze { background: rgba(205,127,50,0.15); color: #cd7f32; }
+    .tier-silver { background: rgba(192,192,192,0.15); color: #c0c0c0; }
+    .tier-gold { background: rgba(255,215,0,0.15); color: #ffd700; }
+
     /* Stock modal */
     .stock-modal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; }
     .stock-modal.show { display: flex; }
@@ -280,6 +286,7 @@
     <div class="tab-bar">
       <button class="tab-btn active" onclick="switchTab('orders')">📋 Đơn hàng</button>
       <button class="tab-btn" onclick="switchTab('stock')">📦 Tồn kho</button>
+      <button class="tab-btn" onclick="switchTab('customers')">👤 Khách hàng</button>
     </div>
 
     <!-- === ORDERS TAB === -->
@@ -389,6 +396,35 @@
         </table>
       </div>
     </div><!-- close tabStock -->
+
+    <!-- === CUSTOMERS TAB === -->
+    <div class="tab-content" id="tabCustomers">
+      <!-- CUSTOMER KPI -->
+      <div class="kpi-row" id="customerKpi">
+        <div class="kpi-card"><div class="kpi-icon">👥</div><div class="kpi-value" id="custTotal">—</div><div class="kpi-label">Tổng khách</div></div>
+        <div class="kpi-card"><div class="kpi-icon">🆕</div><div class="kpi-value" id="custNew">—</div><div class="kpi-label">Khách mới (30 ngày)</div></div>
+        <div class="kpi-card"><div class="kpi-icon">👑</div><div class="kpi-value" id="custVip">—</div><div class="kpi-label">Khách VIP (≥3 đơn)</div></div>
+      </div>
+
+      <!-- SEARCH -->
+      <div class="toolbar">
+        <input type="text" id="customerSearch" placeholder="🔍 Tìm theo tên hoặc SĐT..." oninput="renderCustomers()">
+      </div>
+
+      <!-- CUSTOMER TABLE -->
+      <div class="order-table-wrap">
+        <table class="order-table">
+          <thead><tr>
+            <th>STT</th><th>Tên</th><th>SĐT</th><th>Số đơn</th><th>Tổng chi tiêu</th><th>Lần mua cuối</th><th>Hạng</th>
+          </tr></thead>
+          <tbody id="customerBody"></tbody>
+        </table>
+        <div class="empty-state" id="customerEmpty" style="display:none;">
+          <div class="empty-icon">📭</div>
+          <p>Chưa có khách hàng nào</p>
+        </div>
+      </div>
+    </div><!-- close tabCustomers -->
 
     <!-- FOOTER -->
     <div class="admin-footer">
@@ -597,19 +633,20 @@
     // ─── EXPORT CSV ───
     function exportCSV() {
       if (allOrders.length === 0) return alert('Không có dữ liệu');
-      const headers = ['Mã đơn','Khách hàng','SĐT','Địa chỉ','Sản phẩm','Tổng','Trạng thái','Thời gian','Ghi chú'];
+      const headers = ['Mã đơn','Ngày','Khách hàng','SĐT','Địa chỉ','Sản phẩm','Tổng tiền','Trạng thái'];
       const rows = allOrders.map(o => {
         const items = (o.items || []).map(i => `${i.name||''}x${i.qty||1}`).join('; ') || o.products || '';
+        const status = o.status || 'pending';
+        const statusLabel = STATUS_MAP[status]?.label || status;
         return [
           o.orderId || o.id || '',
+          (o.created_at||'').slice(0,10),
           o.name || o.customer_name || '',
           o.phone || '',
           o.address || '',
           items,
           o.total || o.total_amount || 0,
-          o.status || 'pending',
-          (o.created_at||'').slice(0,16),
-          o.note || ''
+          statusLabel
         ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
       });
       const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
@@ -617,7 +654,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `kbeauty-orders-${new Date().toISOString().slice(0,10)}.csv`;
+      a.download = `don-hang-${new Date().toISOString().slice(0,10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -709,10 +746,13 @@
 
     // ─── TAB SWITCH ───
     function switchTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === (tab === 'orders' ? 0 : 1)));
+      const idx = tab === 'orders' ? 0 : tab === 'stock' ? 1 : 2;
+      document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
       document.getElementById('tabOrders').classList.toggle('active', tab === 'orders');
       document.getElementById('tabStock').classList.toggle('active', tab === 'stock');
+      document.getElementById('tabCustomers').classList.toggle('active', tab === 'customers');
       if (tab === 'stock') loadStock();
+      if (tab === 'customers') loadCustomers();
     }
 
     // ─── STOCK DATA ───
@@ -798,6 +838,114 @@
         closeStockModal();
         loadStock();
       } catch(e) { alert('Lỗi kết nối API'); }
+    }
+
+    // ─── CUSTOMERS DATA ───
+    let customerData = [];
+    async function loadCustomers() {
+      try {
+        const res = await fetch(`${API}/api/orders`);
+        if (!res.ok) return;
+        const orders = await res.json();
+
+        // Group by phone number
+        const customerMap = new Map();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        for (const o of orders) {
+          const phone = o.phone || '';
+          if (!phone) continue;
+
+          if (!customerMap.has(phone)) {
+            customerMap.set(phone, {
+              phone: phone,
+              name: o.name || o.customer_name || '—',
+              orders: 0,
+              totalSpent: 0,
+              lastOrder: null
+            });
+          }
+
+          const cust = customerMap.get(phone);
+          cust.orders += 1;
+          cust.totalSpent += parseFloat(o.total || o.total_amount || 0);
+
+          const orderDate = o.created_at ? new Date(o.created_at) : null;
+          if (orderDate && (!cust.lastOrder || orderDate > cust.lastOrder)) {
+            cust.lastOrder = orderDate;
+          }
+
+          // Check if new customer (first order within 30 days)
+          if (orderDate && orderDate < thirtyDaysAgo) {
+            cust.isNew = false;
+          }
+        }
+
+        // Mark customers as new if their first order is within 30 days
+        for (const cust of customerMap.values()) {
+          if (!cust.lastOrder || cust.lastOrder >= thirtyDaysAgo) {
+            cust.isNew = true;
+          }
+        }
+
+        customerData = Array.from(customerMap.values());
+        renderCustomers();
+      } catch(e) {
+        console.error('Load customers error', e);
+        document.getElementById('customerEmpty').style.display = 'block';
+      }
+    }
+
+    function getTier(orders) {
+      if (orders >= 6) return { label: '🥇 Gold', cls: 'tier-gold' };
+      if (orders >= 3) return { label: '🥈 Silver', cls: 'tier-silver' };
+      return { label: '🥉 Bronze', cls: 'tier-bronze' };
+    }
+
+    function renderCustomers() {
+      const search = document.getElementById('customerSearch').value.toLowerCase();
+
+      let filtered = customerData.filter(c => {
+        if (!search) return true;
+        return (c.name || '').toLowerCase().includes(search) || (c.phone || '').toLowerCase().includes(search);
+      });
+
+      // Update KPIs
+      const totalCustomers = customerData.length;
+      const newCustomers = customerData.filter(c => c.isNew).length;
+      const vipCustomers = customerData.filter(c => c.orders >= 3).length;
+
+      document.getElementById('custTotal').textContent = totalCustomers;
+      document.getElementById('custNew').textContent = newCustomers;
+      document.getElementById('custVip').textContent = vipCustomers;
+
+      const tbody = document.getElementById('customerBody');
+      const empty = document.getElementById('customerEmpty');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      // Sort by total spent desc
+      filtered.sort((a, b) => b.totalSpent - a.totalSpent);
+
+      tbody.innerHTML = filtered.map((c, i) => {
+        const tier = getTier(c.orders);
+        const lastOrderStr = c.lastOrder ? c.lastOrder.toISOString().slice(0, 16).replace('T', ' ') : '—';
+        return `<tr>
+          <td>${i + 1}</td>
+          <td>${c.name}</td>
+          <td>${c.phone}</td>
+          <td>${c.orders}</td>
+          <td style="color:var(--accent-pink);font-weight:600">${formatVND(c.totalSpent)}</td>
+          <td style="color:var(--text-secondary)">${lastOrderStr}</td>
+          <td><span class="tier-badge ${tier.cls}">${tier.label}</span></td>
+        </tr>`;
+      }).join('');
     }
   </script>
 </body>

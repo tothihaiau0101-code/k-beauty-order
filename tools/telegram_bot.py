@@ -547,7 +547,25 @@ class WebhookHandler(BaseHTTPRequestHandler):
             if WebhookHandler.store and WebhookHandler.bot:
                 # Save Order
                 WebhookHandler.store.add_order(data)
-                
+
+                # Auto-deduct stock
+                PICKER_TO_STOCK = {
+                    'cosrx-snail': 'KB001', 'boj-sun': 'KB002', 'anua-toner': 'KB003',
+                    'torriden-serum': 'KB004', 'skin1004': 'KB005', 'mediheal': 'KB006',
+                    'roundlab': 'KB007', 'romand': 'KB008',
+                    'txt-7th': 'ALB001', 'bts-arirang': 'ALB002', 'babymonster': 'ALB003',
+                    'kissoflife': 'ALB004', 'nctwish': 'ALB005'
+                }
+                for item in data.get('items', []):
+                    stock_id = PICKER_TO_STOCK.get(item.get('id', ''))
+                    if stock_id:
+                        WebhookHandler.store.update_stock(
+                            stock_id,
+                            'out',
+                            int(item.get('quantity', 1)),
+                            note=f"Đơn {data.get('orderId', '')}"
+                        )
+
                 # Notify Owner
                 msg = self._format_order_message(data)
                 WebhookHandler.bot.send_message(msg)

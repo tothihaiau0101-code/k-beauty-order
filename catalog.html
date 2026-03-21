@@ -23,8 +23,8 @@
         <a href="#combos">🎁 Combo</a>
         <a href="order-form.html">📩 Đặt Hàng</a>
         <a href="policy.html">📋 Chính Sách</a>
-        <a href="order-form.html" class="nav-cart" id="navCart" style="display:none;">
-          🛒<span class="nav-cart-badge" id="navCartBadge">0</span>
+        <a href="order-form.html" class="nav-cart" id="navCart" style="display:flex;">
+          🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
         </a>
       </div>
     </div>
@@ -431,6 +431,94 @@
       });
     }).catch(() => {});
 
+    // ─── PRODUCT DETAIL DATA ───
+    const PRODUCT_DATA = {
+      'cosrx-snail': {
+        name: 'COSRX Advanced Snail 96 Mucin Power Essence',
+        brand: 'COSRX', spec: '100ml',
+        price: '420,000₫', oldPrice: '550,000₫',
+        img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&q=80&auto=format&fit=crop',
+        desc: 'Tinh chất ốc sên chứa 96.3% Snail Secretion Filtrate giúp phục hồi da tổn thương, làm dịu và cấp ẩm sâu. Kết cấu mỏng nhẹ, thấm nhanh, không gây bết dính. Thích hợp mọi loại da, đặc biệt da khô và da mụn.',
+        usage: 'Sau bước toner, lấy 2-3 giọt thoa đều lên toàn mặt. Vỗ nhẹ để tinh chất thẩm thấu. Dùng sáng và tối.'
+      },
+      'boj-sun': {
+        name: 'Beauty of Joseon Relief Sun SPF50+ PA++++',
+        brand: 'BEAUTY OF JOSEON', spec: '50ml',
+        price: '380,000₫', oldPrice: '500,000₫',
+        img: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=600&q=80&auto=format&fit=crop',
+        desc: 'Kem chống nắng hóa học với chiết xuất gạo 30% và men vi sinh. Bảo vệ da khỏi UVA/UVB, đồng thời nuôi dưỡng da sáng khỏe. Finish tự nhiên, không bết trắng.',
+        usage: 'Thoa đều lên mặt và cổ ở bước cuối cùng trước khi ra ngoài 15 phút. Thoa lại sau 2-3 giờ nếu ở ngoài trời.'
+      },
+      'anua-toner': {
+        name: 'Anua Heartleaf 77% Soothing Toner',
+        brand: 'ANUA', spec: '250ml',
+        price: '450,000₫', oldPrice: '600,000₫',
+        img: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?w=600&q=80&auto=format&fit=crop',
+        desc: 'Toner chứa 77% chiết xuất rau diếp cá (Houttuynia Cordata). Làm dịu mụn sưng đỏ, cân bằng pH, kiểm soát bã nhờn. Phù hợp da dầu mụn và da nhạy cảm.',
+        usage: 'Thấm ra bông cotton lau nhẹ toàn mặt, hoặc đổ ra tay vỗ trực tiếp. Có thể dùng làm lotion mask 3-5 phút.'
+      },
+      'torriden-serum': {
+        name: 'Torriden Dive-In HA Serum',
+        brand: 'TORRIDEN', spec: '50ml',
+        price: '400,000₫', oldPrice: '520,000₫',
+        img: 'https://images.unsplash.com/photo-1617897903246-719242758050?w=600&q=80&auto=format&fit=crop',
+        desc: 'Serum cấp nước đa tầng với 5 loại Hyaluronic Acid phân tử thấp. Giúp da ngậm nước, bóng khỏe từ bên trong. Bổ sung D-Panthenol và Allantoin làm dịu da.',
+        usage: 'Lấy 2-3 giọt serum thoa đều lên da ẩm sau bước toner. Sử dụng sáng và tối.'
+      },
+      'txt-7th': {
+        name: 'TXT — minisode 3: TOMORROW',
+        brand: 'BIGHIT MUSIC', spec: '8th Mini Album',
+        price: '500,000₫', oldPrice: '',
+        img: 'https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?w=600&q=80&auto=format&fit=crop',
+        desc: 'Album comeback mới nhất của TOMORROW X TOGETHER. Order từ Ktown4u / Weverse, được chọn POB (Photocard) theo thành viên nếu đặt sớm. Random version.',
+        usage: 'Pre-order — Hàng về sau 7-10 ngày kể từ ngày phát hành chính thức (13/04).'
+      },
+      'babymonster': {
+        name: 'BABYMONSTER — BABYMONS7ER',
+        brand: 'YG ENTERTAINMENT', spec: '1st Mini Album',
+        price: '500,000₫', oldPrice: '',
+        img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80&auto=format&fit=crop',
+        desc: 'Mini album đầu tay của girlgroup thế hệ mới BABYMONSTER với 7 thành viên. Đi kèm photobook dày và random photocard chính thức.',
+        usage: 'Pre-order — Giao hàng dự kiến cuối tháng 4. Full nguyên seal.'
+      },
+      'combo-skincare': {
+        name: 'Skincare Starter Combo',
+        brand: 'K-BEAUTY ORDER', spec: '3 sản phẩm',
+        price: '1,100,000₫', oldPrice: '1,290,000₫',
+        img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&q=80&auto=format&fit=crop',
+        desc: 'Combo gồm: Sữa rửa mặt Round Lab 1025 Dokdo + Toner Anua Heartleaf 77% + Kem chống nắng Beauty of Joseon SPF50+. Bộ 3 quy trình skincare chuẩn Hàn.',
+        usage: 'Dùng theo thứ tự: Rửa mặt → Toner → Kem chống nắng. Sáng và tối.'
+      },
+      'combo-mix': {
+        name: 'Mix Box K-Pop + K-Beauty',
+        brand: 'K-BEAUTY ORDER', spec: '3 items',
+        price: '950,000₫', oldPrice: '1,150,000₫',
+        img: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&q=80&auto=format&fit=crop',
+        desc: 'Combo gồm: 1 Album K-Pop tùy chọn + 1 Toner Pad Mediheal + 1 Son Romand Juicy Lasting Tint. Tặng kèm POB nếu còn hàng.',
+        usage: 'Combo quà tặng lý tưởng cho fan K-Pop & K-Beauty.'
+      }
+    };
+
+    // ─── MODAL FUNCTIONS ───
+    function openProductModal(productId) {
+      const data = PRODUCT_DATA[productId];
+      if (!data) return;
+      document.getElementById('modalImg').src = data.img;
+      document.getElementById('modalBrand').textContent = data.brand;
+      document.getElementById('modalName').textContent = data.name;
+      document.getElementById('modalSpec').textContent = data.spec;
+      document.getElementById('modalPrice').textContent = data.price;
+      document.getElementById('modalOldPrice').textContent = data.oldPrice || '';
+      document.getElementById('modalDesc').textContent = data.desc;
+      document.getElementById('modalUsage').textContent = data.usage;
+      const addBtn = document.getElementById('modalAddCartBtn');
+      addBtn.setAttribute('data-id', productId);
+      document.getElementById('productModal').style.display = 'flex';
+    }
+    function closeProductModal() {
+      document.getElementById('productModal').style.display = 'none';
+    }
+
     // ─── SHOPPING CART LOGIC ───
     let cart = JSON.parse(localStorage.getItem('kbeauty_cart')) || {};
 
@@ -438,17 +526,14 @@
       const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
       const cartEl = document.getElementById('floatingCart');
       const badgeEl = document.getElementById('cartBadge');
-      const navCartEl = document.getElementById('navCart');
       const navBadgeEl = document.getElementById('navCartBadge');
-      
       if (count > 0) {
         if (cartEl) cartEl.style.display = 'flex';
         if (badgeEl) badgeEl.textContent = count;
-        if (navCartEl) navCartEl.style.display = 'flex';
-        if (navBadgeEl) navBadgeEl.textContent = count;
+        if (navBadgeEl) { navBadgeEl.style.display = 'flex'; navBadgeEl.textContent = count; }
       } else {
         if (cartEl) cartEl.style.display = 'none';
-        if (navCartEl) navCartEl.style.display = 'none';
+        if (navBadgeEl) navBadgeEl.style.display = 'none';
       }
     }
 
@@ -459,36 +544,84 @@
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
+    // ─── CARD CLICK → OPEN MODAL ───
+    document.querySelectorAll('.card').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-order');
+        if (btn) return; // Let "Mua ngay" navigate normally
+        const link = card.querySelector('.btn-order');
+        if (!link) return;
+        const href = link.getAttribute('href') || '';
+        const match = href.match(/select=([^&]+)/);
+        if (match) {
+          e.preventDefault();
+          openProductModal(match[1]);
+        }
+      });
+    });
+
+    // ─── BTN-ORDER: just stopPropagation but let it NAVIGATE ───
     document.querySelectorAll('.btn-order').forEach(btn => {
       btn.addEventListener('click', (e) => {
         if (btn.textContent === 'Hết hàng' || btn.style.pointerEvents === 'none') {
           e.preventDefault();
-          return;
         }
-        
-        // If it's a specific product link (has ?select=)
-        const href = btn.getAttribute('href') || '';
-        const match = href.match(/select=([^&]+)/);
-        if (match) {
-          e.preventDefault(); // Don't navigate
-          const productId = match[1];
-          cart[productId] = (cart[productId] || 0) + 1;
-          localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
-          updateCartUI();
-          showToast('🛍️ Đã thêm vào giỏ hàng!');
-          
-          // Small animation on button
-          btn.style.transform = 'scale(0.9)';
-          setTimeout(() => btn.style.transform = '', 150);
-        }
-        // If it's a combo/presale button that just goes to order-form.html without select=
-        // allow normal navigation unless we want to handle combos in cart too.
+        e.stopPropagation();
       });
     });
 
-    // Init UI
+    // ─── MODAL ADD TO CART ───
+    document.getElementById('modalAddCartBtn').addEventListener('click', () => {
+      const id = document.getElementById('modalAddCartBtn').getAttribute('data-id');
+      if (!id) return;
+      cart[id] = (cart[id] || 0) + 1;
+      localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
+      updateCartUI();
+      showToast('🛍️ Đã thêm vào giỏ hàng!');
+      closeProductModal();
+    });
+
+    // Init
     updateCartUI();
   </script>
+
+  <!-- PRODUCT DETAIL MODAL -->
+  <div id="productModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:200;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeProductModal()">
+    <div style="background:linear-gradient(135deg,#12121e 0%,#1a1a2e 100%);border-radius:20px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.5);position:relative;">
+      <button onclick="closeProductModal()" style="position:absolute;top:14px;right:18px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.8rem;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;" class="modal-grid-inner">
+        <div style="padding:24px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);border-radius:20px 0 0 20px;">
+          <img id="modalImg" src="" alt="Product" style="width:100%;max-width:320px;border-radius:16px;object-fit:cover;aspect-ratio:1/1;">
+        </div>
+        <div style="padding:28px 28px 28px 20px;display:flex;flex-direction:column;gap:12px;">
+          <div id="modalBrand" style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#a855f7;">BRAND</div>
+          <h2 id="modalName" style="font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:800;color:#f0f0f5;line-height:1.3;">Product</h2>
+          <div id="modalSpec" style="font-size:0.8rem;color:rgba(255,255,255,0.4);">spec</div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0;">
+            <span id="modalPrice" style="font-size:1.5rem;font-weight:800;color:#ff5a92;">0₫</span>
+            <span id="modalOldPrice" style="font-size:0.9rem;text-decoration:line-through;color:rgba(255,255,255,0.3);"></span>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
+            <div style="font-size:0.8rem;font-weight:700;color:#06d6a0;margin-bottom:6px;">✨ Mô tả chi tiết</div>
+            <p id="modalDesc" style="font-size:0.82rem;color:rgba(255,255,255,0.65);line-height:1.6;">...</p>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
+            <div style="font-size:0.8rem;font-weight:700;color:#fbbf24;margin-bottom:6px;">💡 Hướng dẫn sử dụng</div>
+            <p id="modalUsage" style="font-size:0.82rem;color:rgba(255,255,255,0.65);line-height:1.6;">...</p>
+          </div>
+          <button id="modalAddCartBtn" data-id="" style="margin-top:auto;width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ff5a92 0%,#c084fc 100%);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 15px rgba(255,90,146,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">🛒 Thêm vào giỏ hàng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <style>
+    @media (max-width: 640px) {
+      .modal-grid-inner { grid-template-columns: 1fr !important; }
+      .modal-grid-inner > div:first-child { border-radius: 20px 20px 0 0 !important; padding: 16px !important; }
+      .modal-grid-inner > div:last-child { padding: 20px !important; }
+    }
+  </style>
 
   <!-- FLOATING CART -->
   <a href="order-form.html" class="floating-cart" id="floatingCart" style="display: none;">

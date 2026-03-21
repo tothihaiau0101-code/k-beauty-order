@@ -766,6 +766,11 @@
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(q) ? '' : 'none';
       });
+      // Hide entire sections if no visible cards
+      document.querySelectorAll('.section').forEach(sec => {
+        const visibleCards = sec.querySelectorAll('.product-card:not([style*="display: none"])');
+        sec.style.display = (q && visibleCards.length === 0) ? 'none' : '';
+      });
     }
 
     // ─── CATEGORY FILTER (M45) ───

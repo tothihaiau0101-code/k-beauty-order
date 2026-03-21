@@ -1,0 +1,124 @@
+[
+  {
+    "id": "KB001",
+    "name": "COSRX Advanced Snail 96 Mucin Power Essence",
+    "category": "Skincare",
+    "size": "100ml",
+    "price": 420000,
+    "price_compare": 550000,
+    "stock": 2
+  },
+  {
+    "id": "KB002",
+    "name": "Beauty of Joseon Relief Sun: Rice + Probiotics SPF50+",
+    "category": "Skincare",
+    "size": "50ml",
+    "price": 380000,
+    "price_compare": 500000,
+    "stock": 2
+  },
+  {
+    "id": "KB003",
+    "name": "Anua Heartleaf 77% Soothing Toner",
+    "category": "Skincare",
+    "size": "250ml",
+    "price": 450000,
+    "price_compare": 600000,
+    "stock": 2
+  },
+  {
+    "id": "KB004",
+    "name": "Torriden Dive-In Low Molecular Hyaluronic Acid Serum",
+    "category": "Skincare",
+    "size": "50ml",
+    "price": 400000,
+    "price_compare": 520000,
+    "stock": 1
+  },
+  {
+    "id": "KB005",
+    "name": "SKIN1004 Madagascar Centella Ampoule",
+    "category": "Skincare",
+    "size": "100ml",
+    "price": 420000,
+    "price_compare": 550000,
+    "stock": 1
+  },
+  {
+    "id": "KB006",
+    "name": "Mediheal Madecassoside Blemish Pad",
+    "category": "Skincare",
+    "size": "100 miếng",
+    "price": 300000,
+    "price_compare": 400000,
+    "stock": 2
+  },
+  {
+    "id": "KB007",
+    "name": "Round Lab 1025 Dokdo Toner",
+    "category": "Skincare",
+    "size": "200ml",
+    "price": 380000,
+    "price_compare": 480000,
+    "stock": 1
+  },
+  {
+    "id": "KB008",
+    "name": "Romand Juicy Lasting Tint",
+    "category": "Makeup",
+    "size": "5.5g",
+    "price": 250000,
+    "price_compare": 350000,
+    "stock": 3
+  },
+  {
+    "id": "ALB001",
+    "name": "TXT — 7TH YEAR: A Moment of Stillness in the Thorns",
+    "category": "K-Pop Album",
+    "type": "8th Mini Album",
+    "release_date": "2026-04-13",
+    "price": 500000,
+    "stock": 0,
+    "preorder": true
+  },
+  {
+    "id": "ALB002",
+    "name": "BTS — ARIRANG (5th Album)",
+    "category": "K-Pop Album",
+    "type": "Full Album",
+    "release_date": "2026-06-01",
+    "price": 600000,
+    "stock": 0,
+    "preorder": true
+  },
+  {
+    "id": "ALB003",
+    "name": "BABYMONSTER — CHOOM (Mini Album)",
+    "category": "K-Pop Album",
+    "type": "Mini Album",
+    "release_date": "2026-05-01",
+    "price": 500000,
+    "stock": 0,
+    "preorder": true
+  },
+  {
+    "id": "ALB004",
+    "name": "KISS OF LIFE — Comeback Album",
+    "category": "K-Pop Album",
+    "type": "TBA",
+    "release_date": "2026-04-01",
+    "price": 480000,
+    "stock": 1,
+    "preorder": true
+  },
+  {
+    "id": "ALB005",
+    "name": "NCT WISH — Full Album",
+    "category": "K-Pop Album",
+    "type": "Full Album",
+    "release_date": "2026-04-01",
+    "price": 450000,
+    "stock": 0,
+    "preorder": true
+  }
+]

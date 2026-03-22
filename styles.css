@@ -4,7 +4,7 @@
            Luxury Gradients, Scrollytelling (Figma Trend #6)
    ======================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap&subset=vietnamese');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap&subset=vietnamese,latin');
 
 :root {
   /* Background — Sofi clean white */
@@ -66,7 +66,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
@@ -128,7 +128,7 @@ body {
 }
 
 .hero h1 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 3.5rem;
   font-weight: 900;
   background: var(--gradient-hero);
@@ -208,7 +208,7 @@ body {
   height: 56px;
 }
 .nav-logo {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 800;
   font-size: 1.1rem;
   background: var(--gradient-pink);
@@ -287,7 +287,7 @@ body {
 }
 .price-bar .price-new {
   color: var(--accent-green);
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 1.3rem;
 }
@@ -309,7 +309,7 @@ body {
   margin: 0 auto;
 }
 .section-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1.8rem;
   font-weight: 800;
   margin-bottom: 8px;
@@ -408,7 +408,7 @@ body {
   transform: scale(1.05);
 }
 .product-card h3 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1rem;
   font-weight: 700;
   margin-bottom: 4px;
@@ -428,7 +428,7 @@ body {
   margin-bottom: 16px;
 }
 .product-card .price {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--accent-green);
@@ -556,7 +556,7 @@ body {
 }
 .nav-cart-wrap:hover .cart-dropdown { display: block; }
 .cart-dropdown-title {
-  padding: 14px 16px 10px; font-family: 'Outfit', sans-serif;
+  padding: 14px 16px 10px; font-family: 'Inter', sans-serif;
   font-weight: 700; font-size: 0.85rem; color: var(--text-primary);
   border-bottom: 1px solid rgba(0,0,0,0.06);
 }
@@ -573,7 +573,7 @@ body {
 .cart-dropdown-checkout {
   display: block; text-align: center; padding: 10px; border-radius: 10px;
   background: #1a1a1a;
-  color: #fff; text-decoration: none; font-family: 'Outfit', sans-serif;
+  color: #fff; text-decoration: none; font-family: 'Inter', sans-serif;
   font-weight: 700; font-size: 0.82rem; transition: opacity 0.2s;
 }
 .cart-dropdown-checkout:hover { opacity: 0.85; }
@@ -672,11 +672,11 @@ body {
   transform: translateY(-4px);
 }
 .combo-card h3 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
 }
 .combo-card .combo-price {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 2rem;
   font-weight: 900;
   background: var(--gradient-pink);
@@ -722,7 +722,7 @@ body {
   gap: 2px;
 }
 .countdown-bar .cd-num {
-  font-family: 'Outfit', monospace;
+  font-family: 'Inter', monospace;
   font-weight: 800;
   font-size: 1.2rem;
   color: var(--text-primary);
@@ -783,7 +783,7 @@ body {
   pointer-events: none;
 }
 .cta-section h2 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 2rem;
   font-weight: 800;
   margin-bottom: 12px;

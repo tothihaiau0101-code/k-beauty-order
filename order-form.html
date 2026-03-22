@@ -203,6 +203,9 @@
     </div>
 
     <form id="orderForm">
+      <!-- Autofill Badge -->
+      <div id="autofillBadge" style="display:none;padding:8px 14px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);color:#059669;font-size:0.78rem;font-weight:500;margin-bottom:14px;text-align:center;">✅ Thông tin đã được điền sẵn từ tài khoản</div>
+
       <!-- Customer Info -->
       <div class="form-group" id="fg-name">
         <label>Họ tên *</label>
@@ -348,6 +351,20 @@
 
     // ---- STATE ----
     let cart = JSON.parse(localStorage.getItem('kbeauty_cart')) || {};
+
+    // ---- AUTO-FILL CUSTOMER INFO (M56) ----
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.BeaPop && window.BeaPop.Auth.isLoggedIn()) {
+        const user = window.BeaPop.Auth.getUser();
+        if (user) {
+          let filled = false;
+          if (user.name) { document.getElementById('name').value = user.name; filled = true; }
+          if (user.phone) { document.getElementById('phone').value = user.phone; filled = true; }
+          if (user.address) { document.getElementById('address').value = user.address; filled = true; }
+          if (filled) document.getElementById('autofillBadge').style.display = 'block';
+        }
+      }
+    });
 
     function saveCart() {
       localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
@@ -570,7 +587,12 @@
       // Hide form
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('cartBar').style.display = 'none';
-      
+
+      // Save address for logged-in user
+      if (window.BeaPop && window.BeaPop.Auth.isLoggedIn()) {
+        window.BeaPop.Auth.saveAddress(data.address);
+      }
+
       // Clear Cart
       localStorage.removeItem('kbeauty_cart');
       

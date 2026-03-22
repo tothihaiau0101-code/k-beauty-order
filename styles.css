@@ -106,7 +106,7 @@ body {
 /* ---- HERO ---- */
 .hero {
   text-align: center;
-  padding: 100px 20px 50px;
+  padding: 100px 20px 20px;
   position: relative;
   overflow: hidden;
 }

@@ -1,53 +1,53 @@
 /* ========================================================
    K-Beauty & K-Pop Order — Design System 2026
-   Trends: Motion Design, Micro-Animations, Glassmorphism,
-           Luxury Gradients, Scrollytelling (Figma Trend #6)
+   Style: Warm Cream + Navy — Beauty Skincare Elegant
+   Inspired by: Hanover & Tyke Skincare Banner
    ======================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Background — Sofi clean white */
-  --bg-primary: #f8f8f8;
-  --bg-card: rgba(255, 255, 255, 0.8);
-  --bg-card-hover: rgba(255, 255, 255, 1);
+  /* Background — warm cream */
+  --bg-primary: #fdf6e3;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
 
-  /* Borders — subtle */
-  --border: rgba(0, 0, 0, 0.07);
-  --border-hover: rgba(0, 0, 0, 0.15);
+  /* Borders — warm */
+  --border: rgba(45, 43, 107, 0.08);
+  --border-hover: rgba(45, 43, 107, 0.18);
 
-  /* Text — Sofi dark */
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b6b7b;
-  --text-muted: #9a9aaa;
+  /* Text */
+  --text-primary: #2d2b55;
+  --text-secondary: #6b6891;
+  --text-muted: #a09db8;
 
-  /* Minimal Accent Palette */
-  --accent-pink: #1a1a1a;
-  --accent-pink-soft: #333;
-  --accent-purple: #1a1a1a;
-  --accent-blue: #3b82f6;
+  /* Skincare Color Palette — Navy + Warm */
+  --accent-pink: #2d2b6b;
+  --accent-pink-soft: #4a47a0;
+  --accent-purple: #2d2b6b;
+  --accent-blue: #2d2b6b;
   --accent-cyan: #06d6a0;
-  --accent-green: #1a8a5e;
-  --accent-coral: #e05555;
-  --accent-gold: #d4a017;
+  --accent-green: #2d8a5e;
+  --accent-coral: #c97b5d;
+  --accent-gold: #c9a84c;
   --accent-rosegold: #c48a5c;
 
-  /* Gradients — neutral/monochrome */
-  --gradient-pink: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
-  --gradient-blue: linear-gradient(135deg, #2a2a2a 0%, #444 100%);
-  --gradient-glow: linear-gradient(135deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.06) 100%);
-  --gradient-hero: linear-gradient(135deg, #1a1a1a, #333, #555, #333, #1a1a1a);
-  --gradient-shimmer: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.03) 50%, transparent 100%);
+  /* Gradients — navy + warm */
+  --gradient-pink: linear-gradient(135deg, #2d2b6b 0%, #4a47a0 100%);
+  --gradient-blue: linear-gradient(135deg, #2d2b6b 0%, #3d3a8a 100%);
+  --gradient-glow: linear-gradient(135deg, rgba(45,43,107,0.04) 0%, rgba(45,43,107,0.08) 100%);
+  --gradient-hero: linear-gradient(135deg, #2d2b6b, #4a47a0, #6b68a8, #4a47a0, #2d2b6b);
+  --gradient-shimmer: linear-gradient(90deg, transparent 0%, rgba(45,43,107,0.04) 50%, transparent 100%);
 
-  /* Shadows — soft, clean */
-  --shadow-glow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  --shadow-glow-pink: 0 2px 15px rgba(0, 0, 0, 0.08);
-  --shadow-glow-blue: 0 2px 15px rgba(0, 0, 0, 0.08);
-  --shadow-lift: 0 12px 30px rgba(0, 0, 0, 0.08);
+  /* Shadows — warm, soft */
+  --shadow-glow: 0 4px 20px rgba(45, 43, 107, 0.08);
+  --shadow-glow-pink: 0 2px 15px rgba(45, 43, 107, 0.1);
+  --shadow-glow-blue: 0 2px 15px rgba(45, 43, 107, 0.1);
+  --shadow-lift: 0 12px 30px rgba(45, 43, 107, 0.08);
 
-  /* Neumorphism — light */
-  --neu-shadow-out: 4px 4px 12px rgba(0,0,0,0.06), -3px -3px 8px rgba(255,255,255,0.8);
-  --neu-shadow-in: inset 3px 3px 8px rgba(0,0,0,0.04), inset -2px -2px 6px rgba(255,255,255,0.6);
+  /* Neumorphism — warm */
+  --neu-shadow-out: 4px 4px 12px rgba(45,43,107,0.06), -3px -3px 8px rgba(255,255,255,0.8);
+  --neu-shadow-in: inset 3px 3px 8px rgba(45,43,107,0.04), inset -2px -2px 6px rgba(255,255,255,0.6);
 
   /* Radius */
   --radius: 16px;
@@ -173,19 +173,19 @@ body {
   transform: translateY(-2px) scale(1.05);
 }
 .badge-pink {
-  background: rgba(0,0,0,0.04);
-  color: #1a1a1a;
-  border: 1px solid rgba(0,0,0,0.1);
+  background: rgba(45,43,107,0.06);
+  color: #2d2b6b;
+  border: 1px solid rgba(45,43,107,0.12);
 }
 .badge-purple {
-  background: rgba(0,0,0,0.04);
-  color: #1a1a1a;
-  border: 1px solid rgba(0,0,0,0.1);
+  background: rgba(45,43,107,0.06);
+  color: #2d2b6b;
+  border: 1px solid rgba(45,43,107,0.12);
 }
 .badge-green {
-  background: rgba(26,138,94,0.08);
+  background: rgba(45,138,94,0.08);
   color: var(--accent-green);
-  border: 1px solid rgba(26,138,94,0.15);
+  border: 1px solid rgba(45,138,94,0.15);
 }
 
 /* ---- NAV BAR ---- */
@@ -193,7 +193,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(248, 248, 248, 0.9);
+  background: rgba(253, 246, 227, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
@@ -250,11 +250,11 @@ body {
 }
 .nav-links a:hover {
   color: var(--text-primary);
-  background: rgba(0,0,0,0.04);
+  background: rgba(45,43,107,0.04);
 }
 .nav-links a.active {
-  color: #1a1a1a;
-  background: rgba(0,0,0,0.06);
+  color: #2d2b6b;
+  background: rgba(45,43,107,0.08);
   font-weight: 600;
 }
 .nav-links a.active::after {
@@ -372,26 +372,26 @@ body {
 }
 /* Badge Shimmer Animation */
 .badge-bestseller {
-  background: rgba(0,0,0,0.05);
-  color: #1a1a1a;
+  background: rgba(45,43,107,0.08);
+  color: #2d2b6b;
   animation: badge-shimmer 3s ease-in-out infinite;
   background-size: 200% 100%;
 }
 .badge-new {
-  background: rgba(59,130,246,0.08);
-  color: #2563eb;
+  background: rgba(45,43,107,0.06);
+  color: #4a47a0;
   animation: badge-shimmer 3s ease-in-out infinite 0.5s;
   background-size: 200% 100%;
 }
 .badge-preorder {
-  background: rgba(0,0,0,0.05);
-  color: #444;
+  background: rgba(201,123,93,0.1);
+  color: #c97b5d;
   animation: badge-shimmer 3s ease-in-out infinite 1s;
   background-size: 200% 100%;
 }
 @keyframes badge-shimmer {
   0% { background-position: -100% 0; box-shadow: none; }
-  50% { background-position: 100% 0; box-shadow: 0 0 8px rgba(0,0,0,0.05); }
+  50% { background-position: 100% 0; box-shadow: 0 0 8px rgba(45,43,107,0.06); }
   100% { background-position: -100% 0; box-shadow: none; }
 }
 
@@ -501,20 +501,20 @@ body {
   padding: 10px 6px;
 }
 .btn-buy-now {
-  background: #1a1a1a;
+  background: #2d2b6b;
   color: #fff;
 }
 .btn-add-cart {
-  background: rgba(0, 0, 0, 0.04);
-  color: #1a1a1a;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(45, 43, 107, 0.06);
+  color: #2d2b6b;
+  border: 1px solid rgba(45, 43, 107, 0.15);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
 }
 .btn-add-cart:hover {
-  background: rgba(0, 0, 0, 0.08);
-  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(45, 43, 107, 0.12);
+  border-color: rgba(45, 43, 107, 0.25);
 }
 
 /* ─── Payment Method Cards ─── */

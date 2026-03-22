@@ -563,7 +563,8 @@
       }
 
       // Always show payment modal (regardless of webhook)
-      showPaymentModal(orderId, total);
+      const itemSummary = items.map(i => `${i.name.split(' ')[0]} x${i.qty}`).join(' ');
+      showPaymentModal(orderId, total, itemSummary);
 
       // Hide form
       document.getElementById('orderForm').style.display = 'none';
@@ -682,16 +683,17 @@
       });
     }
 
-    function showPaymentModal(orderId, amount) {
+    function showPaymentModal(orderId, amount, itemSummary) {
       const method = document.getElementById('paymentMethod').value;
+      const transferNote = `${orderId} ${itemSummary}`.slice(0, 50);
       document.getElementById('modalOrderId').textContent = orderId;
-      document.getElementById('modalTransferNote').textContent = orderId;
+      document.getElementById('modalTransferNote').textContent = transferNote;
       const infoEl = document.getElementById('paymentInfo');
       const amtStr = formatVND(amount);
 
       if (method === 'bank') {
         // VietQR: auto-fill bank + STK + amount + note
-        const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${BANK_ACC}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent(BANK_NAME)}`;
+        const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${BANK_ACC}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(BANK_NAME)}`;
         infoEl.innerHTML = `
           <img src="${qrUrl}" alt="VietQR" style="width:200px;height:200px;border-radius:12px;background:#fff;padding:4px;margin:12px 0;box-shadow:0 4px 16px rgba(0,0,0,0.3);">
           <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin:12px 0;text-align:left;">
@@ -699,7 +701,7 @@
             <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">STK:</strong> ${BANK_ACC} <button onclick="copyText('${BANK_ACC}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(168,85,247,0.3);border-radius:6px;background:rgba(168,85,247,0.1);color:#a855f7;font-size:0.7rem;cursor:pointer;">Copy</button></p>
             <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Chủ TK:</strong> ${BANK_NAME}</p>
             <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Số tiền:</strong> <span style="color:#ff5a92;font-weight:700;">${amtStr}</span></p>
-            <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Nội dung:</strong> <span style="color:#fbbf24;">${orderId}</span> <button onclick="copyText('${orderId}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(168,85,247,0.3);border-radius:6px;background:rgba(168,85,247,0.1);color:#a855f7;font-size:0.7rem;cursor:pointer;">Copy</button></p>
+            <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Nội dung:</strong> <span style="color:#fbbf24;">${transferNote}</span> <button onclick="copyText('${transferNote}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(168,85,247,0.3);border-radius:6px;background:rgba(168,85,247,0.1);color:#a855f7;font-size:0.7rem;cursor:pointer;">Copy</button></p>
           </div>
           <p style="color:rgba(255,255,255,0.4);font-size:0.72rem;margin-top:4px;">📱 Mở app ngân hàng → Quét QR → Tự điền STK + số tiền</p>`;
 
@@ -712,7 +714,7 @@
             <p style="color:#d6308d;font-size:1.1rem;font-weight:700;">Chuyển qua MoMo</p>
             <p style="color:#fff;font-size:0.9rem;margin-top:10px;"><strong>Số tiền:</strong> <span style="color:#ff5a92;font-weight:700;font-size:1.1rem;">${amtStr}</span></p>
             <p style="color:#fff;font-size:0.85rem;margin-top:6px;"><strong>SĐT:</strong> ${MOMO_PHONE} <button onclick="copyText('${MOMO_PHONE}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(214,48,141,0.3);border-radius:6px;background:rgba(214,48,141,0.15);color:#d6308d;font-size:0.7rem;cursor:pointer;">Copy</button></p>
-            <p style="color:#fff;font-size:0.85rem;margin-top:4px;"><strong>Nội dung CK:</strong> <span style="color:#fbbf24;">${orderId}</span> <button onclick="copyText('${orderId}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(214,48,141,0.3);border-radius:6px;background:rgba(214,48,141,0.15);color:#d6308d;font-size:0.7rem;cursor:pointer;">Copy</button></p>
+            <p style="color:#fff;font-size:0.85rem;margin-top:4px;"><strong>Nội dung CK:</strong> <span style="color:#fbbf24;">${transferNote}</span> <button onclick="copyText('${transferNote}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(214,48,141,0.3);border-radius:6px;background:rgba(214,48,141,0.15);color:#d6308d;font-size:0.7rem;cursor:pointer;">Copy</button></p>
             <a href="${momoLink}" target="_blank" style="display:inline-block;margin-top:14px;padding:12px 28px;background:linear-gradient(135deg,#d6308d,#a1136e);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem;">🚀 Mở MoMo chuyển ngay</a>
           </div>`;
 
@@ -724,7 +726,7 @@
             <p style="color:#0084ff;font-size:1.1rem;font-weight:700;">Chuyển qua ZaloPay</p>
             <p style="color:#fff;font-size:0.9rem;margin-top:10px;"><strong>Số tiền:</strong> <span style="color:#ff5a92;font-weight:700;font-size:1.1rem;">${amtStr}</span></p>
             <p style="color:#fff;font-size:0.85rem;margin-top:6px;"><strong>SĐT:</strong> ${MOMO_PHONE} <button onclick="copyText('${MOMO_PHONE}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(0,132,255,0.3);border-radius:6px;background:rgba(0,132,255,0.15);color:#0084ff;font-size:0.7rem;cursor:pointer;">Copy</button></p>
-            <p style="color:#fff;font-size:0.85rem;margin-top:4px;"><strong>Nội dung CK:</strong> <span style="color:#fbbf24;">${orderId}</span> <button onclick="copyText('${orderId}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(0,132,255,0.3);border-radius:6px;background:rgba(0,132,255,0.15);color:#0084ff;font-size:0.7rem;cursor:pointer;">Copy</button></p>
+            <p style="color:#fff;font-size:0.85rem;margin-top:4px;"><strong>Nội dung CK:</strong> <span style="color:#fbbf24;">${transferNote}</span> <button onclick="copyText('${transferNote}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(0,132,255,0.3);border-radius:6px;background:rgba(0,132,255,0.15);color:#0084ff;font-size:0.7rem;cursor:pointer;">Copy</button></p>
             <a href="${zaloLink}" target="_blank" style="display:inline-block;margin-top:14px;padding:12px 28px;background:linear-gradient(135deg,#0084ff,#005ecb);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem;">🚀 Mở ZaloPay chuyển ngay</a>
           </div>`;
 

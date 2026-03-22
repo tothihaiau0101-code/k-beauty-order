@@ -53,39 +53,36 @@
   </section>
 
   <!-- PRICE COMPARISON BANNER -->
-  <div class="reveal" style="max-width:580px;margin:30px auto;padding:0 16px;">
-    <div style="background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 2px 16px rgba(0,0,0,0.04);padding:28px 24px;position:relative;overflow:hidden;">
-      <!-- Accent line top -->
-      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1a1a1a 0%,#16a34a 100%);"></div>
-      <!-- Label -->
-      <div style="text-align:center;margin-bottom:20px;">
-        <span style="font-size:0.68rem;font-weight:600;letter-spacing:1.5px;color:#999;text-transform:uppercase;">So sánh giá</span>
+  <div class="reveal" style="max-width:720px;margin:30px auto;padding:0 16px;">
+    <div style="background:linear-gradient(135deg,#f5ebe0 0%,#ede0d4 100%);border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:200px;position:relative;">
+      <!-- Left: Text content -->
+      <div style="flex:1;padding:32px 16px 32px 32px;z-index:1;">
+        <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:900;color:#2b2b2b;line-height:1.2;margin-bottom:8px;">
+          MỸ PHẨM HÀN QUỐC<br>CHÍNH HÃNG
+        </div>
+        <div style="font-size:0.82rem;color:#7a6e62;margin-bottom:16px;line-height:1.5;">
+          Giá gốc Olive Young, ship về tận nhà.<br>Tiết kiệm đến 50% so với Shopee.
+        </div>
+        <!-- Discount row -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+          <div>
+            <div style="font-size:0.65rem;color:#9a8d7f;text-transform:uppercase;letter-spacing:1px;">Tiết kiệm</div>
+            <div style="font-size:2rem;font-weight:900;color:#2b2b2b;font-family:'Outfit',sans-serif;line-height:1;">30-50%</div>
+          </div>
+          <div style="width:1px;height:36px;background:rgba(0,0,0,0.12);"></div>
+          <div style="font-weight:800;font-size:0.95rem;color:#2b2b2b;line-height:1.3;">FREESHIP<br><span style="font-weight:500;font-size:0.75rem;color:#7a6e62;">đơn đầu tiên</span></div>
+        </div>
+        <!-- CTA -->
+        <a href="order-form.html" style="display:inline-block;background:#2b2b2b;color:#fff;padding:10px 24px;border-radius:8px;font-size:0.8rem;font-weight:700;text-decoration:none;font-family:'Outfit',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#444'" onmouseout="this.style.background='#2b2b2b'">
+          ĐẶT HÀNG NGAY
+        </a>
       </div>
-      <!-- Price comparison row -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;">
-        <!-- Left: product + old price -->
-        <div style="text-align:right;">
-          <div style="font-weight:700;font-size:0.95rem;color:#1a1a1a;margin-bottom:4px;">COSRX Snail Mucin</div>
-          <div style="font-size:0.8rem;color:#bbb;">Shopee <span style="text-decoration:line-through;">550k</span></div>
-        </div>
-        <!-- Center: animated arrow -->
-        <div style="display:flex;align-items:center;animation:arrow-slide 1.5s ease-in-out infinite;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-        <!-- Right: new price -->
-        <div style="text-align:left;">
-          <div style="font-size:1.8rem;font-weight:900;color:#1a1a1a;font-family:'Outfit',sans-serif;line-height:1;">420k</div>
-          <div style="font-size:0.72rem;color:#16a34a;font-weight:600;margin-top:2px;">Tiết kiệm 130k</div>
-        </div>
+      <!-- Right: Product image -->
+      <div style="flex:0 0 220px;display:flex;align-items:flex-end;justify-content:center;padding:16px 16px 0 0;align-self:flex-end;">
+        <img src="https://image.oliveyoung.co.kr/cfimages/cf-goods/uploads/images/thumbnails/400/10000/0000/A00000000000113/goods_013.jpg" alt="K-Beauty Product" style="max-height:180px;object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.15));transform:rotate(-5deg);">
       </div>
     </div>
   </div>
-  <style>
-    @keyframes arrow-slide {
-      0%,100% { transform: translateX(0); opacity: 0.4; }
-      50% { transform: translateX(4px); opacity: 1; }
-    }
-  </style>
 
   <!-- TRUST BAR -->
   <div class="trust-bar reveal">

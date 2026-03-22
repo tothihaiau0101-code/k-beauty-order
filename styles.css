@@ -480,6 +480,17 @@ body {
   border-color: rgba(168, 85, 247, 0.5);
 }
 
+/* ─── Payment Method Cards ─── */
+.pay-method {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.2s;
+}
+.pay-method:hover { border-color: var(--accent-purple); transform: translateY(-1px); }
+.pay-method.active {
+  border-color: #a855f7; background: rgba(168,85,247,0.08);
+  box-shadow: 0 0 0 2px rgba(168,85,247,0.2);
+}
+
 /* ─── Filter Buttons (M45) ─── */
 .filter-btn {
   padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);

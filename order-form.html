@@ -243,6 +243,34 @@
         </div>
       </div>
 
+      <!-- PAYMENT GATEWAY -->
+      <div class="picker-section">
+        <div class="picker-title">💳 Phương thức thanh toán</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="paymentMethods">
+          <label class="pay-method active" data-method="bank" onclick="selectPayment('bank')">
+            <div style="font-size:1.4rem;margin-bottom:4px;">🏦</div>
+            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">Chuyển khoản</div>
+            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">QR Code ngân hàng</div>
+          </label>
+          <label class="pay-method" data-method="momo" onclick="selectPayment('momo')">
+            <div style="font-size:1.4rem;margin-bottom:4px;">📱</div>
+            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">MoMo</div>
+            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Ví điện tử MoMo</div>
+          </label>
+          <label class="pay-method" data-method="zalopay" onclick="selectPayment('zalopay')">
+            <div style="font-size:1.4rem;margin-bottom:4px;">💙</div>
+            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">ZaloPay</div>
+            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Ví ZaloPay</div>
+          </label>
+          <label class="pay-method" data-method="cod" onclick="selectPayment('cod')">
+            <div style="font-size:1.4rem;margin-bottom:4px;">🚚</div>
+            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">COD</div>
+            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Thanh toán khi nhận</div>
+          </label>
+        </div>
+        <input type="hidden" id="paymentMethod" value="bank">
+      </div>
+
       <!-- Note -->
       <div class="form-group" style="margin-top: 8px;">
         <label>Ghi chú (tuỳ chọn)</label>
@@ -424,6 +452,13 @@
     }
 
     // ---- VOUCHER SYSTEM (M26) ----
+    // ---- PAYMENT GATEWAY ----
+    function selectPayment(method) {
+      document.querySelectorAll('.pay-method').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.pay-method[data-method="${method}"]`).classList.add('active');
+      document.getElementById('paymentMethod').value = method;
+    }
+
     const VOUCHERS = {
       'WELCOME10': { label: 'Giảm 10%', type: 'percent', value: 10 },
       'FREESHIP': { label: 'Giảm 30,000₫ ship', type: 'fixed', value: 30000 },
@@ -625,18 +660,59 @@
     <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;padding:32px 24px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(255,90,146,0.2);border:1px solid rgba(255,255,255,0.1);text-align:center;">
       <h2 style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:8px;">✅ Đặt hàng thành công!</h2>
       <p style="color:rgba(255,255,255,0.6);font-size:0.85rem;margin-bottom:16px;">Mã đơn: <span id="modalOrderId" style="color:#a855f7;font-weight:700;font-family:'Outfit',monospace;">KB-0000</span></p>
-      <img id="modalQrCode" src="" alt="QR Code" style="width:180px;height:180px;border-radius:12px;background:#fff;padding:8px;margin:16px 0;box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-      <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin:16px 0;">
-        <p style="color:#fff;font-size:0.9rem;margin:0;"><strong style="color:#a855f7;">NH:</strong> BIDV</p>
-        <p style="color:#fff;font-size:0.9rem;margin:6px 0 0;"><strong style="color:#a855f7;">STK:</strong> 0123456789</p>
-        <p style="color:#fff;font-size:0.9rem;margin:6px 0 0;"><strong style="color:#a855f7;">Chủ TK:</strong> NGUYEN VAN A</p>
-      </div>
+      <div id="paymentInfo"></div>
       <p style="color:rgba(255,255,255,0.5);font-size:0.75rem;margin-top:12px;">Ghi chú CK: <span id="modalTransferNote" style="color:#a855f7;font-weight:700;">KB-0000</span></p>
-      <button onclick="document.getElementById('paymentModal').style.display='none'" style="margin-top:20px;width:100%;padding:14px;border:none;border-radius:8px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.3s;">✓ Đã chuyển khoản</button>
+      <button onclick="document.getElementById('paymentModal').style.display='none'" style="margin-top:20px;width:100%;padding:14px;border:none;border-radius:8px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.3s;">✓ Xác nhận</button>
       <a href="catalog.html" style="display:block;text-align:center;margin-top:12px;color:rgba(255,255,255,0.5);font-size:0.8rem;text-decoration:none;">← Quay lại Catalog</a>
       <p style="color:rgba(255,255,255,0.4);font-size:0.72rem;margin-top:10px;">📞 Chúng tôi sẽ liên hệ xác nhận qua SĐT của bạn</p>
     </div>
   </div>
+
+  <script>
+    // Update payment modal based on selected method
+    function showPaymentModal(orderId) {
+      const method = document.getElementById('paymentMethod').value;
+      document.getElementById('modalOrderId').textContent = orderId;
+      document.getElementById('modalTransferNote').textContent = orderId;
+      const infoEl = document.getElementById('paymentInfo');
+      if (method === 'bank') {
+        infoEl.innerHTML = `
+          <img id="modalQrCode" src="https://img.vietqr.io/image/970418-0123456789-compact.png?amount=0&addInfo=${orderId}" alt="QR" style="width:180px;height:180px;border-radius:12px;background:#fff;padding:8px;margin:16px 0;box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin:16px 0;">
+            <p style="color:#fff;font-size:0.9rem;margin:0;"><strong style="color:#a855f7;">NH:</strong> BIDV</p>
+            <p style="color:#fff;font-size:0.9rem;margin:6px 0 0;"><strong style="color:#a855f7;">STK:</strong> 0123456789</p>
+            <p style="color:#fff;font-size:0.9rem;margin:6px 0 0;"><strong style="color:#a855f7;">Chủ TK:</strong> NGUYEN VAN A</p>
+          </div>`;
+      } else if (method === 'momo') {
+        infoEl.innerHTML = `
+          <div style="background:rgba(214,48,141,0.1);border:1px solid rgba(214,48,141,0.3);border-radius:12px;padding:20px;margin:16px 0;">
+            <div style="font-size:2.5rem;margin-bottom:8px;">📱</div>
+            <p style="color:#d6308d;font-size:1rem;font-weight:700;">Chuyển MoMo</p>
+            <p style="color:#fff;font-size:0.9rem;margin-top:8px;"><strong>SĐT:</strong> 0901 234 567</p>
+            <p style="color:#fff;font-size:0.9rem;margin-top:4px;"><strong>Tên:</strong> NGUYEN VAN A</p>
+            <p style="color:rgba(255,255,255,0.5);font-size:0.78rem;margin-top:8px;">Nội dung: <strong style="color:#d6308d;">${orderId}</strong></p>
+          </div>`;
+      } else if (method === 'zalopay') {
+        infoEl.innerHTML = `
+          <div style="background:rgba(0,132,255,0.1);border:1px solid rgba(0,132,255,0.3);border-radius:12px;padding:20px;margin:16px 0;">
+            <div style="font-size:2.5rem;margin-bottom:8px;">💙</div>
+            <p style="color:#0084ff;font-size:1rem;font-weight:700;">Chuyển ZaloPay</p>
+            <p style="color:#fff;font-size:0.9rem;margin-top:8px;"><strong>SĐT:</strong> 0901 234 567</p>
+            <p style="color:#fff;font-size:0.9rem;margin-top:4px;"><strong>Tên:</strong> NGUYEN VAN A</p>
+            <p style="color:rgba(255,255,255,0.5);font-size:0.78rem;margin-top:8px;">Nội dung: <strong style="color:#0084ff;">${orderId}</strong></p>
+          </div>`;
+      } else if (method === 'cod') {
+        infoEl.innerHTML = `
+          <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:12px;padding:20px;margin:16px 0;">
+            <div style="font-size:2.5rem;margin-bottom:8px;">🚚</div>
+            <p style="color:#22c55e;font-size:1rem;font-weight:700;">Thanh toán khi nhận hàng</p>
+            <p style="color:rgba(255,255,255,0.6);font-size:0.85rem;margin-top:8px;">Shipper sẽ thu tiền khi giao hàng đến địa chỉ của bạn</p>
+            <p style="color:rgba(255,255,255,0.4);font-size:0.78rem;margin-top:8px;">Phí ship COD: <strong style="color:#fbbf24;">+25,000₫</strong></p>
+          </div>`;
+      }
+      document.getElementById('paymentModal').style.display = 'flex';
+    }
+  </script>
 
   <!-- FOOTER -->
   <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid var(--border);">

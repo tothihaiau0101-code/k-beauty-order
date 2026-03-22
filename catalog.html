@@ -653,6 +653,11 @@
         }
         rv.innerHTML = html;
         rv.parentElement.style.display = '';
+        // Set review link
+        const reviewLink = document.getElementById('modalReviewLink');
+        if (reviewLink) {
+          reviewLink.href = data.reviewUrl || `https://www.google.com/search?q=${encodeURIComponent(data.name + ' review đánh giá')}`;
+        }
       } else if (rv) { rv.parentElement.style.display = 'none'; }
       document.getElementById('productModal').style.display = 'flex';
     }
@@ -828,6 +833,7 @@
           <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
             <div style="font-size:0.8rem;font-weight:700;color:#60a5fa;margin-bottom:6px;">💬 Đánh giá từ khách hàng</div>
             <div id="modalReviews"></div>
+            <a id="modalReviewLink" href="#" target="_blank" style="display:inline-block;margin-top:10px;padding:8px 18px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:rgba(96,165,250,0.08);color:#60a5fa;font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='rgba(96,165,250,0.18)'" onmouseout="this.style.background='rgba(96,165,250,0.08)'">📖 Xem thêm đánh giá →</a>
           </div>
           <div style="display:flex;gap:10px;margin-top:auto;">
             <a id="modalBuyNowBtn" href="order-form.html" style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ff5a92 0%,#ec4899 100%);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.3s;box-shadow:0 4px 15px rgba(255,90,146,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">🛒 Mua Ngay</a>

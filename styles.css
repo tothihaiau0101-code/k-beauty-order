@@ -7,47 +7,47 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Background — deeper, richer dark */
-  --bg-primary: #050510;
-  --bg-card: rgba(255, 255, 255, 0.035);
-  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  /* Background — Sofi clean white */
+  --bg-primary: #f8f8f8;
+  --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-card-hover: rgba(255, 255, 255, 1);
 
-  /* Borders */
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.15);
+  /* Borders — subtle */
+  --border: rgba(0, 0, 0, 0.07);
+  --border-hover: rgba(0, 0, 0, 0.15);
 
-  /* Text */
-  --text-primary: #f0f0f5;
-  --text-secondary: #8b8b9e;
-  --text-muted: #5a5a6e;
+  /* Text — Sofi dark */
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b6b7b;
+  --text-muted: #9a9aaa;
 
-  /* Luxury Color Palette — Rose Gold Accent */
-  --accent-pink: #ff5a92;
-  --accent-pink-soft: #ff87b2;
-  --accent-purple: #a855f7;
+  /* Minimal Accent Palette */
+  --accent-pink: #1a1a1a;
+  --accent-pink-soft: #333;
+  --accent-purple: #1a1a1a;
   --accent-blue: #3b82f6;
   --accent-cyan: #06d6a0;
-  --accent-green: #10b981;
-  --accent-coral: #ff6b6b;
-  --accent-gold: #fbbf24;
-  --accent-rosegold: #e8a87c;
+  --accent-green: #1a8a5e;
+  --accent-coral: #e05555;
+  --accent-gold: #d4a017;
+  --accent-rosegold: #c48a5c;
 
-  /* Gradients — Luxury shimmer */
-  --gradient-pink: linear-gradient(135deg, #ff5a92 0%, #c084fc 50%, #818cf8 100%);
-  --gradient-blue: linear-gradient(135deg, #3b82f6 0%, #a855f7 50%, #ec4899 100%);
-  --gradient-glow: linear-gradient(135deg, #ff5a92 0%, #fbbf24 50%, #06d6a0 100%);
-  --gradient-hero: linear-gradient(135deg, #ff5a92, #c084fc, #3b82f6, #06d6a0, #ff5a92);
-  --gradient-shimmer: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+  /* Gradients — neutral/monochrome */
+  --gradient-pink: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+  --gradient-blue: linear-gradient(135deg, #2a2a2a 0%, #444 100%);
+  --gradient-glow: linear-gradient(135deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.06) 100%);
+  --gradient-hero: linear-gradient(135deg, #1a1a1a, #333, #555, #333, #1a1a1a);
+  --gradient-shimmer: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.03) 50%, transparent 100%);
 
-  /* Shadows — richer glow */
-  --shadow-glow: 0 8px 40px rgba(168, 85, 247, 0.12), 0 0 60px rgba(255, 90, 146, 0.06);
-  --shadow-glow-pink: 0 4px 30px rgba(255, 90, 146, 0.15);
-  --shadow-glow-blue: 0 4px 30px rgba(59, 130, 246, 0.15);
-  --shadow-lift: 0 20px 50px rgba(0, 0, 0, 0.4);
+  /* Shadows — soft, clean */
+  --shadow-glow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --shadow-glow-pink: 0 2px 15px rgba(0, 0, 0, 0.08);
+  --shadow-glow-blue: 0 2px 15px rgba(0, 0, 0, 0.08);
+  --shadow-lift: 0 12px 30px rgba(0, 0, 0, 0.08);
 
-  /* Neumorphism */
-  --neu-shadow-out: 6px 6px 16px rgba(0,0,0,0.5), -4px -4px 12px rgba(255,255,255,0.04);
-  --neu-shadow-in: inset 4px 4px 10px rgba(0,0,0,0.4), inset -3px -3px 8px rgba(255,255,255,0.03);
+  /* Neumorphism — light */
+  --neu-shadow-out: 4px 4px 12px rgba(0,0,0,0.06), -3px -3px 8px rgba(255,255,255,0.8);
+  --neu-shadow-in: inset 3px 3px 8px rgba(0,0,0,0.04), inset -2px -2px 6px rgba(255,255,255,0.6);
 
   /* Radius */
   --radius: 16px;
@@ -118,7 +118,7 @@ body {
   transform: translateX(-50%);
   width: 800px;
   height: 800px;
-  background: radial-gradient(circle, rgba(255,90,146,0.12) 0%, rgba(168,85,247,0.08) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.01) 40%, transparent 70%);
   pointer-events: none;
   animation: hero-pulse 6s ease-in-out infinite;
 }
@@ -173,19 +173,19 @@ body {
   transform: translateY(-2px) scale(1.05);
 }
 .badge-pink {
-  background: rgba(255,90,146,0.15);
-  color: var(--accent-pink);
-  border: 1px solid rgba(255,90,146,0.25);
+  background: rgba(0,0,0,0.04);
+  color: #1a1a1a;
+  border: 1px solid rgba(0,0,0,0.1);
 }
 .badge-purple {
-  background: rgba(168,85,247,0.15);
-  color: var(--accent-purple);
-  border: 1px solid rgba(168,85,247,0.25);
+  background: rgba(0,0,0,0.04);
+  color: #1a1a1a;
+  border: 1px solid rgba(0,0,0,0.1);
 }
 .badge-green {
-  background: rgba(16,185,129,0.15);
+  background: rgba(26,138,94,0.08);
   color: var(--accent-green);
-  border: 1px solid rgba(16,185,129,0.25);
+  border: 1px solid rgba(26,138,94,0.15);
 }
 
 /* ---- NAV BAR ---- */
@@ -193,7 +193,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(6, 6, 14, 0.85);
+  background: rgba(248, 248, 248, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
@@ -250,11 +250,12 @@ body {
 }
 .nav-links a:hover {
   color: var(--text-primary);
-  background: rgba(255,255,255,0.04);
+  background: rgba(0,0,0,0.04);
 }
 .nav-links a.active {
-  color: var(--accent-pink);
-  background: rgba(255,90,146,0.1);
+  color: #1a1a1a;
+  background: rgba(0,0,0,0.06);
+  font-weight: 600;
 }
 .nav-links a.active::after {
   transform: scaleX(1);
@@ -371,27 +372,27 @@ body {
 }
 /* Badge Shimmer Animation */
 .badge-bestseller {
-  background: rgba(255,90,146,0.15);
-  color: var(--accent-pink);
+  background: rgba(0,0,0,0.05);
+  color: #1a1a1a;
   animation: badge-shimmer 3s ease-in-out infinite;
   background-size: 200% 100%;
 }
 .badge-new {
-  background: rgba(59,130,246,0.15);
-  color: var(--accent-blue);
+  background: rgba(59,130,246,0.08);
+  color: #2563eb;
   animation: badge-shimmer 3s ease-in-out infinite 0.5s;
   background-size: 200% 100%;
 }
 .badge-preorder {
-  background: rgba(168,85,247,0.15);
-  color: var(--accent-purple);
+  background: rgba(0,0,0,0.05);
+  color: #444;
   animation: badge-shimmer 3s ease-in-out infinite 1s;
   background-size: 200% 100%;
 }
 @keyframes badge-shimmer {
-  0% { background-position: -100% 0; box-shadow: 0 0 0 0 currentColor; }
-  50% { background-position: 100% 0; box-shadow: 0 0 14px rgba(255,90,146,0.2); }
-  100% { background-position: -100% 0; box-shadow: 0 0 0 0 currentColor; }
+  0% { background-position: -100% 0; box-shadow: none; }
+  50% { background-position: 100% 0; box-shadow: 0 0 8px rgba(0,0,0,0.05); }
+  100% { background-position: -100% 0; box-shadow: none; }
 }
 
 .product-card .product-img {
@@ -500,20 +501,20 @@ body {
   padding: 10px 6px;
 }
 .btn-buy-now {
-  background: linear-gradient(135deg, #ff5a92, #ec4899);
+  background: #1a1a1a;
   color: #fff;
 }
 .btn-add-cart {
-  background: rgba(168, 85, 247, 0.12);
-  color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.25);
+  background: rgba(0, 0, 0, 0.04);
+  color: #1a1a1a;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
 }
 .btn-add-cart:hover {
-  background: rgba(168, 85, 247, 0.25);
-  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.2);
 }
 
 /* ─── Payment Method Cards ─── */
@@ -544,9 +545,9 @@ body {
 .cart-dropdown {
   display: none; position: absolute; top: 100%; right: 0;
   margin-top: 8px; width: 280px;
-  background: linear-gradient(135deg, #12121e, #1a1a2e);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.1);
   z-index: 150; animation: dropIn 0.2s ease-out; overflow: hidden;
 }
 @keyframes dropIn {
@@ -557,7 +558,7 @@ body {
 .cart-dropdown-title {
   padding: 14px 16px 10px; font-family: 'Outfit', sans-serif;
   font-weight: 700; font-size: 0.85rem; color: var(--text-primary);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 .cart-dropdown-items { max-height: 220px; overflow-y: auto; padding: 8px 0; }
 .cart-dropdown-empty { text-align: center; padding: 20px 16px; color: var(--text-secondary); font-size: 0.8rem; }
@@ -565,13 +566,13 @@ body {
   display: flex; justify-content: space-between; align-items: center;
   padding: 8px 16px; font-size: 0.8rem; transition: background 0.15s;
 }
-.cart-dropdown-item:hover { background: rgba(255,255,255,0.03); }
+.cart-dropdown-item:hover { background: rgba(0,0,0,0.03); }
 .cart-dropdown-item-name { color: var(--text-primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; }
 .cart-dropdown-item-qty { color: var(--accent-pink); font-weight: 700; font-size: 0.75rem; }
-.cart-dropdown-footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 12px 16px; }
+.cart-dropdown-footer { border-top: 1px solid rgba(0,0,0,0.06); padding: 12px 16px; }
 .cart-dropdown-checkout {
   display: block; text-align: center; padding: 10px; border-radius: 10px;
-  background: linear-gradient(135deg, #ff5a92, #ec4899);
+  background: #1a1a1a;
   color: #fff; text-decoration: none; font-family: 'Outfit', sans-serif;
   font-weight: 700; font-size: 0.82rem; transition: opacity 0.2s;
 }

@@ -54,11 +54,11 @@
 
   <!-- BANNER CAROUSEL -->
   <style>
-    .banner-carousel{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:20px 16px;max-width:100%;}
+    .banner-carousel{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:30px 16px;max-width:100%;align-items:center;}
     .banner-carousel::-webkit-scrollbar{display:none;}
-    .banner-slide{scroll-snap-align:center;flex:0 0 85%;max-width:680px;border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:200px;position:relative;transition:transform 0.35s ease,box-shadow 0.35s ease;transform:scale(0.93);opacity:0.65;}
-    .banner-slide.center{transform:scale(1);opacity:1;box-shadow:0 8px 30px rgba(0,0,0,0.1);}
-    @media(max-width:600px){.banner-slide{flex:0 0 92%;min-height:auto;} .banner-slide .b-img{display:none;}}
+    .banner-slide{scroll-snap-align:center;flex:0 0 75%;max-width:640px;border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:200px;position:relative;transition:transform 0.4s ease,box-shadow 0.4s ease,opacity 0.4s ease;transform:scale(0.82);opacity:0.45;}
+    .banner-slide.center{transform:scale(1);opacity:1;box-shadow:0 12px 40px rgba(0,0,0,0.12);}
+    @media(max-width:600px){.banner-slide{flex:0 0 88%;min-height:auto;} .banner-slide .b-img{display:none;}}
   </style>
 
   <div class="banner-carousel" id="bannerCarousel">

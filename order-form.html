@@ -321,27 +321,27 @@
     // ---- PRODUCT DATA ----
     const PRODUCTS = {
       beauty: [
-        { id: 'cosrx-snail', icon: '🧴', name: 'COSRX Snail Mucin', spec: '100ml', price: 420000, oldPrice: 550000, tag: 'hot', tagLabel: '#1 Bestseller' },
-        { id: 'boj-sun', icon: '☀️', name: 'BoJ Relief Sun SPF50+', spec: '50ml', price: 380000, oldPrice: 500000, tag: 'hot', tagLabel: 'Bestseller' },
-        { id: 'anua-toner', icon: '💧', name: 'Anua Heartleaf Toner', spec: '250ml', price: 450000, oldPrice: 600000, tag: 'hot', tagLabel: 'Bestseller' },
-        { id: 'torriden-serum', icon: '💦', name: 'Torriden Dive-In HA Serum', spec: '50ml', price: 400000, oldPrice: 520000, tag: 'new', tagLabel: 'New' },
-        { id: 'skin1004', icon: '🌿', name: 'SKIN1004 Centella Ampoule', spec: '100ml', price: 420000, oldPrice: 550000 },
-        { id: 'mediheal', icon: '🧹', name: 'Mediheal Blemish Pad', spec: '100 miếng', price: 300000, oldPrice: 400000 },
-        { id: 'roundlab', icon: '🫧', name: 'Round Lab 1025 Dokdo Toner', spec: '200ml', price: 380000, oldPrice: 480000 },
-        { id: 'romand', icon: '💄', name: 'Romand Juicy Lasting Tint', spec: '5.5g', price: 250000, oldPrice: 350000, tag: 'new', tagLabel: 'Hot 🔥' },
+        { id: 'cosrx-snail', img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200&h=200&q=80&fit=crop', name: 'COSRX Snail Mucin', spec: '100ml', price: 420000, oldPrice: 550000, tag: 'hot', tagLabel: '#1 Bestseller' },
+        { id: 'boj-sun', img: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=200&h=200&q=80&fit=crop', name: 'BoJ Relief Sun SPF50+', spec: '50ml', price: 380000, oldPrice: 500000, tag: 'hot', tagLabel: 'Bestseller' },
+        { id: 'anua-toner', img: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?w=200&h=200&q=80&fit=crop', name: 'Anua Heartleaf Toner', spec: '250ml', price: 450000, oldPrice: 600000, tag: 'hot', tagLabel: 'Bestseller' },
+        { id: 'torriden-serum', img: 'https://images.unsplash.com/photo-1570194065650-d99fb4a38691?w=200&h=200&q=80&fit=crop', name: 'Torriden Dive-In HA Serum', spec: '50ml', price: 400000, oldPrice: 520000, tag: 'new', tagLabel: 'New' },
+        { id: 'skin1004', img: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=200&h=200&q=80&fit=crop', name: 'SKIN1004 Centella Ampoule', spec: '100ml', price: 420000, oldPrice: 550000 },
+        { id: 'mediheal', img: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=200&h=200&q=80&fit=crop', name: 'Mediheal Blemish Pad', spec: '100 miếng', price: 300000, oldPrice: 400000 },
+        { id: 'roundlab', img: 'https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?w=200&h=200&q=80&fit=crop', name: 'Round Lab 1025 Dokdo Toner', spec: '200ml', price: 380000, oldPrice: 480000 },
+        { id: 'romand', img: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=200&h=200&q=80&fit=crop', name: 'Romand Juicy Lasting Tint', spec: '5.5g', price: 250000, oldPrice: 350000, tag: 'new', tagLabel: 'Hot' },
       ],
       kpop: [
-        { id: 'txt-7th', icon: '💎', name: 'TXT — 7TH YEAR', spec: '8th Mini Album · 13/04', price: 500000, tag: 'new', tagLabel: 'Pre-order' },
-        { id: 'bts-arirang', icon: '🌟', name: 'BTS — ARIRANG', spec: '5th Album · 2026', price: 600000, tag: 'new', tagLabel: 'Pre-order' },
-        { id: 'babymonster', icon: '🐾', name: 'BABYMONSTER — CHOOM', spec: 'Mini Album · 05/2026', price: 500000, tag: 'new', tagLabel: 'New 🔥' },
-        { id: 'kissoflife', icon: '💋', name: 'KISS OF LIFE — Comeback', spec: '04/2026', price: 480000 },
-        { id: 'nctwish', icon: '⭐', name: 'NCT WISH — Full Album', spec: '04/2026', price: 450000 },
+        { id: 'txt-7th', img: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&q=80&fit=crop', name: 'TXT — 7TH YEAR', spec: '8th Mini Album · 13/04', price: 500000, tag: 'new', tagLabel: 'Pre-order' },
+        { id: 'bts-arirang', img: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=200&h=200&q=80&fit=crop', name: 'BTS — ARIRANG', spec: '5th Album · 2026', price: 600000, tag: 'new', tagLabel: 'Pre-order' },
+        { id: 'babymonster', img: 'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=200&h=200&q=80&fit=crop', name: 'BABYMONSTER — CHOOM', spec: 'Mini Album · 05/2026', price: 500000, tag: 'new', tagLabel: 'New' },
+        { id: 'kissoflife', img: 'https://images.unsplash.com/photo-1598387993441-a364f854c3e1?w=200&h=200&q=80&fit=crop', name: 'KISS OF LIFE — Comeback', spec: '04/2026', price: 480000 },
+        { id: 'nctwish', img: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&h=200&q=80&fit=crop', name: 'NCT WISH — Full Album', spec: '04/2026', price: 450000 },
       ],
       combo: [
-        { id: 'combo-skincare', icon: '🎀', name: 'Skincare Starter', spec: '3 samples', price: 150000, tag: 'hot', tagLabel: 'Phổ biến' },
-        { id: 'combo-sun', icon: '🌞', name: 'Sun & Glow', spec: 'Mini sun + pads', price: 120000 },
-        { id: 'combo-kpop', icon: '🎶', name: 'K-Pop Surprise', spec: 'Photocard + Sticker', price: 200000 },
-        { id: 'combo-mix', icon: '🎁', name: 'Mix Box', spec: '2 mỹ phẩm + 1 album', price: 300000, tag: 'new', tagLabel: 'Best value' },
+        { id: 'combo-skincare', img: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=200&h=200&q=80&fit=crop', name: 'Skincare Starter', spec: '3 samples', price: 150000, tag: 'hot', tagLabel: 'Phổ biến' },
+        { id: 'combo-sun', img: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=200&h=200&q=80&fit=crop', name: 'Sun & Glow', spec: 'Mini sun + pads', price: 120000 },
+        { id: 'combo-kpop', img: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&q=80&fit=crop', name: 'K-Pop Surprise', spec: 'Photocard + Sticker', price: 200000 },
+        { id: 'combo-mix', img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200&h=200&q=80&fit=crop', name: 'Mix Box', spec: '2 mỹ phẩm + 1 album', price: 300000, tag: 'new', tagLabel: 'Best value' },
       ]
     };
 
@@ -359,7 +359,7 @@
         <div class="pick-card" data-id="${p.id}" onclick="toggleProduct('${p.id}')">
           ${p.tag ? `<span class="pick-tag pick-tag-${p.tag}">${p.tagLabel}</span>` : ''}
           <div class="pick-check">✓</div>
-          <div class="pick-icon">${p.icon}</div>
+          <img src="${p.img}" alt="${p.name}" style="width:56px;height:56px;border-radius:10px;object-fit:cover;margin-bottom:6px;">
           <div class="pick-name">${p.name}</div>
           <div class="pick-brand">${p.spec}</div>
           <div>

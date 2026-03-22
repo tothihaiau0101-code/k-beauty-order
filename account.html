@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tài Khoản — BeaPop</title>
+  <meta name="description" content="Quản lý tài khoản, tích điểm và lịch sử đơn hàng BeaPop.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <script src="auth.js" defer></script>
+  <style>
+    .account-section { max-width: 640px; margin: 0 auto; padding: 30px 16px 60px; }
+    .account-header { text-align: center; margin-bottom: 28px; padding-top: 20px; }
+    .account-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #f0f0f0, #e0e0e0); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 12px; }
+    .account-name { font-size: 1.4rem; font-weight: 800; color: #1a1a1a; margin-bottom: 4px; }
+    .account-phone { font-size: 0.85rem; color: #6b6b7b; }
+
+    /* Tier Card */
+    .tier-card { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); position: relative; overflow: hidden; }
+    .tier-card::before { content: ''; position: absolute; top: -50%; right: -30%; width: 200px; height: 200px; border-radius: 50%; opacity: 0.06; }
+    .tier-card.bronze::before { background: #cd7f32; }
+    .tier-card.silver::before { background: #a0a0a0; }
+    .tier-card.gold::before { background: #d4a017; }
+    .tier-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .tier-card.bronze .tier-badge { background: rgba(205,127,50,0.1); color: #cd7f32; }
+    .tier-card.silver .tier-badge { background: rgba(160,160,160,0.15); color: #666; }
+    .tier-card.gold .tier-badge { background: rgba(212,160,23,0.1); color: #b8860b; }
+    .points-big { font-size: 2.5rem; font-weight: 900; color: #1a1a1a; line-height: 1; }
+    .points-label { font-size: 0.8rem; color: #6b6b7b; margin-top: 2px; }
+    .tier-progress { margin-top: 16px; }
+    .tier-progress-bar { height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+    .tier-progress-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .tier-card.bronze .tier-progress-fill { background: #cd7f32; }
+    .tier-card.silver .tier-progress-fill { background: #a0a0a0; }
+    .tier-card.gold .tier-progress-fill { background: #d4a017; }
+    .tier-next { font-size: 0.72rem; color: #6b6b7b; display: flex; justify-content: space-between; }
+
+    /* Stats Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+    .stat-value { font-size: 1.3rem; font-weight: 800; color: #1a1a1a; }
+    .stat-label { font-size: 0.7rem; color: #6b6b7b; margin-top: 2px; }
+
+    /* Section Card */
+    .section-card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+    .section-title { font-size: 0.9rem; font-weight: 700; color: #1a1a1a; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .section-title span { font-size: 1.1rem; }
+
+    /* Points Log */
+    .points-log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+    .points-log-item:last-child { border-bottom: none; }
+    .log-info { flex: 1; }
+    .log-note { font-size: 0.8rem; font-weight: 600; color: #1a1a1a; }
+    .log-date { font-size: 0.7rem; color: #9a9aaa; margin-top: 2px; }
+    .log-amount { font-weight: 700; font-size: 0.85rem; }
+    .log-amount.earn { color: #1a8a5e; }
+    .log-amount.redeem { color: #e05555; }
+
+    /* Perks */
+    .perk-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+    .perk-row:last-child { border-bottom: none; }
+    .perk-icon { font-size: 1.3rem; }
+    .perk-text { flex: 1; }
+    .perk-text strong { font-size: 0.82rem; color: #1a1a1a; display: block; }
+    .perk-text small { font-size: 0.72rem; color: #6b6b7b; }
+
+    /* Buttons */
+    .btn-logout { width: 100%; padding: 13px; background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.08); color: #e05555; border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; margin-top: 10px; }
+    .btn-logout:hover { background: rgba(224,85,85,0.08); }
+
+    /* Change Password / PIN Forms */
+    .change-form { margin-bottom: 12px; }
+    .change-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); font-size: 0.82rem; font-family: 'Inter', sans-serif; margin-bottom: 8px; box-sizing: border-box; }
+    .change-form input:focus { outline: none; border-color: #1a1a1a; }
+    .btn-change { width: 100%; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+    .btn-change:hover { background: #333; }
+    .form-result { font-size: 0.75rem; margin-top: 6px; padding: 6px 10px; border-radius: 6px; }
+    .form-result.success { background: rgba(16,185,129,0.08); color: #059669; }
+    .form-result.error { background: rgba(224,85,85,0.08); color: #dc2626; }
+
+    /* Not logged in */
+    .not-logged-in { text-align: center; padding: 60px 20px; }
+    .not-logged-in h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
+    .not-logged-in p { color: #6b6b7b; font-size: 0.85rem; margin-bottom: 24px; }
+    .btn-login-big { display: inline-block; padding: 14px 40px; background: #1a1a1a; color: #fff; border: none; border-radius: 12px; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; text-decoration: none; }
+    .btn-login-big:hover { background: #333; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV BAR -->
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <a href="catalog.html" class="nav-logo">BeaPop</a>
+      <div class="nav-links">
+        <a href="catalog.html#k-beauty">Beauty</a>
+        <a href="catalog.html#k-pop">Pop</a>
+        <a href="catalog.html#combos">Combo</a>
+        <a href="order-form.html">Đặt Hàng</a>
+        <a href="policy.html">Chính Sách</a>
+        <div class="nav-cart-wrap">
+          <a href="order-form.html" class="nav-cart" id="navCart" style="display:flex;">
+            🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="account-section" id="accountContent">
+    <!-- JS will populate -->
+  </div>
+
+  <footer style="text-align:center;padding:32px 16px;background:var(--bg-card);border-top:1px solid var(--border);">
+    <div style="display:flex;justify-content:center;gap:20px;margin-bottom:12px;">
+      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📦 Catalog</a>
+      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📩 Đặt Hàng</a>
+      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📋 Chính Sách</a>
+    </div>
+    <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
+  </footer>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    renderAccount();
+  });
+
+  function handleChangePassword() {
+    const oldPwd = document.getElementById('oldPassword').value;
+    const newPwd = document.getElementById('newPassword').value;
+    const confirmPwd = document.getElementById('confirmPassword').value;
+    const resultEl = document.getElementById('changePasswordResult');
+
+    if (!oldPwd || !newPwd || !confirmPwd) {
+      resultEl.textContent = '❌ Vui lòng điền đầy đủ thông tin';
+      resultEl.className = 'form-result error';
+      return;
+    }
+    if (newPwd.length < 4) {
+      resultEl.textContent = '❌ Mật khẩu mới phải có ít nhất 4 ký tự';
+      resultEl.className = 'form-result error';
+      return;
+    }
+    if (newPwd !== confirmPwd) {
+      resultEl.textContent = '❌ Mật khẩu xác nhận không khớp';
+      resultEl.className = 'form-result error';
+      return;
+    }
+
+    window.BeaPop.Auth.changePassword(oldPwd, newPwd).then(r => {
+      if (r.success) {
+        resultEl.textContent = '✅ Đổi mật khẩu thành công!';
+        resultEl.className = 'form-result success';
+        document.getElementById('oldPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+      } else {
+        resultEl.textContent = r.error === 'WRONG_PASSWORD' ? '❌ Mật khẩu cũ không đúng' : '❌ Có lỗi xảy ra';
+        resultEl.className = 'form-result error';
+      }
+    });
+  }
+
+  function handleChangePin() {
+    const pwd = document.getElementById('pinPassword').value;
+    const newPin = document.getElementById('newPin').value;
+    const confirmPin = document.getElementById('confirmPin').value;
+    const resultEl = document.getElementById('changePinResult');
+
+    if (!pwd || !newPin || !confirmPin) {
+      resultEl.textContent = '❌ Vui lòng điền đầy đủ thông tin';
+      resultEl.className = 'form-result error';
+      return;
+    }
+    if (!/^\d{4,6}$/.test(newPin)) {
+      resultEl.textContent = '❌ PIN phải là 4-6 chữ số';
+      resultEl.className = 'form-result error';
+      return;
+    }
+    if (newPin !== confirmPin) {
+      resultEl.textContent = '❌ PIN xác nhận không khớp';
+      resultEl.className = 'form-result error';
+      return;
+    }
+
+    window.BeaPop.Auth.changePin(pwd, newPin).then(r => {
+      if (r.success) {
+        resultEl.textContent = '✅ Đổi PIN thành công!';
+        resultEl.className = 'form-result success';
+        document.getElementById('pinPassword').value = '';
+        document.getElementById('newPin').value = '';
+        document.getElementById('confirmPin').value = '';
+      } else {
+        resultEl.textContent = r.error === 'WRONG_PASSWORD' ? '❌ Mật khẩu không đúng' : '❌ Có lỗi xảy ra';
+        resultEl.className = 'form-result error';
+      }
+    });
+  }
+
+  function renderAccount() {
+    const container = document.getElementById('accountContent');
+    const user = window.BeaPop?.Auth?.getUser();
+
+    if (!user) {
+      container.innerHTML = `
+        <div class="not-logged-in">
+          <div style="font-size:4rem;margin-bottom:16px;">👤</div>
+          <h2>Chưa đăng nhập</h2>
+          <p>Đăng nhập để tích điểm, nhận ưu đãi<br>và theo dõi đơn hàng</p>
+          <button class="btn-login-big" onclick="window.BeaPop.openLogin()">Đăng nhập ngay</button>
+        </div>
+      `;
+      return;
+    }
+
+    const Auth = window.BeaPop.Auth;
+    const log = Auth.getPointsLog();
+    const tier = user.tier || 'bronze';
+    const nextTier = tier === 'bronze' ? 'Silver' : tier === 'silver' ? 'Gold' : 'Max';
+    const nextPoints = tier === 'bronze' ? 100 : tier === 'silver' ? 500 : user.points;
+    const progress = tier === 'gold' ? 100 : Math.min(100, Math.round((user.points / nextPoints) * 100));
+
+    container.innerHTML = `
+      <div class="account-header">
+        <div class="account-avatar">👤</div>
+        <div class="account-name">${user.name || 'Khách hàng'}</div>
+        <div class="account-phone">${user.phone}</div>
+      </div>
+
+      <div class="tier-card ${tier}">
+        <div class="tier-badge">${Auth.tierLabel(tier)}</div>
+        <div class="points-big">${user.points.toLocaleString('vi-VN')}</div>
+        <div class="points-label">điểm tích luỹ</div>
+        ${tier !== 'gold' ? `
+        <div class="tier-progress">
+          <div class="tier-next">
+            <span>Lên hạng ${nextTier}</span>
+            <span>${user.points}/${nextPoints} điểm</span>
+          </div>
+          <div class="tier-progress-bar">
+            <div class="tier-progress-fill" style="width:${progress}%"></div>
+          </div>
+        </div>` : `<div style="font-size:0.75rem;color:#b8860b;margin-top:8px;font-weight:600;">🎉 Hạng cao nhất — x2 điểm mỗi đơn!</div>`}
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">${user.orderCount || 0}</div>
+          <div class="stat-label">Đơn hàng</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${user.totalSpent ? new Intl.NumberFormat('vi-VN', {notation: 'compact'}).format(user.totalSpent) : '0'}₫</div>
+          <div class="stat-label">Tổng chi tiêu</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${Math.floor(user.points / 100) * 50}k₫</div>
+          <div class="stat-label">Có thể giảm</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title"><span>🎁</span> Quyền lợi hạng ${Auth.tierLabel(tier)}</div>
+        <div class="perk-row">
+          <div class="perk-icon">⭐</div>
+          <div class="perk-text">
+            <strong>x${Auth.tierMultiplier(tier)} điểm mỗi đơn</strong>
+            <small>Mỗi 10.000₫ = ${Auth.tierMultiplier(tier)} điểm</small>
+          </div>
+        </div>
+        ${tier !== 'bronze' ? `
+        <div class="perk-row">
+          <div class="perk-icon">🚚</div>
+          <div class="perk-text">
+            <strong>Freeship mọi đơn</strong>
+            <small>Không giới hạn giá trị</small>
+          </div>
+        </div>` : ''}
+        ${tier === 'gold' ? `
+        <div class="perk-row">
+          <div class="perk-icon">👑</div>
+          <div class="perk-text">
+            <strong>Ưu đãi riêng</strong>
+            <small>Sale sớm, quà sinh nhật, deal VIP</small>
+          </div>
+        </div>` : ''}
+        <div class="perk-row">
+          <div class="perk-icon">💰</div>
+          <div class="perk-text">
+            <strong>Đổi 100 điểm = giảm 50.000₫</strong>
+            <small>Áp dụng khi thanh toán</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title"><span>📋</span> Lịch sử điểm</div>
+        ${log.length === 0 ? '<div style="text-align:center;color:#9a9aaa;font-size:0.8rem;padding:16px 0;">Chưa có giao dịch điểm</div>' :
+          log.slice(0, 10).map(function(item) {
+            const d = new Date(item.date);
+            const dateStr = d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+            return '<div class="points-log-item">' +
+              '<div class="log-info"><div class="log-note">' + item.note + '</div><div class="log-date">' + dateStr + '</div></div>' +
+              '<div class="log-amount ' + item.type + '">' + (item.type === 'earn' ? '+' : '-') + item.amount + ' ⭐</div></div>';
+          }).join('')
+        }
+      </div>
+
+      <!-- Change Password Form -->
+      <div class="section-card">
+        <div class="section-title"><span>🔐</span> Đổi mật khẩu</div>
+        <div class="change-form">
+          <input type="password" id="oldPassword" placeholder="Mật khẩu hiện tại" autocomplete="current-password">
+          <input type="password" id="newPassword" placeholder="Mật khẩu mới (ít nhất 4 ký tự)" autocomplete="new-password">
+          <input type="password" id="confirmPassword" placeholder="Xác nhận mật khẩu mới" autocomplete="new-password">
+          <button type="button" class="btn-change" onclick="handleChangePassword()">Đổi mật khẩu</button>
+          <div id="changePasswordResult"></div>
+        </div>
+      </div>
+
+      <!-- Change PIN Form -->
+      <div class="section-card">
+        <div class="section-title"><span>🔢</span> Đổi mã PIN bảo mật</div>
+        <div class="change-form">
+          <input type="password" id="pinPassword" placeholder="Mật khẩu hiện tại để xác nhận" autocomplete="current-password">
+          <input type="password" id="newPin" placeholder="PIN mới (4-6 số)" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}">
+          <input type="password" id="confirmPin" placeholder="Xác nhận PIN mới" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}">
+          <button type="button" class="btn-change" onclick="handleChangePin()">Đổi PIN</button>
+          <div id="changePinResult"></div>
+        </div>
+      </div>
+
+      <button class="btn-logout" onclick="window.BeaPop.handleLogout(); renderAccount();">Đăng xuất</button>
+    `;
+  }
+  </script>
+
+</body>
+</html>

@@ -3,32 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>K-Beauty & K-Pop Order — Mỹ Phẩm & Album Hàn Quốc Chính Hãng</title>
-  <meta name="description" content="Order mỹ phẩm Hàn Quốc chính hãng từ Olive Young & album K-Pop từ Ktown4u. Giá gốc minh bạch, freeship đơn đầu tiên.">
-  <meta property="og:title" content="K-Beauty & K-Pop Order — Mỹ Phẩm & Album Hàn Quốc Chính Hãng">
-  <meta property="og:description" content="Order mỹ phẩm Hàn Quốc chính hãng từ Olive Young & album K-Pop từ Ktown4u. Giá gốc minh bạch, freeship đơn đầu tiên.">
+  <title>BeaPop — Mỹ Phẩm & Album Hàn Quốc Chính Hãng</title>
+  <meta name="description" content="Order mỹ phẩm Hàn Quốc chính hãng từ Olive Young & album KPop từ Ktown4u. Giá gốc minh bạch, freeship đơn đầu tiên.">
+  <meta property="og:title" content="BeaPop — Mỹ Phẩm & Album Hàn Quốc Chính Hãng">
+  <meta property="og:description" content="Order mỹ phẩm Hàn Quốc chính hãng từ Olive Young & album KPop từ Ktown4u. Giá gốc minh bạch, freeship đơn đầu tiên.">
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <script src="auth.js" defer></script>
 </head>
 <body>
 
   <!-- NAV BAR -->
   <nav class="nav-bar">
     <div class="nav-inner">
-      <a href="#" class="nav-logo">🇰🇷 K-Beauty Order</a>
+      <a href="#" class="nav-logo">BeaPop</a>
       <div class="nav-links">
-        <a href="#k-beauty" class="active">🧴 K-Beauty</a>
-        <a href="#k-pop">🎵 K-Pop</a>
-        <a href="#combos">🎁 Combo</a>
-        <a href="order-form.html">📩 Đặt Hàng</a>
-        <a href="policy.html">📋 Chính Sách</a>
+        <a href="#k-beauty" class="active">Beauty</a>
+        <a href="#k-pop">Pop</a>
+        <a href="#combos">Combo</a>
+        <a href="order-form.html">Đặt Hàng</a>
+        <a href="policy.html">Chính Sách</a>
         <div class="nav-cart-wrap">
           <a href="order-form.html" class="nav-cart" id="navCart" style="display:flex;">
             🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
           </a>
           <div class="cart-dropdown" id="cartDropdown">
-            <div class="cart-dropdown-title">🛒 Giỏ hàng</div>
+            <div class="cart-dropdown-title">Giỏ hàng</div>
             <div class="cart-dropdown-items" id="cartDropdownItems">
               <div class="cart-dropdown-empty">Giỏ hàng trống</div>
             </div>
@@ -43,75 +44,168 @@
 
   <!-- HERO -->
   <section class="hero">
-    <h1>🇰🇷 K-Beauty & K-Pop Order</h1>
-    <p>Mỹ phẩm Hàn Quốc chính hãng từ Olive Young & Album K-Pop từ Ktown4u — Giá gốc, minh bạch, ship về tận nhà</p>
+    <h1>BeaPop</h1>
+    <p>Mỹ phẩm Hàn Quốc chính hãng từ Olive Young & Album BeaPop từ Ktown4u — Giá gốc, minh bạch, ship về tận nhà</p>
     <div class="badge-row">
-      <span class="badge badge-pink">✨ Hàng chính hãng 100%</span>
-      <span class="badge badge-purple">🚀 Freeship đơn đầu</span>
-      <span class="badge badge-green">💰 Tiết kiệm 30-50%</span>
+      <span class="badge badge-pink">Hàng chính hãng 100%</span>
+      <span class="badge badge-purple">Freeship đơn đầu</span>
+      <span class="badge badge-green">Tiết kiệm 30-50%</span>
     </div>
   </section>
 
-  <!-- PRICE TRANSPARENCY BAR -->
-  <div class="price-bar reveal">
-    <span class="label">Ví dụ: COSRX Snail Mucin</span>
-    <span class="price-old">Shopee: 550k</span>
-    <span class="price-new">Shop: 420k</span>
-    <span class="save">Tiết kiệm 130k ✓</span>
+  <!-- BANNER CAROUSEL -->
+  <style>
+    .banner-carousel-wrap{max-width:1200px;margin:-10px auto 0;overflow:hidden;}
+    .banner-carousel{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:12px 0;align-items:center;}
+    .banner-carousel::before,.banner-carousel::after{content:'';flex:0 0 12.5%;}
+    .banner-carousel::-webkit-scrollbar{display:none;}
+    .banner-slide{scroll-snap-align:center;flex:0 0 65%;border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:220px;position:relative;transition:transform 0.4s ease,box-shadow 0.4s ease,opacity 0.4s ease,filter 0.4s ease;transform:scale(0.82);opacity:0.5;filter:brightness(0.6) saturate(0.4) grayscale(0.3);}
+    .banner-slide.center{transform:scale(1);opacity:1;box-shadow:0 12px 40px rgba(0,0,0,0.15);filter:brightness(1.1) saturate(1.1);}
+    @media(max-width:600px){.banner-slide{flex:0 0 88%;min-height:auto;} .banner-slide .b-img{display:none;} .banner-carousel::before,.banner-carousel::after{flex:0 0 6%;}}
+  </style>
+
+  <div class="banner-carousel-wrap">
+  <div class="banner-carousel" id="bannerCarousel">
+    <!-- 1: My Pham Chinh Hang -->
+    <div class="banner-slide center" style="background:linear-gradient(135deg,#f5ebe0,#ede0d4);">
+      <div style="flex:1;padding:28px 16px 28px 32px;">
+        <div style="font-family:'Inter',sans-serif;font-size:1.4rem;font-weight:900;color:#2b2b2b;line-height:1.2;margin-bottom:8px;">MỸ PHẨM HÀN QUỐC<br>CHÍNH HÃNG</div>
+        <div style="font-size:0.8rem;color:#7a6e62;margin-bottom:14px;line-height:1.5;">Giá gốc Olive Young, ship về tận nhà.<br>Tiết kiệm đến 50% so với Shopee.</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div><div style="font-size:0.6rem;color:#9a8d7f;text-transform:uppercase;letter-spacing:1px;">Tiết kiệm</div><div style="font-size:1.8rem;font-weight:900;color:#2b2b2b;line-height:1;">30-50%</div></div>
+          <div style="width:1px;height:32px;background:rgba(0,0,0,0.12);"></div>
+          <div style="font-weight:800;font-size:0.9rem;color:#2b2b2b;line-height:1.3;">FREESHIP<br><span style="font-weight:500;font-size:0.72rem;color:#7a6e62;">đơn đầu tiên</span></div>
+        </div>
+        <a href="order-form.html" style="display:inline-block;background:#2b2b2b;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">ĐẶT HÀNG NGAY</a>
+      </div>
+      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <img src="images/banner-products.png" alt="Beauty Products" style="max-height:170px;width:100%;object-fit:contain;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      </div>
+    </div>
+
+    <!-- 2: Flash Sale -->
+    <div class="banner-slide" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);">
+      <div style="flex:1;padding:28px 16px 28px 32px;">
+        <div style="display:inline-block;background:#2e7d32;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">⚡ FLASH SALE</div>
+        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#1b5e20;line-height:1.2;margin-bottom:8px;">SKINCARE CUỐI TUẦN<br>GIẢM THÊM 15%</div>
+        <div style="font-size:0.8rem;color:#4a7c59;margin-bottom:14px;line-height:1.5;">Áp dụng cho COSRX, Torriden, Anua.<br>Chỉ trong 48h — Số lượng có hạn!</div>
+        <a href="order-form.html" style="display:inline-block;background:#2e7d32;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">MUA NGAY</a>
+      </div>
+      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&h=300&q=80&fit=crop" alt="Flash Sale" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      </div>
+    </div>
+
+    <!-- 3: Pre-order KPop -->
+    <div class="banner-slide" style="background:linear-gradient(135deg,#e8eaf6,#c5cae9);">
+      <div style="flex:1;padding:28px 16px 28px 32px;">
+        <div style="display:inline-block;background:#5c6bc0;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">🎵 PRE-ORDER</div>
+        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#283593;line-height:1.2;margin-bottom:8px;">ALBUM MỚI 2026<br>TẶNG POB + POSTER</div>
+        <div style="font-size:0.8rem;color:#5c6b8a;margin-bottom:14px;line-height:1.5;">TXT, BTS, BABYMONSTER comeback.<br>Đặt trước giá ưu đãi!</div>
+        <a href="#k-pop" style="display:inline-block;background:#5c6bc0;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">ĐẶT TRƯỚC</a>
+      </div>
+      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&q=80&fit=crop" alt="KPop Album" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      </div>
+    </div>
+
+    <!-- 4: Combo -->
+    <div class="banner-slide" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);">
+      <div style="flex:1;padding:28px 16px 28px 32px;">
+        <div style="display:inline-block;background:#e65100;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">🔥 COMBO</div>
+        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#bf360c;line-height:1.2;margin-bottom:8px;">COMBO 3 MÓN<br>TIẾT KIỆM 40%</div>
+        <div style="font-size:0.8rem;color:#8d6e63;margin-bottom:14px;line-height:1.5;">Skincare + Album + Photocard.<br>Quà tặng cho fan Hàn Quốc!</div>
+        <a href="#combos" style="display:inline-block;background:#e65100;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">XEM COMBO</a>
+      </div>
+      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <img src="https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&q=80&fit=crop" alt="Combo Deal" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      </div>
+    </div>
   </div>
+
+  <!-- Dot indicators -->
+  <div style="display:flex;justify-content:center;gap:8px;margin-bottom:10px;" id="bannerDots">
+    <span style="width:8px;height:8px;border-radius:50%;background:#1a1a1a;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(0)"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(1)"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(2)"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(3)"></span>
+  </div>
+  </div>
+  <script>
+  (function(){
+    var c=document.getElementById('bannerCarousel');
+    var sl=c.querySelectorAll('.banner-slide');
+    var dots=document.querySelectorAll('#bannerDots span');
+    var ob=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting && e.intersectionRatio > 0.6){
+          sl.forEach(function(s){s.classList.remove('center')});
+          e.target.classList.add('center');
+          var i=Array.from(sl).indexOf(e.target);
+          dots.forEach(function(d,j){d.style.background = j===i ? '#1a1a1a' : '#ccc'});
+        }
+      });
+    },{root:c, threshold:0.6});
+    sl.forEach(function(s){ob.observe(s)});
+    window.scrollToBanner=function(i){sl[i].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});};
+    // Center first banner on load
+    c.scrollLeft = 0;
+    sl[0].classList.add('center');
+  })();
+  </script>
 
   <!-- TRUST BAR -->
   <div class="trust-bar reveal">
     <div class="trust-item">
-      <div class="trust-icon">🏆</div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a017" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M6 3h12v7a6 6 0 0 1-12 0V3z"/><path d="M12 16v3"/><path d="M8 22h8"/><path d="M8 22v-3h8v3"/></svg>
       <div class="trust-text">Top Olive Young 2025</div>
     </div>
     <div class="trust-item">
-      <div class="trust-icon">📦</div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polyline points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
       <div class="trust-text">Ship 7-14 ngày</div>
     </div>
     <div class="trust-item">
-      <div class="trust-icon">🔒</div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
       <div class="trust-text">Hoàn tiền nếu lỗi</div>
     </div>
     <div class="trust-item">
-      <div class="trust-icon">💬</div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <div class="trust-text">Tư vấn 1:1</div>
     </div>
   </div>
 
   <!-- SEARCH BAR -->
   <div style="max-width:900px;margin:0 auto 8px;padding:0 16px;">
-    <input type="text" id="catalogSearch" placeholder="🔍 Tìm sản phẩm..." oninput="filterProducts()" style="width:100%;padding:12px 18px;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-family:inherit;font-size:0.9rem;outline:none;transition:border-color 0.3s;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--border)'">
+    <input type="text" id="catalogSearch" placeholder="Tìm sản phẩm..." oninput="filterProducts()" style="width:100%;padding:12px 18px;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-family:inherit;font-size:0.9rem;outline:none;transition:border-color 0.3s;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--border)'">
   </div>
 
   <!-- FILTER BAR (M45) -->
   <div style="max-width:900px;margin:0 auto 16px;padding:0 16px;display:flex;gap:8px;flex-wrap:wrap;">
-    <button onclick="filterCategory('all')" class="filter-btn active" data-cat="all">🌐 Tất cả</button>
-    <button onclick="filterCategory('skincare')" class="filter-btn" data-cat="skincare">🧴 Skincare</button>
-    <button onclick="filterCategory('makeup')" class="filter-btn" data-cat="makeup">💄 Makeup</button>
-    <button onclick="filterCategory('album')" class="filter-btn" data-cat="album">🎵 Album</button>
-    <button onclick="filterCategory('combo')" class="filter-btn" data-cat="combo">🎁 Combo</button>
+    <button onclick="filterCategory('all')" class="filter-btn active" data-cat="all">Tất cả</button>
+    <button onclick="filterCategory('skincare')" class="filter-btn" data-cat="skincare">Skincare</button>
+    <button onclick="filterCategory('makeup')" class="filter-btn" data-cat="makeup">Makeup</button>
+    <button onclick="filterCategory('album')" class="filter-btn" data-cat="album">Album</button>
+    <button onclick="filterCategory('combo')" class="filter-btn" data-cat="combo">Combo</button>
   </div>
 
   <!-- SOCIAL FLOATING BAR (M4) -->
   <div style="position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;gap:10px;">
-    <a href="https://zalo.me/" target="_blank" title="Zalo" style="width:40px;height:40px;border-radius:12px;background:rgba(0,132,255,0.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem;border:1px solid rgba(0,132,255,0.2);transition:all 0.2s;" onmouseover="this.style.background='rgba(0,132,255,0.3)'" onmouseout="this.style.background='rgba(0,132,255,0.15)'">💬</a>
-    <a href="https://facebook.com/" target="_blank" title="Facebook" style="width:40px;height:40px;border-radius:12px;background:rgba(66,103,178,0.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem;border:1px solid rgba(66,103,178,0.2);transition:all 0.2s;" onmouseover="this.style.background='rgba(66,103,178,0.3)'" onmouseout="this.style.background='rgba(66,103,178,0.15)'">📘</a>
-    <a href="https://instagram.com/" target="_blank" title="Instagram" style="width:40px;height:40px;border-radius:12px;background:rgba(225,48,108,0.15);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem;border:1px solid rgba(225,48,108,0.2);transition:all 0.2s;" onmouseover="this.style.background='rgba(225,48,108,0.3)'" onmouseout="this.style.background='rgba(225,48,108,0.15)'">📸</a>
-    <a href="https://tiktok.com/" target="_blank" title="TikTok" style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:1.1rem;border:1px solid rgba(255,255,255,0.1);transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">🎵</a>
+    <a href="https://zalo.me/" target="_blank" title="Zalo" style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.7rem;font-weight:700;color:#1a1a1a;border:1px solid rgba(0,0,0,0.08);transition:all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">Z</a>
+    <a href="https://facebook.com/" target="_blank" title="Facebook" style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.7rem;font-weight:700;color:#1a1a1a;border:1px solid rgba(0,0,0,0.08);transition:all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">F</a>
+    <a href="https://instagram.com/" target="_blank" title="Instagram" style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.7rem;font-weight:700;color:#1a1a1a;border:1px solid rgba(0,0,0,0.08);transition:all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">IG</a>
+    <a href="https://tiktok.com/" target="_blank" title="TikTok" style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.7rem;font-weight:700;color:#1a1a1a;border:1px solid rgba(0,0,0,0.08);transition:all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">TT</a>
   </div>
 
   <!-- K-BEAUTY SECTION -->
   <section class="section" id="k-beauty">
-    <h2 class="section-title reveal">🧴 Mỹ Phẩm K-Beauty</h2>
+    <h2 class="section-title reveal">Mỹ Phẩm BeaPop</h2>
     <p class="section-subtitle reveal">Top bestseller Olive Young 2025 — Giá gốc từ Hàn Quốc</p>
 
     <div class="product-grid reveal-stagger">
 
       <div class="product-card">
         <span class="card-badge badge-bestseller">Bestseller #1</span>
-        <span class="emoji-icon">🧴</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&h=400&q=80&fit=crop&crop=center" alt="COSRX Snail Mucin">
         <h3>Advanced Snail 96 Mucin Power Essence</h3>
         <div class="brand">COSRX · 100ml</div>
         <div class="price-row">
@@ -126,7 +220,7 @@
 
       <div class="product-card">
         <span class="card-badge badge-bestseller">Bestseller</span>
-        <span class="emoji-icon">☀️</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=400&q=80&fit=crop&crop=center" alt="Beauty of Joseon Sun">
         <h3>Relief Sun: Rice + Probiotics SPF50+</h3>
         <div class="brand">Beauty of Joseon · 50ml</div>
         <div class="price-row">
@@ -141,7 +235,7 @@
 
       <div class="product-card">
         <span class="card-badge badge-bestseller">Bestseller</span>
-        <span class="emoji-icon">💧</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1599305090598-fe179d501227?w=400&h=400&q=80&fit=crop&crop=center" alt="Anua Toner">
         <h3>Heartleaf 77% Soothing Toner</h3>
         <div class="brand">Anua · 250ml</div>
         <div class="price-row">
@@ -156,7 +250,7 @@
 
       <div class="product-card">
         <span class="card-badge badge-new">New</span>
-        <span class="emoji-icon">💦</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1570194065650-d99fb4a38691?w=400&h=400&q=80&fit=crop&crop=center" alt="Torriden Serum">
         <h3>Dive-In Low Molecular Hyaluronic Acid Serum</h3>
         <div class="brand">Torriden · 50ml</div>
         <div class="price-row">
@@ -170,7 +264,7 @@
       </div>
 
       <div class="product-card">
-        <span class="emoji-icon">🌿</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=400&h=400&q=80&fit=crop&crop=center" alt="Skin1004 Centella">
         <h3>Madagascar Centella Ampoule</h3>
         <div class="brand">SKIN1004 · 100ml</div>
         <div class="price-row">
@@ -184,7 +278,7 @@
       </div>
 
       <div class="product-card">
-        <span class="emoji-icon">🧹</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=400&h=400&q=80&fit=crop&crop=center" alt="Mediheal Mask">
         <h3>Madecassoside Blemish Pad</h3>
         <div class="brand">Mediheal · 100 miếng</div>
         <div class="price-row">
@@ -198,7 +292,7 @@
       </div>
 
       <div class="product-card">
-        <span class="emoji-icon">🫧</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1611930022073-b7a4ba5fcccd?w=400&h=400&q=80&fit=crop&crop=center" alt="Round Lab Birch">
         <h3>1025 Dokdo Toner</h3>
         <div class="brand">Round Lab · 200ml</div>
         <div class="price-row">
@@ -213,7 +307,7 @@
 
       <div class="product-card">
         <span class="card-badge badge-new">Hot 🔥</span>
-        <span class="emoji-icon">💄</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&h=400&q=80&fit=crop&crop=center" alt="Romand Lipstick">
         <h3>Juicy Lasting Tint</h3>
         <div class="brand">Romand · 5.5g</div>
         <div class="price-row">
@@ -231,14 +325,14 @@
 
   <!-- K-POP SECTION -->
   <section class="section" id="k-pop">
-    <h2 class="section-title reveal">🎵 Album K-Pop</h2>
+    <h2 class="section-title reveal">Album BeaPop</h2>
     <p class="section-subtitle reveal">Pre-order album comeback mới nhất — Tính chart Hanteo & Circle</p>
 
     <div class="product-grid reveal-stagger">
 
       <div class="product-card">
         <span class="card-badge badge-preorder">Pre-order</span>
-        <span class="emoji-icon">💎</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&q=80&fit=crop&crop=center" alt="TXT Album">
         <h3>7TH YEAR: A Moment of Stillness in the Thorns</h3>
         <div class="brand">TXT · 8th Mini Album · 13/04/2026</div>
         <div class="countdown-bar" data-release="2026-04-13T00:00:00+09:00">
@@ -255,7 +349,7 @@
 
       <div class="product-card">
         <span class="card-badge badge-preorder">Pre-order</span>
-        <span class="emoji-icon">🌟</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=400&q=80&fit=crop&crop=center" alt="BTS Album">
         <h3>ARIRANG — 5th Album</h3>
         <div class="brand">BTS · Full Album · 2026</div>
         <div class="countdown-bar" data-release="2026-06-01T00:00:00+09:00">
@@ -272,7 +366,7 @@
 
       <div class="product-card">
         <span class="card-badge badge-new">New 🔥</span>
-        <span class="emoji-icon">🐾</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=400&h=400&q=80&fit=crop&crop=center" alt="BABYMONSTER Album">
         <h3>CHOOM — Mini Album</h3>
         <div class="brand">BABYMONSTER · 05/2026</div>
         <div class="countdown-bar" data-release="2026-05-01T00:00:00+09:00">
@@ -289,7 +383,7 @@
 
       <div class="product-card">
         <span class="card-badge badge-preorder">Comeback</span>
-        <span class="emoji-icon">💋</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1598387993441-a364f854c3e1?w=400&h=400&q=80&fit=crop&crop=center" alt="KISS OF LIFE Album">
         <h3>TBA — Comeback Album</h3>
         <div class="brand">KISS OF LIFE · 04/2026</div>
         <div class="countdown-bar" data-release="2026-04-01T00:00:00+09:00">
@@ -306,7 +400,7 @@
 
       <div class="product-card">
         <span class="card-badge badge-new">New</span>
-        <span class="emoji-icon">⭐</span>
+        <img class="product-img" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&q=80&fit=crop&crop=center" alt="NCT WISH Album">
         <h3>Full Album</h3>
         <div class="brand">NCT WISH · 04/2026</div>
         <div class="countdown-bar" data-release="2026-04-01T00:00:00+09:00">
@@ -377,15 +471,15 @@
 
   <!-- CTA / ORDER -->
   <section class="cta-section reveal" id="order">
-    <h2>📩 Đặt Hàng Ngay</h2>
+    <h2>Đặt Hàng Ngay</h2>
     <p>Điền form hoặc inbox trực tiếp để được tư vấn 1:1 và đặt hàng nhé!</p>
-    <a href="order-form.html" class="btn-cta" id="btn-order-form">🛒 Form Đặt Hàng</a>
+    <a href="order-form.html" class="btn-cta" id="btn-order-form"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Form Đặt Hàng</a>
     <br><br>
-    <a href="https://m.me/" class="btn-cta" style="background: var(--gradient-blue);">💬 Inbox Facebook</a>
+    <a href="https://m.me/" class="btn-cta" style="background: var(--gradient-blue);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Inbox Facebook</a>
   </section>
 
   <footer>
-    <p>© 2026 K-Beauty & K-Pop Order — Hàng chính hãng từ Hàn Quốc 🇰🇷</p>
+    <p>© 2026 BeaPop — Hàng chính hãng từ Hàn Quốc</p>
     <p style="margin-top:6px;">Giá gốc minh bạch · Freeship đơn đầu · Hoàn tiền nếu lỗi</p>
   </footer>
 
@@ -612,7 +706,7 @@
         rating: 4.7, reviewCount: 65, reviews: []
       },
       'combo-skincare': {
-        name: 'Skincare Starter Combo', brand: 'K-BEAUTY ORDER', spec: '3 sản phẩm',
+        name: 'Skincare Starter Combo', brand: 'BEAPOP', spec: '3 sản phẩm',
         price: '1,100,000₫', oldPrice: '1,290,000₫',
         img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&q=80&auto=format&fit=crop',
         desc: 'Combo: Round Lab Dokdo + Anua Heartleaf + BOJ SPF50+. Bộ 3 quy trình skincare chuẩn Hàn.',
@@ -620,7 +714,7 @@
         rating: 4.9, reviewCount: 45, reviews: []
       },
       'combo-mix': {
-        name: 'Mix Box K-Pop + K-Beauty', brand: 'K-BEAUTY ORDER', spec: '3 items',
+        name: 'Mix Box K-Pop + K-Beauty', brand: 'BEAPOP', spec: '3 items',
         price: '950,000₫', oldPrice: '1,150,000₫',
         img: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&q=80&auto=format&fit=crop',
         desc: 'Combo: 1 Album K-Pop + 1 Toner Pad Mediheal + 1 Son Romand. Tặng kèm POB.',
@@ -653,6 +747,11 @@
         }
         rv.innerHTML = html;
         rv.parentElement.style.display = '';
+        // Set review link
+        const reviewLink = document.getElementById('modalReviewLink');
+        if (reviewLink) {
+          reviewLink.href = `reviews.html?product=${productId}`;
+        }
       } else if (rv) { rv.parentElement.style.display = 'none'; }
       document.getElementById('productModal').style.display = 'flex';
     }
@@ -811,7 +910,7 @@
         </div>
         <div style="padding:28px 28px 28px 20px;display:flex;flex-direction:column;gap:12px;">
           <div id="modalBrand" style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#a855f7;">BRAND</div>
-          <h2 id="modalName" style="font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:800;color:#f0f0f5;line-height:1.3;">Product</h2>
+          <h2 id="modalName" style="font-family:'Inter',sans-serif;font-size:1.35rem;font-weight:800;color:#f0f0f5;line-height:1.3;">Product</h2>
           <div id="modalSpec" style="font-size:0.8rem;color:rgba(255,255,255,0.4);">spec</div>
           <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0;">
             <span id="modalPrice" style="font-size:1.5rem;font-weight:800;color:#ff5a92;">0₫</span>
@@ -828,6 +927,7 @@
           <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
             <div style="font-size:0.8rem;font-weight:700;color:#60a5fa;margin-bottom:6px;">💬 Đánh giá từ khách hàng</div>
             <div id="modalReviews"></div>
+            <a id="modalReviewLink" href="#" target="_blank" style="display:inline-block;margin-top:10px;padding:8px 18px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:rgba(96,165,250,0.08);color:#60a5fa;font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='rgba(96,165,250,0.18)'" onmouseout="this.style.background='rgba(96,165,250,0.08)'">📖 Xem thêm đánh giá →</a>
           </div>
           <div style="display:flex;gap:10px;margin-top:auto;">
             <a id="modalBuyNowBtn" href="order-form.html" style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ff5a92 0%,#ec4899 100%);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.3s;box-shadow:0 4px 15px rgba(255,90,146,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">🛒 Mua Ngay</a>
@@ -860,11 +960,11 @@
   <!-- FOOTER -->
   <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid var(--border);">
     <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
-      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📦 Catalog</a>
-      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📩 Đặt Hàng</a>
-      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📋 Chính Sách</a>
+      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>Catalog</a>
+      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Đặt Hàng</a>
+      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Chính Sách</a>
     </div>
-    <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 K-Beauty & K-Pop Order • Mỹ phẩm Hàn Quốc chính hãng</div>
+    <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
   </footer>
 
 </body>

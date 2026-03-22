@@ -68,6 +68,16 @@
     .btn-logout { width: 100%; padding: 13px; background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.08); color: #e05555; border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; margin-top: 10px; }
     .btn-logout:hover { background: rgba(224,85,85,0.08); }
 
+    /* Change Password / PIN Forms */
+    .change-form { margin-bottom: 12px; }
+    .change-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); font-size: 0.82rem; font-family: 'Inter', sans-serif; margin-bottom: 8px; box-sizing: border-box; }
+    .change-form input:focus { outline: none; border-color: #1a1a1a; }
+    .btn-change { width: 100%; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+    .btn-change:hover { background: #333; }
+    .form-result { font-size: 0.75rem; margin-top: 6px; padding: 6px 10px; border-radius: 6px; }
+    .form-result.success { background: rgba(16,185,129,0.08); color: #059669; }
+    .form-result.error { background: rgba(224,85,85,0.08); color: #dc2626; }
+
     /* Not logged in */
     .not-logged-in { text-align: center; padding: 60px 20px; }
     .not-logged-in h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
@@ -114,6 +124,78 @@
   document.addEventListener('DOMContentLoaded', function() {
     renderAccount();
   });
+
+  function handleChangePassword() {
+    const oldPwd = document.getElementById('oldPassword').value;
+    const newPwd = document.getElementById('newPassword').value;
+    const confirmPwd = document.getElementById('confirmPassword').value;
+    const resultEl = document.getElementById('changePasswordResult');
+
+    if (!oldPwd || !newPwd || !confirmPwd) {
+      resultEl.textContent = '❌ Vui lòng điền đầy đủ thông tin';
+      resultEl.className = 'form-result error';
+      return;
+    }
+    if (newPwd.length < 4) {
+      resultEl.textContent = '❌ Mật khẩu mới phải có ít nhất 4 ký tự';
+      resultEl.className = 'form-result error';
+      return;
+    }
+    if (newPwd !== confirmPwd) {
+      resultEl.textContent = '❌ Mật khẩu xác nhận không khớp';
+      resultEl.className = 'form-result error';
+      return;
+    }
+
+    window.BeaPop.Auth.changePassword(oldPwd, newPwd).then(r => {
+      if (r.success) {
+        resultEl.textContent = '✅ Đổi mật khẩu thành công!';
+        resultEl.className = 'form-result success';
+        document.getElementById('oldPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+      } else {
+        resultEl.textContent = r.error === 'WRONG_PASSWORD' ? '❌ Mật khẩu cũ không đúng' : '❌ Có lỗi xảy ra';
+        resultEl.className = 'form-result error';
+      }
+    });
+  }
+
+  function handleChangePin() {
+    const pwd = document.getElementById('pinPassword').value;
+    const newPin = document.getElementById('newPin').value;
+    const confirmPin = document.getElementById('confirmPin').value;
+    const resultEl = document.getElementById('changePinResult');
+
+    if (!pwd || !newPin || !confirmPin) {
+      resultEl.textContent = '❌ Vui lòng điền đầy đủ thông tin';
+      resultEl.className = 'form-result error';
+      return;
+    }
+    if (!/^\d{4,6}$/.test(newPin)) {
+      resultEl.textContent = '❌ PIN phải là 4-6 chữ số';
+      resultEl.className = 'form-result error';
+      return;
+    }
+    if (newPin !== confirmPin) {
+      resultEl.textContent = '❌ PIN xác nhận không khớp';
+      resultEl.className = 'form-result error';
+      return;
+    }
+
+    window.BeaPop.Auth.changePin(pwd, newPin).then(r => {
+      if (r.success) {
+        resultEl.textContent = '✅ Đổi PIN thành công!';
+        resultEl.className = 'form-result success';
+        document.getElementById('pinPassword').value = '';
+        document.getElementById('newPin').value = '';
+        document.getElementById('confirmPin').value = '';
+      } else {
+        resultEl.textContent = r.error === 'WRONG_PASSWORD' ? '❌ Mật khẩu không đúng' : '❌ Có lỗi xảy ra';
+        resultEl.className = 'form-result error';
+      }
+    });
+  }
 
   function renderAccount() {
     const container = document.getElementById('accountContent');
@@ -221,6 +303,30 @@
               '<div class="log-amount ' + item.type + '">' + (item.type === 'earn' ? '+' : '-') + item.amount + ' ⭐</div></div>';
           }).join('')
         }
+      </div>
+
+      <!-- Change Password Form -->
+      <div class="section-card">
+        <div class="section-title"><span>🔐</span> Đổi mật khẩu</div>
+        <div class="change-form">
+          <input type="password" id="oldPassword" placeholder="Mật khẩu hiện tại" autocomplete="current-password">
+          <input type="password" id="newPassword" placeholder="Mật khẩu mới (ít nhất 4 ký tự)" autocomplete="new-password">
+          <input type="password" id="confirmPassword" placeholder="Xác nhận mật khẩu mới" autocomplete="new-password">
+          <button type="button" class="btn-change" onclick="handleChangePassword()">Đổi mật khẩu</button>
+          <div id="changePasswordResult"></div>
+        </div>
+      </div>
+
+      <!-- Change PIN Form -->
+      <div class="section-card">
+        <div class="section-title"><span>🔢</span> Đổi mã PIN bảo mật</div>
+        <div class="change-form">
+          <input type="password" id="pinPassword" placeholder="Mật khẩu hiện tại để xác nhận" autocomplete="current-password">
+          <input type="password" id="newPin" placeholder="PIN mới (4-6 số)" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}">
+          <input type="password" id="confirmPin" placeholder="Xác nhận PIN mới" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}">
+          <button type="button" class="btn-change" onclick="handleChangePin()">Đổi PIN</button>
+          <div id="changePinResult"></div>
+        </div>
       </div>
 
       <button class="btn-logout" onclick="window.BeaPop.handleLogout(); renderAccount();">Đăng xuất</button>

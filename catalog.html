@@ -656,7 +656,7 @@
         // Set review link
         const reviewLink = document.getElementById('modalReviewLink');
         if (reviewLink) {
-          reviewLink.href = data.reviewUrl || `https://www.google.com/search?q=${encodeURIComponent(data.name + ' review đánh giá')}`;
+          reviewLink.href = `reviews.html?product=${productId}`;
         }
       } else if (rv) { rv.parentElement.style.display = 'none'; }
       document.getElementById('productModal').style.display = 'flex';

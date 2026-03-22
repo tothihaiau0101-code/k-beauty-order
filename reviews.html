@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đánh Giá Sản Phẩm — K-Beauty Order</title>
+  <meta name="description" content="Đánh giá từ khách hàng đã mua sản phẩm tại K-Beauty Order">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .review-page { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
+    .review-header { text-align: center; margin-bottom: 28px; }
+    .review-header h1 { font-family: 'Outfit', sans-serif; font-size: 1.5rem; color: #fff; margin: 0; }
+    .review-header p { color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-top: 6px; }
+
+    /* Product Filter Tabs */
+    .product-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 20px; }
+    .product-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn { padding: 8px 16px; border: 1px solid rgba(168,85,247,0.2); border-radius: 20px; background: rgba(168,85,247,0.06); color: rgba(255,255,255,0.6); font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; font-family: inherit; }
+    .tab-btn:hover { background: rgba(168,85,247,0.15); color: #c084fc; }
+    .tab-btn.active { background: rgba(168,85,247,0.2); border-color: #a855f7; color: #c084fc; }
+
+    /* Stats */
+    .review-stats { text-align: center; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 20px; }
+    .stats-stars { font-size: 1.6rem; }
+    .stats-avg { font-size: 2rem; font-weight: 800; color: #fbbf24; margin: 4px 0; }
+    .stats-count { color: rgba(255,255,255,0.4); font-size: 0.78rem; }
+
+    /* Review Form */
+    .review-form { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
+    .review-form h3 { font-family: 'Outfit', sans-serif; font-size: 0.95rem; color: #60a5fa; margin: 0 0 16px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; color: rgba(255,255,255,0.6); font-size: 0.78rem; font-weight: 600; margin-bottom: 6px; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      background: rgba(255,255,255,0.04); color: #fff; font-size: 0.85rem; font-family: inherit;
+      transition: border-color 0.2s; box-sizing: border-box;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: #a855f7; outline: none; }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    /* Star Rating Input */
+    .star-input { display: flex; gap: 6px; flex-direction: row-reverse; justify-content: flex-end; }
+    .star-input input { display: none; }
+    .star-input label { font-size: 1.8rem; cursor: pointer; color: rgba(255,255,255,0.15); transition: all 0.15s; }
+    .star-input label:hover, .star-input label:hover ~ label,
+    .star-input input:checked ~ label { color: #fbbf24; transform: scale(1.1); }
+
+    .btn-submit { width: 100%; padding: 12px; border: none; border-radius: 12px; background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(168,85,247,0.3); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Review List */
+    .review-list { display: flex; flex-direction: column; gap: 12px; }
+    .review-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 16px; transition: border-color 0.2s; }
+    .review-item:hover { border-color: rgba(168,85,247,0.2); }
+    .review-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .reviewer-name { font-weight: 700; color: #c084fc; font-size: 0.85rem; }
+    .review-date { color: rgba(255,255,255,0.3); font-size: 0.7rem; }
+    .review-stars { font-size: 0.85rem; margin-bottom: 6px; }
+    .review-text { color: rgba(255,255,255,0.65); font-size: 0.82rem; line-height: 1.5; }
+    .review-product { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 6px; background: rgba(96,165,250,0.1); color: #60a5fa; font-size: 0.68rem; font-weight: 600; }
+    .review-verified { display: inline-block; margin-left: 6px; padding: 3px 8px; border-radius: 6px; background: rgba(34,197,94,0.1); color: #22c55e; font-size: 0.65rem; font-weight: 600; }
+    .empty-state { text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.3); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+
+    .success-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); background: rgba(34,197,94,0.95); color: #fff; padding: 14px 28px; border-radius: 14px; font-weight: 700; font-size: 0.85rem; z-index: 999; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; }
+    .success-toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="main-nav">
+    <a href="catalog.html" class="nav-logo">🇰🇷 K-Beauty Order</a>
+    <div class="nav-links">
+      <a href="catalog.html#beauty">🧴 K-Beauty</a>
+      <a href="catalog.html#kpop">🎵 K-Pop</a>
+      <a href="order-form.html">🛒 Đặt Hàng</a>
+      <a href="reviews.html" class="active">⭐ Đánh Giá</a>
+    </div>
+  </nav>
+
+  <div class="review-page">
+    <div class="review-header">
+      <h1>⭐ Đánh Giá Từ Khách Hàng</h1>
+      <p>Review thật từ người đã mua tại K-Beauty Order</p>
+    </div>
+
+    <!-- Product Filter -->
+    <div class="product-tabs" id="productTabs">
+      <button class="tab-btn active" data-filter="all">Tất cả</button>
+      <button class="tab-btn" data-filter="cosrx-snail">COSRX Snail</button>
+      <button class="tab-btn" data-filter="boj-sun">BoJ Sun</button>
+      <button class="tab-btn" data-filter="anua-toner">Anua Toner</button>
+      <button class="tab-btn" data-filter="torriden-serum">Torriden</button>
+      <button class="tab-btn" data-filter="skin1004">Skin1004</button>
+      <button class="tab-btn" data-filter="mediheal">Mediheal</button>
+      <button class="tab-btn" data-filter="roundlab">Round Lab</button>
+      <button class="tab-btn" data-filter="romand">Romand</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="review-stats" id="reviewStats">
+      <div class="stats-stars">⭐⭐⭐⭐⭐</div>
+      <div class="stats-avg">5.0</div>
+      <div class="stats-count">0 đánh giá</div>
+    </div>
+
+    <!-- Review Form -->
+    <div class="review-form">
+      <h3>✍️ Gửi đánh giá của bạn</h3>
+      <form id="reviewForm">
+        <div class="form-group">
+          <label>Mã đơn hàng (xác thực đã mua) *</label>
+          <input type="text" id="rvOrderId" placeholder="VD: KB-A1B2" required>
+        </div>
+        <div class="form-group">
+          <label>Tên hiển thị *</label>
+          <input type="text" id="rvName" placeholder="VD: Hà My" required maxlength="30">
+        </div>
+        <div class="form-group">
+          <label>Sản phẩm đã mua *</label>
+          <select id="rvProduct" required>
+            <option value="">-- Chọn sản phẩm --</option>
+            <option value="cosrx-snail">COSRX Snail Mucin Essence</option>
+            <option value="boj-sun">Beauty of Joseon Relief Sun</option>
+            <option value="anua-toner">Anua Heartleaf Toner</option>
+            <option value="torriden-serum">Torriden Dive-In Serum</option>
+            <option value="skin1004">Skin1004 Centella Ampoule</option>
+            <option value="mediheal">Mediheal Blemish Pad</option>
+            <option value="roundlab">Round Lab Dokdo Toner</option>
+            <option value="romand">Romand Juicy Lasting Tint</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Đánh giá sao *</label>
+          <div class="star-input">
+            <input type="radio" name="rating" id="star5" value="5"><label for="star5">★</label>
+            <input type="radio" name="rating" id="star4" value="4"><label for="star4">★</label>
+            <input type="radio" name="rating" id="star3" value="3"><label for="star3">★</label>
+            <input type="radio" name="rating" id="star2" value="2"><label for="star2">★</label>
+            <input type="radio" name="rating" id="star1" value="1"><label for="star1">★</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nội dung đánh giá *</label>
+          <textarea id="rvText" placeholder="Chia sẻ trải nghiệm sử dụng sản phẩm..." required maxlength="500"></textarea>
+        </div>
+        <button type="submit" class="btn-submit" id="submitBtn">📩 Gửi Đánh Giá</button>
+      </form>
+    </div>
+
+    <!-- Review List -->
+    <div class="review-list" id="reviewList"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="success-toast" id="toast">✅ Đánh giá của bạn đã được gửi!</div>
+
+  <!-- FOOTER -->
+  <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid var(--border);">
+    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📦 Catalog</a>
+      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📩 Đặt Hàng</a>
+      <a href="reviews.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">⭐ Đánh Giá</a>
+      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📋 Chính Sách</a>
+    </div>
+    <p style="color:var(--text-secondary);font-size:0.7rem;margin:0;">© 2025 K-Beauty Order — Made with 💜</p>
+  </footer>
+
+  <script>
+    const PRODUCT_NAMES = {
+      'cosrx-snail': 'COSRX Snail Mucin',
+      'boj-sun': 'BoJ Relief Sun',
+      'anua-toner': 'Anua Toner',
+      'torriden-serum': 'Torriden Serum',
+      'skin1004': 'Skin1004 Centella',
+      'mediheal': 'Mediheal Pad',
+      'roundlab': 'Round Lab Dokdo',
+      'romand': 'Romand Tint'
+    };
+
+    const STORAGE_KEY = 'kbeauty_reviews';
+    let currentFilter = 'all';
+
+    function getReviews() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+      catch { return []; }
+    }
+    function saveReviews(reviews) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+    }
+
+    function starStr(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+    function renderStats(reviews) {
+      const el = document.getElementById('reviewStats');
+      if (!reviews.length) {
+        el.innerHTML = `<div class="stats-stars">☆☆☆☆☆</div><div class="stats-avg">--</div><div class="stats-count">Chưa có đánh giá</div>`;
+        return;
+      }
+      const avg = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+      el.innerHTML = `<div class="stats-stars" style="color:#fbbf24;">${starStr(Math.round(avg))}</div><div class="stats-avg">${avg}</div><div class="stats-count">${reviews.length} đánh giá</div>`;
+    }
+
+    function renderReviews(reviews) {
+      const el = document.getElementById('reviewList');
+      if (!reviews.length) {
+        el.innerHTML = `<div class="empty-state"><div class="icon">📝</div><p>Chưa có đánh giá nào${currentFilter !== 'all' ? ' cho sản phẩm này' : ''}.<br>Hãy là người đầu tiên!</p></div>`;
+        return;
+      }
+      el.innerHTML = reviews.sort((a, b) => b.timestamp - a.timestamp).map(r => `
+        <div class="review-item">
+          <div class="review-item-header">
+            <span class="reviewer-name">${r.name}</span>
+            <span class="review-date">${new Date(r.timestamp).toLocaleDateString('vi')}</span>
+          </div>
+          <div class="review-stars" style="color:#fbbf24;">${starStr(r.rating)}</div>
+          <div class="review-text">${r.text}</div>
+          <span class="review-product">${PRODUCT_NAMES[r.product] || r.product}</span>
+          ${r.orderId ? '<span class="review-verified">✓ Đã mua hàng</span>' : ''}
+        </div>
+      `).join('');
+    }
+
+    function applyFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+      const all = getReviews();
+      const filtered = filter === 'all' ? all : all.filter(r => r.product === filter);
+      renderStats(filtered);
+      renderReviews(filtered);
+    }
+
+    // Tab clicks
+    document.getElementById('productTabs').addEventListener('click', e => {
+      if (e.target.classList.contains('tab-btn')) {
+        applyFilter(e.target.dataset.filter);
+      }
+    });
+
+    // Form submit
+    document.getElementById('reviewForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const rating = document.querySelector('input[name="rating"]:checked');
+      if (!rating) { alert('Vui lòng chọn số sao!'); return; }
+
+      const review = {
+        orderId: document.getElementById('rvOrderId').value.trim(),
+        name: document.getElementById('rvName').value.trim(),
+        product: document.getElementById('rvProduct').value,
+        rating: parseInt(rating.value),
+        text: document.getElementById('rvText').value.trim(),
+        timestamp: Date.now()
+      };
+
+      const reviews = getReviews();
+      reviews.push(review);
+      saveReviews(reviews);
+
+      // Reset form
+      document.getElementById('reviewForm').reset();
+
+      // Show toast
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+
+      // Re-render
+      applyFilter(currentFilter);
+    });
+
+    // Init: check URL param
+    const params = new URLSearchParams(window.location.search);
+    const productParam = params.get('product');
+    if (productParam && PRODUCT_NAMES[productParam]) {
+      applyFilter(productParam);
+      document.getElementById('rvProduct').value = productParam;
+    } else {
+      applyFilter('all');
+    }
+  </script>
+
+</body>
+</html>

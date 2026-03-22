@@ -52,100 +52,99 @@
     </div>
   </section>
 
-  <!-- PRICE COMPARISON BANNER -->
-  <div class="reveal" style="max-width:720px;margin:30px auto;padding:0 16px;">
-    <div style="background:linear-gradient(135deg,#f5ebe0 0%,#ede0d4 100%);border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:200px;position:relative;">
-      <!-- Left: Text content -->
-      <div style="flex:1;padding:32px 16px 32px 32px;z-index:1;">
-        <div style="font-family:'Inter',sans-serif;font-size:1.5rem;font-weight:900;color:#2b2b2b;line-height:1.2;margin-bottom:8px;">
-          MỸ PHẨM HÀN QUỐC<br>CHÍNH HÃNG
+  <!-- BANNER CAROUSEL -->
+  <style>
+    .banner-carousel{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:20px 16px;max-width:100%;}
+    .banner-carousel::-webkit-scrollbar{display:none;}
+    .banner-slide{scroll-snap-align:center;flex:0 0 85%;max-width:680px;border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:200px;position:relative;transition:transform 0.35s ease,box-shadow 0.35s ease;transform:scale(0.93);opacity:0.65;}
+    .banner-slide.center{transform:scale(1);opacity:1;box-shadow:0 8px 30px rgba(0,0,0,0.1);}
+    @media(max-width:600px){.banner-slide{flex:0 0 92%;min-height:auto;} .banner-slide .b-img{display:none;}}
+  </style>
+
+  <div class="banner-carousel" id="bannerCarousel">
+    <!-- 1: My Pham Chinh Hang -->
+    <div class="banner-slide center" style="background:linear-gradient(135deg,#f5ebe0,#ede0d4);">
+      <div style="flex:1;padding:28px 16px 28px 32px;">
+        <div style="font-family:'Inter',sans-serif;font-size:1.4rem;font-weight:900;color:#2b2b2b;line-height:1.2;margin-bottom:8px;">MỸ PHẨM HÀN QUỐC<br>CHÍNH HÃNG</div>
+        <div style="font-size:0.8rem;color:#7a6e62;margin-bottom:14px;line-height:1.5;">Giá gốc Olive Young, ship về tận nhà.<br>Tiết kiệm đến 50% so với Shopee.</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div><div style="font-size:0.6rem;color:#9a8d7f;text-transform:uppercase;letter-spacing:1px;">Tiết kiệm</div><div style="font-size:1.8rem;font-weight:900;color:#2b2b2b;line-height:1;">30-50%</div></div>
+          <div style="width:1px;height:32px;background:rgba(0,0,0,0.12);"></div>
+          <div style="font-weight:800;font-size:0.9rem;color:#2b2b2b;line-height:1.3;">FREESHIP<br><span style="font-weight:500;font-size:0.72rem;color:#7a6e62;">đơn đầu tiên</span></div>
         </div>
-        <div style="font-size:0.82rem;color:#7a6e62;margin-bottom:16px;line-height:1.5;">
-          Giá gốc Olive Young, ship về tận nhà.<br>Tiết kiệm đến 50% so với Shopee.
-        </div>
-        <!-- Discount row -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
-          <div>
-            <div style="font-size:0.65rem;color:#9a8d7f;text-transform:uppercase;letter-spacing:1px;">Tiết kiệm</div>
-            <div style="font-size:2rem;font-weight:900;color:#2b2b2b;font-family:'Inter',sans-serif;line-height:1;">30-50%</div>
-          </div>
-          <div style="width:1px;height:36px;background:rgba(0,0,0,0.12);"></div>
-          <div style="font-weight:800;font-size:0.95rem;color:#2b2b2b;line-height:1.3;">FREESHIP<br><span style="font-weight:500;font-size:0.75rem;color:#7a6e62;">đơn đầu tiên</span></div>
-        </div>
-        <!-- CTA -->
-        <a href="order-form.html" style="display:inline-block;background:#2b2b2b;color:#fff;padding:10px 24px;border-radius:8px;font-size:0.8rem;font-weight:700;text-decoration:none;font-family:'Inter',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#444'" onmouseout="this.style.background='#2b2b2b'">
-          ĐẶT HÀNG NGAY
-        </a>
+        <a href="order-form.html" style="display:inline-block;background:#2b2b2b;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">ĐẶT HÀNG NGAY</a>
       </div>
-      <!-- Right: Product image -->
-      <div style="flex:0 0 240px;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <img src="images/banner-products.png" alt="Beauty Products" style="max-height:180px;width:100%;object-fit:contain;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.12));">
+      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <img src="images/banner-products.png" alt="Beauty Products" style="max-height:170px;width:100%;object-fit:contain;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
       </div>
     </div>
-  </div>
 
-  <!-- PROMO BANNER 1: FLASH SALE -->
-  <div class="reveal" style="max-width:720px;margin:16px auto;padding:0 16px;">
-    <div style="background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 100%);border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:180px;position:relative;">
-      <div style="flex:1;padding:28px 16px 28px 32px;z-index:1;">
+    <!-- 2: Flash Sale -->
+    <div class="banner-slide" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);">
+      <div style="flex:1;padding:28px 16px 28px 32px;">
         <div style="display:inline-block;background:#2e7d32;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">⚡ FLASH SALE</div>
-        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#1b5e20;line-height:1.2;margin-bottom:8px;">
-          SKINCARE CUỐI TUẦN<br>GIẢM THÊM 15%
-        </div>
-        <div style="font-size:0.8rem;color:#4a7c59;margin-bottom:16px;line-height:1.5;">
-          Áp dụng cho tất cả COSRX, Torriden, Anua.<br>Chỉ trong 48h — Số lượng có hạn!
-        </div>
-        <a href="order-form.html" style="display:inline-block;background:#2e7d32;color:#fff;padding:10px 24px;border-radius:8px;font-size:0.8rem;font-weight:700;text-decoration:none;font-family:'Inter',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#388e3c'" onmouseout="this.style.background='#2e7d32'">
-          MUA NGAY
-        </a>
+        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#1b5e20;line-height:1.2;margin-bottom:8px;">SKINCARE CUỐI TUẦN<br>GIẢM THÊM 15%</div>
+        <div style="font-size:0.8rem;color:#4a7c59;margin-bottom:14px;line-height:1.5;">Áp dụng cho COSRX, Torriden, Anua.<br>Chỉ trong 48h — Số lượng có hạn!</div>
+        <a href="order-form.html" style="display:inline-block;background:#2e7d32;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">MUA NGAY</a>
       </div>
-      <div style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&h=300&q=80&fit=crop" alt="Flash Sale Skincare" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&h=300&q=80&fit=crop" alt="Flash Sale" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
       </div>
     </div>
-  </div>
 
-  <!-- PROMO BANNER 2: PRE-ORDER KPOP -->
-  <div class="reveal" style="max-width:720px;margin:16px auto;padding:0 16px;">
-    <div style="background:linear-gradient(135deg,#e8eaf6 0%,#c5cae9 100%);border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:180px;position:relative;">
-      <div style="flex:1;padding:28px 16px 28px 32px;z-index:1;">
+    <!-- 3: Pre-order KPop -->
+    <div class="banner-slide" style="background:linear-gradient(135deg,#e8eaf6,#c5cae9);">
+      <div style="flex:1;padding:28px 16px 28px 32px;">
         <div style="display:inline-block;background:#5c6bc0;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">🎵 PRE-ORDER</div>
-        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#283593;line-height:1.2;margin-bottom:8px;">
-          ALBUM MỚI 2026<br>TẶNG POB + POSTER
-        </div>
-        <div style="font-size:0.8rem;color:#5c6b8a;margin-bottom:16px;line-height:1.5;">
-          TXT, BTS, BABYMONSTER comeback.<br>Tính chart Hanteo & Circle — Đặt trước giá ưu đãi!
-        </div>
-        <a href="#k-pop" style="display:inline-block;background:#5c6bc0;color:#fff;padding:10px 24px;border-radius:8px;font-size:0.8rem;font-weight:700;text-decoration:none;font-family:'Inter',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#7986cb'" onmouseout="this.style.background='#5c6bc0'">
-          ĐẶT TRƯỚC
-        </a>
+        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#283593;line-height:1.2;margin-bottom:8px;">ALBUM MỚI 2026<br>TẶNG POB + POSTER</div>
+        <div style="font-size:0.8rem;color:#5c6b8a;margin-bottom:14px;line-height:1.5;">TXT, BTS, BABYMONSTER comeback.<br>Đặt trước giá ưu đãi!</div>
+        <a href="#k-pop" style="display:inline-block;background:#5c6bc0;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">ĐẶT TRƯỚC</a>
       </div>
-      <div style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&q=80&fit=crop" alt="Pre-order KPop Album" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&q=80&fit=crop" alt="KPop Album" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
       </div>
     </div>
-  </div>
 
-  <!-- PROMO BANNER 3: COMBO -->
-  <div class="reveal" style="max-width:720px;margin:16px auto;padding:0 16px;">
-    <div style="background:linear-gradient(135deg,#fff3e0 0%,#ffe0b2 100%);border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:180px;position:relative;">
-      <div style="flex:1;padding:28px 16px 28px 32px;z-index:1;">
+    <!-- 4: Combo -->
+    <div class="banner-slide" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);">
+      <div style="flex:1;padding:28px 16px 28px 32px;">
         <div style="display:inline-block;background:#e65100;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">🔥 COMBO</div>
-        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#bf360c;line-height:1.2;margin-bottom:8px;">
-          COMBO 3 MÓN<br>TIẾT KIỆM 40%
-        </div>
-        <div style="font-size:0.8rem;color:#8d6e63;margin-bottom:16px;line-height:1.5;">
-          Skincare + Album + Photocard.<br>Quà tặng lý tưởng cho fan Hàn Quốc!
-        </div>
-        <a href="#combos" style="display:inline-block;background:#e65100;color:#fff;padding:10px 24px;border-radius:8px;font-size:0.8rem;font-weight:700;text-decoration:none;font-family:'Inter',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='#f57c00'" onmouseout="this.style.background='#e65100'">
-          XEM COMBO
-        </a>
+        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#bf360c;line-height:1.2;margin-bottom:8px;">COMBO 3 MÓN<br>TIẾT KIỆM 40%</div>
+        <div style="font-size:0.8rem;color:#8d6e63;margin-bottom:14px;line-height:1.5;">Skincare + Album + Photocard.<br>Quà tặng cho fan Hàn Quốc!</div>
+        <a href="#combos" style="display:inline-block;background:#e65100;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">XEM COMBO</a>
       </div>
-      <div style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
         <img src="https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&q=80&fit=crop" alt="Combo Deal" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
       </div>
     </div>
   </div>
+
+  <!-- Dot indicators -->
+  <div style="display:flex;justify-content:center;gap:8px;margin-bottom:10px;" id="bannerDots">
+    <span style="width:8px;height:8px;border-radius:50%;background:#1a1a1a;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(0)"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(1)"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(2)"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(3)"></span>
+  </div>
+  <script>
+  (function(){
+    var c=document.getElementById('bannerCarousel');
+    var sl=c.querySelectorAll('.banner-slide');
+    var dots=document.querySelectorAll('#bannerDots span');
+    var ob=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting && e.intersectionRatio > 0.6){
+          sl.forEach(function(s){s.classList.remove('center')});
+          e.target.classList.add('center');
+          var i=Array.from(sl).indexOf(e.target);
+          dots.forEach(function(d,j){d.style.background = j===i ? '#1a1a1a' : '#ccc'});
+        }
+      });
+    },{root:c, threshold:0.6});
+    sl.forEach(function(s){ob.observe(s)});
+    window.scrollToBanner=function(i){sl[i].scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});};
+  })();
+  </script>
 
   <!-- TRUST BAR -->
   <div class="trust-bar reveal">
@@ -699,7 +698,7 @@
         rating: 4.7, reviewCount: 65, reviews: []
       },
       'combo-skincare': {
-        name: 'Skincare Starter Combo', brand: 'K-BEAUTY ORDER', spec: '3 sản phẩm',
+        name: 'Skincare Starter Combo', brand: 'BEAPOP', spec: '3 sản phẩm',
         price: '1,100,000₫', oldPrice: '1,290,000₫',
         img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&q=80&auto=format&fit=crop',
         desc: 'Combo: Round Lab Dokdo + Anua Heartleaf + BOJ SPF50+. Bộ 3 quy trình skincare chuẩn Hàn.',
@@ -707,7 +706,7 @@
         rating: 4.9, reviewCount: 45, reviews: []
       },
       'combo-mix': {
-        name: 'Mix Box K-Pop + K-Beauty', brand: 'K-BEAUTY ORDER', spec: '3 items',
+        name: 'Mix Box K-Pop + K-Beauty', brand: 'BEAPOP', spec: '3 items',
         price: '950,000₫', oldPrice: '1,150,000₫',
         img: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&q=80&auto=format&fit=crop',
         desc: 'Combo: 1 Album K-Pop + 1 Toner Pad Mediheal + 1 Son Romand. Tặng kèm POB.',

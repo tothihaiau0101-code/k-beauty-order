@@ -291,8 +291,8 @@
         <div class="amount" id="displayAmount">0₫</div>
         <img id="qrCode" src="" alt="QR" width="180" height="180">
         <div class="bank-info">
-          <p><strong>NH:</strong> Vietcombank &nbsp;|&nbsp; <strong>STK:</strong> 1234567890</p>
-          <p><strong>Chủ TK:</strong> NGUYEN VAN A</p>
+          <p><strong>NH:</strong> Vietcombank &nbsp;|&nbsp; <strong>STK:</strong> 0791000067719</p>
+          <p><strong>Chủ TK:</strong> TO THI HAI AU</p>
           <p style="margin-top:6px; color:var(--accent-pink);">Nội dung CK: <strong id="transferNote">KB-0000</strong></p>
         </div>
       </div>
@@ -576,7 +576,7 @@
       document.getElementById('transferNote').textContent = orderId;
       document.getElementById('displayAmount').textContent = formatPrice(total);
       document.getElementById('qrCode').src =
-        `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`1234567890|Vietcombank|${total}|${orderId}`)}`;
+        `https://img.vietqr.io/image/970436-0791000067719-compact2.png?amount=${total}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent('TO THI HAI AU')}`;
       document.getElementById('successCard').classList.add('show');
 
       // Reset button
@@ -667,9 +667,9 @@
 
   <script>
     // Optimal payment modal with VietQR + deep links
-    const BANK_ID = '970418'; // BIDV bin code
-    const BANK_ACC = '0123456789';
-    const BANK_NAME = 'NGUYEN VAN A';
+    const BANK_ID = '970436'; // Vietcombank (VCB) bin code
+    const BANK_ACC = '0791000067719';
+    const BANK_NAME = 'TO THI HAI AU';
     const MOMO_PHONE = '0901234567';
 
     function formatVND(n) { return n.toLocaleString('vi') + '₫'; }
@@ -695,7 +695,7 @@
         infoEl.innerHTML = `
           <img src="${qrUrl}" alt="VietQR" style="width:200px;height:200px;border-radius:12px;background:#fff;padding:4px;margin:12px 0;box-shadow:0 4px 16px rgba(0,0,0,0.3);">
           <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin:12px 0;text-align:left;">
-            <p style="color:#fff;font-size:0.85rem;margin:0;"><strong style="color:#a855f7;">NH:</strong> BIDV</p>
+            <p style="color:#fff;font-size:0.85rem;margin:0;"><strong style="color:#a855f7;">NH:</strong> Vietcombank (VCB)</p>
             <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">STK:</strong> ${BANK_ACC} <button onclick="copyText('${BANK_ACC}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(168,85,247,0.3);border-radius:6px;background:rgba(168,85,247,0.1);color:#a855f7;font-size:0.7rem;cursor:pointer;">Copy</button></p>
             <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Chủ TK:</strong> ${BANK_NAME}</p>
             <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Số tiền:</strong> <span style="color:#ff5a92;font-weight:700;">${amtStr}</span></p>

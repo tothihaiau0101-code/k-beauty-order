@@ -138,7 +138,34 @@
       return discount;
     },
     logPoints(type, amount, note) { try { const log=JSON.parse(localStorage.getItem(POINTS_LOG_KEY))||[]; log.unshift({type,amount,note,date:new Date().toISOString()}); if(log.length>100)log.length=100; localStorage.setItem(POINTS_LOG_KEY,JSON.stringify(log)); } catch(e){} },
-    getPointsLog() { try { return JSON.parse(localStorage.getItem(POINTS_LOG_KEY))||[]; } catch(e) { return []; } }
+    getPointsLog() { try { return JSON.parse(localStorage.getItem(POINTS_LOG_KEY))||[]; } catch(e) { return []; } },
+
+    /* ---- LOYALTY VOUCHERS ---- */
+    getVouchers() { try { return JSON.parse(localStorage.getItem(VOUCHER_KEY)) || []; } catch(e) { return []; } },
+    saveVouchers(vouchers) { localStorage.setItem(VOUCHER_KEY, JSON.stringify(vouchers)); },
+    getAvailableVouchers() { return this.getVouchers().filter(v => !v.used); },
+    findVoucher(code) { return this.getVouchers().find(v => v.code === code.toUpperCase() && !v.used); },
+    useVoucher(code) {
+      const vouchers = this.getVouchers();
+      const v = vouchers.find(v => v.code === code.toUpperCase() && !v.used);
+      if (!v) return false;
+      v.used = true; v.usedAt = new Date().toISOString();
+      this.saveVouchers(vouchers);
+      return true;
+    },
+    checkMilestones(totalSpent) {
+      const vouchers = this.getVouchers();
+      const existingCodes = new Set(vouchers.map(v => v.code));
+      let newVouchers = [];
+      REWARD_MILESTONES.forEach(m => {
+        if (totalSpent >= m.target && !existingCodes.has(m.voucher.code)) {
+          newVouchers.push({ code: m.voucher.code, label: m.voucher.label, type: m.voucher.type, value: m.voucher.value, max: m.voucher.max || null, milestone: m.target, earned: true, used: false, earnedAt: new Date().toISOString() });
+        }
+      });
+      if (newVouchers.length > 0) this.saveVouchers([...vouchers, ...newVouchers]);
+      return newVouchers;
+    },
+    getMilestones() { return REWARD_MILESTONES; }
   };
 
   const ERROR_MESSAGES = { INVALID_PHONE:'SĐT phải có 10 số (bắt đầu bằng 0)', INVALID_CREDENTIALS:'Thông tin đăng nhập không đúng', PHONE_EXISTS:'SĐT này đã được đăng ký', WEAK_PASSWORD:'Mật khẩu phải có ít nhất 4 ký tự', INVALID_PIN:'Mã PIN phải là 4-6 chữ số', PASSWORD_MISMATCH:'Mật khẩu xác nhận không khớp', NOT_LOGGED_IN:'Chưa đăng nhập', WRONG_PASSWORD:'Sai mật khẩu' };

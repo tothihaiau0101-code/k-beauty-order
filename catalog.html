@@ -34,7 +34,10 @@
               <div class="cart-dropdown-empty">Giỏ hàng trống</div>
             </div>
             <div class="cart-dropdown-footer" id="cartDropdownFooter">
-              <div id="cartDropdownTotal" style="font-size:0.82rem;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:none;"></div>
+              <div class="cart-dropdown-total" id="cartDropdownTotal" style="display:none;">
+                <span>Tổng cộng</span>
+                <span id="cartTotalAmount">0₫</span>
+              </div>
               <a href="cart.html" class="cart-dropdown-checkout">Xem giỏ hàng →</a>
             </div>
           </div>
@@ -839,6 +842,7 @@
       // Render dropdown with qty controls
       const dd = document.getElementById('cartDropdownItems');
       const totalEl = document.getElementById('cartDropdownTotal');
+      const totalAmountEl = document.getElementById('cartTotalAmount');
       if (dd) {
         const items = Object.entries(cart).filter(([,v]) => v > 0);
         if (items.length === 0) {
@@ -849,19 +853,19 @@
           dd.innerHTML = items.map(([id, qty]) => {
             const price = PRODUCT_PRICES[id] || 0;
             total += price * qty;
-            return `<div class="cart-dropdown-item" style="align-items:center;gap:8px;padding:9px 12px;">
-              <span class="cart-dropdown-item-name" style="flex:1;font-size:0.8rem;">${PRODUCT_NAMES[id]||id}</span>
-              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-                <button onclick="cartQty('${id}',-1)" style="width:24px;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;cursor:pointer;font-size:0.9rem;font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
-                <span style="min-width:20px;text-align:center;font-size:0.82rem;font-weight:700;color:#1a1a1a;">${qty}</span>
-                <button onclick="cartQty('${id}',1)" style="width:24px;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;cursor:pointer;font-size:0.9rem;font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
-                <button onclick="cartRemove('${id}')" style="width:24px;height:24px;border-radius:6px;border:none;background:rgba(220,38,38,0.08);cursor:pointer;font-size:0.75rem;color:#dc2626;margin-left:2px;display:flex;align-items:center;justify-content:center;">✕</button>
+            return `<div class="cart-dropdown-item">
+              <span class="cart-dropdown-item-name">${PRODUCT_NAMES[id]||id}</span>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                <button onclick="cartQty('${id}',-1)" class="cart-qty-btn" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;cursor:pointer;font-size:0.95rem;font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;line-height:1;transition:all 0.15s;" onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='#f5f5f5'">−</button>
+                <span style="min-width:24px;text-align:center;font-size:0.85rem;font-weight:700;color:#1a1a1a;">${qty}</span>
+                <button onclick="cartQty('${id}',1)" class="cart-qty-btn" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;cursor:pointer;font-size:0.95rem;font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;line-height:1;transition:all 0.15s;" onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='#f5f5f5'">+</button>
+                <button onclick="cartRemove('${id}')" style="width:26px;height:26px;border-radius:6px;border:none;background:rgba(220,38,38,0.1);cursor:pointer;font-size:0.8rem;color:#dc2626;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='rgba(220,38,38,0.18)'" onmouseout="this.style.background='rgba(220,38,38,0.1)'">✕</button>
               </div>
             </div>`;
           }).join('');
-          if (totalEl) {
-            totalEl.textContent = 'Tổng: ' + total.toLocaleString('vi') + '₫';
-            totalEl.style.display = 'block';
+          if (totalEl && totalAmountEl) {
+            totalAmountEl.textContent = total.toLocaleString('vi') + '₫';
+            totalEl.style.display = 'flex';
           }
         }
       }

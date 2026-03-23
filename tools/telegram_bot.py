@@ -679,7 +679,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
                     return_url=f"{FRONTEND}/order-form?payment=success&orderId={order_id_str}",
                     cancel_url=f"{FRONTEND}/order-form?payment=cancel&orderId={order_id_str}"
                 )
-                result = WebhookHandler.payos.payment_requests.create(payment_data)
+                result = WebhookHandler.payos.create_payment_link(payment_data)
                 if result:
                     # Save orderCode to order record
                     if WebhookHandler.store:

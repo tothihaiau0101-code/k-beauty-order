@@ -25,15 +25,16 @@
         <a href="order-form.html">Đặt Hàng</a>
         <a href="policy.html">Chính Sách</a>
         <div class="nav-cart-wrap">
-          <a href="order-form.html" class="nav-cart" id="navCart" style="display:flex;">
+          <button onclick="toggleCartDropdown(event)" class="nav-cart" id="navCart" style="display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:6px 10px;border-radius:8px;">
             🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
-          </a>
-          <div class="cart-dropdown" id="cartDropdown">
-            <div class="cart-dropdown-title">Giỏ hàng</div>
+          </button>
+          <div class="cart-dropdown" id="cartDropdown" style="display:none;">
+            <div class="cart-dropdown-title">🛒 Giỏ hàng</div>
             <div class="cart-dropdown-items" id="cartDropdownItems">
               <div class="cart-dropdown-empty">Giỏ hàng trống</div>
             </div>
-            <div class="cart-dropdown-footer">
+            <div class="cart-dropdown-footer" id="cartDropdownFooter">
+              <div id="cartDropdownTotal" style="font-size:0.82rem;font-weight:700;color:#1a1a1a;margin-bottom:8px;display:none;"></div>
               <a href="order-form.html" class="cart-dropdown-checkout">Thanh toán →</a>
             </div>
           </div>
@@ -741,9 +742,9 @@
       // Reviews
       const rv = document.getElementById('modalReviews');
       if (rv && data.rating) {
-        let html = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-size:1.1rem;">${starStr(Math.round(data.rating))}</span><span style="color:#fbbf24;font-weight:700;">${data.rating}</span><span style="color:rgba(255,255,255,0.4);font-size:0.75rem;">(${data.reviewCount} đánh giá)</span></div>`;
+        let html = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-size:1.1rem;">${starStr(Math.round(data.rating))}</span><span style="color:#fbbf24;font-weight:700;">${data.rating}</span><span style="color:#9a9aaa;font-size:0.75rem;">(${data.reviewCount} đánh giá)</span></div>`;
         if (data.reviews && data.reviews.length) {
-          html += data.reviews.map(r => `<div style="padding:6px 0;border-top:1px solid rgba(255,255,255,0.04);"><span style="font-weight:600;color:#c084fc;font-size:0.78rem;">${r.name}</span> <span style="font-size:0.72rem;">${starStr(r.stars)}</span><p style="color:rgba(255,255,255,0.6);font-size:0.78rem;margin:3px 0 0;">${r.text}</p></div>`).join('');
+          html += data.reviews.map(r => `<div style="padding:6px 0;border-top:1px solid rgba(0,0,0,0.06);"><span style="font-weight:600;color:#1a1a1a;font-size:0.78rem;">${r.name}</span> <span style="font-size:0.72rem;">${starStr(r.stars)}</span><p style="color:#6b6b7b;font-size:0.78rem;margin:3px 0 0;">${r.text}</p></div>`).join('');
         }
         rv.innerHTML = html;
         rv.parentElement.style.display = '';
@@ -771,6 +772,12 @@
       'combo-skincare':'Combo Skincare','combo-mix':'Mix Box K-Pop+Beauty'
     };
 
+    const PRODUCT_PRICES = {
+      'cosrx-snail':420000,'boj-sun':380000,'anua-toner':450000,'torriden-serum':400000,
+      'skin1004':420000,'mediheal':300000,'roundlab':380000,'romand':250000,
+      'txt-7th':500000,'babymonster':500000,'combo-skincare':1100000,'combo-mix':950000
+    };
+
     function updateCartUI() {
       const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
       const cartEl = document.getElementById('floatingCart');
@@ -784,18 +791,61 @@
         if (cartEl) cartEl.style.display = 'none';
         if (navBadgeEl) navBadgeEl.style.display = 'none';
       }
-      // Render dropdown
+      // Render dropdown with qty controls
       const dd = document.getElementById('cartDropdownItems');
+      const totalEl = document.getElementById('cartDropdownTotal');
       if (dd) {
-        if (count === 0) {
+        const items = Object.entries(cart).filter(([,v]) => v > 0);
+        if (items.length === 0) {
           dd.innerHTML = '<div class="cart-dropdown-empty">Giỏ hàng trống</div>';
+          if (totalEl) totalEl.style.display = 'none';
         } else {
-          dd.innerHTML = Object.entries(cart).filter(([,v]) => v > 0).map(([id, qty]) =>
-            `<div class="cart-dropdown-item"><span class="cart-dropdown-item-name">${PRODUCT_NAMES[id]||id}</span><span class="cart-dropdown-item-qty">x${qty}</span></div>`
-          ).join('');
+          let total = 0;
+          dd.innerHTML = items.map(([id, qty]) => {
+            const price = PRODUCT_PRICES[id] || 0;
+            total += price * qty;
+            return `<div class="cart-dropdown-item" style="align-items:center;gap:8px;padding:9px 12px;">
+              <span class="cart-dropdown-item-name" style="flex:1;font-size:0.8rem;">${PRODUCT_NAMES[id]||id}</span>
+              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                <button onclick="cartQty('${id}',-1)" style="width:24px;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;cursor:pointer;font-size:0.9rem;font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;line-height:1;">−</button>
+                <span style="min-width:20px;text-align:center;font-size:0.82rem;font-weight:700;color:#1a1a1a;">${qty}</span>
+                <button onclick="cartQty('${id}',1)" style="width:24px;height:24px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;cursor:pointer;font-size:0.9rem;font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;line-height:1;">+</button>
+                <button onclick="cartRemove('${id}')" style="width:24px;height:24px;border-radius:6px;border:none;background:rgba(220,38,38,0.08);cursor:pointer;font-size:0.75rem;color:#dc2626;margin-left:2px;display:flex;align-items:center;justify-content:center;">✕</button>
+              </div>
+            </div>`;
+          }).join('');
+          if (totalEl) {
+            totalEl.textContent = 'Tổng: ' + total.toLocaleString('vi') + '₫';
+            totalEl.style.display = 'block';
+          }
         }
       }
     }
+
+    function cartQty(id, delta) {
+      cart[id] = Math.max(0, (cart[id] || 0) + delta);
+      if (cart[id] === 0) delete cart[id];
+      localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
+      updateCartUI();
+    }
+
+    function cartRemove(id) {
+      delete cart[id];
+      localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
+      updateCartUI();
+    }
+
+    function toggleCartDropdown(e) {
+      e.stopPropagation();
+      const dd = document.getElementById('cartDropdown');
+      dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+    }
+    // Close when clicking outside
+    document.addEventListener('click', () => {
+      const dd = document.getElementById('cartDropdown');
+      if (dd) dd.style.display = 'none';
+    });
+    document.getElementById('cartDropdown')?.addEventListener('click', e => e.stopPropagation());
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -901,37 +951,37 @@
   </script>
 
   <!-- PRODUCT DETAIL MODAL -->
-  <div id="productModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:200;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeProductModal()">
-    <div style="background:linear-gradient(135deg,#12121e 0%,#1a1a2e 100%);border-radius:20px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.5);position:relative;">
-      <button onclick="closeProductModal()" style="position:absolute;top:14px;right:18px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:1.8rem;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">×</button>
+  <div id="productModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:200;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeProductModal()">
+    <div style="background:#ffffff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;border:1px solid rgba(0,0,0,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.12);position:relative;">
+      <button onclick="closeProductModal()" style="position:absolute;top:14px;right:18px;background:none;border:none;color:rgba(0,0,0,0.35);font-size:1.8rem;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseover="this.style.color='#1a1a1a'" onmouseout="this.style.color='rgba(0,0,0,0.35)'">×</button>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;" class="modal-grid-inner">
-        <div style="padding:24px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);border-radius:20px 0 0 20px;">
+        <div style="padding:24px;display:flex;align-items:center;justify-content:center;background:#f8f8f8;border-radius:20px 0 0 20px;">
           <img id="modalImg" src="" alt="Product" style="width:100%;max-width:320px;border-radius:16px;object-fit:cover;aspect-ratio:1/1;">
         </div>
         <div style="padding:28px 28px 28px 20px;display:flex;flex-direction:column;gap:12px;">
-          <div id="modalBrand" style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#a855f7;">BRAND</div>
-          <h2 id="modalName" style="font-family:'Inter',sans-serif;font-size:1.35rem;font-weight:800;color:#f0f0f5;line-height:1.3;">Product</h2>
-          <div id="modalSpec" style="font-size:0.8rem;color:rgba(255,255,255,0.4);">spec</div>
+          <div id="modalBrand" style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#1a1a1a;">BRAND</div>
+          <h2 id="modalName" style="font-family:'Inter',sans-serif;font-size:1.35rem;font-weight:800;color:#1a1a1a;line-height:1.3;">Product</h2>
+          <div id="modalSpec" style="font-size:0.8rem;color:#6b6b7b;">spec</div>
           <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0;">
-            <span id="modalPrice" style="font-size:1.5rem;font-weight:800;color:#ff5a92;">0₫</span>
-            <span id="modalOldPrice" style="font-size:0.9rem;text-decoration:line-through;color:rgba(255,255,255,0.3);"></span>
+            <span id="modalPrice" style="font-size:1.5rem;font-weight:800;color:#1a8a5e;">0₫</span>
+            <span id="modalOldPrice" style="font-size:0.9rem;text-decoration:line-through;color:#9a9aaa;"></span>
           </div>
-          <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
-            <div style="font-size:0.8rem;font-weight:700;color:#06d6a0;margin-bottom:6px;">✨ Mô tả chi tiết</div>
-            <p id="modalDesc" style="font-size:0.82rem;color:rgba(255,255,255,0.65);line-height:1.6;">...</p>
+          <div style="border-top:1px solid rgba(0,0,0,0.07);padding-top:12px;">
+            <div style="font-size:0.8rem;font-weight:700;color:#059669;margin-bottom:6px;">✨ Mô tả chi tiết</div>
+            <p id="modalDesc" style="font-size:0.82rem;color:#6b6b7b;line-height:1.6;">...</p>
           </div>
-          <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
-            <div style="font-size:0.8rem;font-weight:700;color:#fbbf24;margin-bottom:6px;">💡 Hướng dẫn sử dụng</div>
-            <p id="modalUsage" style="font-size:0.82rem;color:rgba(255,255,255,0.65);line-height:1.6;">...</p>
+          <div style="border-top:1px solid rgba(0,0,0,0.07);padding-top:12px;">
+            <div style="font-size:0.8rem;font-weight:700;color:#d97706;margin-bottom:6px;">💡 Hướng dẫn sử dụng</div>
+            <p id="modalUsage" style="font-size:0.82rem;color:#6b6b7b;line-height:1.6;">...</p>
           </div>
-          <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;">
-            <div style="font-size:0.8rem;font-weight:700;color:#60a5fa;margin-bottom:6px;">💬 Đánh giá từ khách hàng</div>
+          <div style="border-top:1px solid rgba(0,0,0,0.07);padding-top:12px;">
+            <div style="font-size:0.8rem;font-weight:700;color:#2563eb;margin-bottom:6px;">💬 Đánh giá từ khách hàng</div>
             <div id="modalReviews"></div>
-            <a id="modalReviewLink" href="#" target="_blank" style="display:inline-block;margin-top:10px;padding:8px 18px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:rgba(96,165,250,0.08);color:#60a5fa;font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='rgba(96,165,250,0.18)'" onmouseout="this.style.background='rgba(96,165,250,0.08)'">📖 Xem thêm đánh giá →</a>
+            <a id="modalReviewLink" href="#" target="_blank" style="display:inline-block;margin-top:10px;padding:8px 18px;border:1px solid rgba(37,99,235,0.2);border-radius:8px;background:rgba(37,99,235,0.05);color:#2563eb;font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='rgba(37,99,235,0.12)'" onmouseout="this.style.background='rgba(37,99,235,0.05)'">📖 Xem thêm đánh giá →</a>
           </div>
           <div style="display:flex;gap:10px;margin-top:auto;">
-            <a id="modalBuyNowBtn" href="order-form.html" style="flex:1;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#ff5a92 0%,#ec4899 100%);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.3s;box-shadow:0 4px 15px rgba(255,90,146,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">🛒 Mua Ngay</a>
-            <button id="modalAddCartBtn" data-id="" onclick="modalAddToCart()" style="flex:1;padding:14px;border:1px solid rgba(168,85,247,0.3);border-radius:12px;background:rgba(168,85,247,0.12);color:#c084fc;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.3s;" onmouseover="this.style.background='rgba(168,85,247,0.25)'" onmouseout="this.style.background='rgba(168,85,247,0.12)'">➕ Thêm Giỏ</button>
+            <a id="modalBuyNowBtn" href="order-form.html" style="flex:1;padding:14px;border:none;border-radius:12px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.3s;box-shadow:0 4px 15px rgba(0,0,0,0.12);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">🛒 Mua Ngay</a>
+            <button id="modalAddCartBtn" data-id="" onclick="modalAddToCart()" style="flex:1;padding:14px;border:1px solid rgba(0,0,0,0.12);border-radius:12px;background:rgba(0,0,0,0.04);color:#1a1a1a;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.3s;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='rgba(0,0,0,0.04)'">➕ Thêm Giỏ</button>
           </div>
         </div>
       </div>
@@ -944,6 +994,7 @@
       .modal-grid-inner > div:last-child { padding: 20px !important; }
     }
   </style>
+
 
   <!-- FLOATING CART -->
   <a href="order-form.html" class="floating-cart" id="floatingCart" style="display: none;">

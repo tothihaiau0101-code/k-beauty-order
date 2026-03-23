@@ -20,6 +20,8 @@ import threading
 import signal
 import sys
 import time
+import hmac
+import hashlib
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -167,6 +169,98 @@ class TelegramClient:
         except Exception as e:
             logger.error(f"Error getting updates: {e}")
         return []
+
+
+# ─────────────────────────────────────────
+# PayOS Integration
+# Docs: https://payos.vn/docs
+# ─────────────────────────────────────────
+class PayOSClient:
+    """Handles PayOS payment link creation and webhook verification."""
+
+    PAYOS_API = "https://api-merchant.payos.vn"
+
+    def __init__(self, client_id: str, api_key: str, checksum_key: str):
+        self.client_id = client_id
+        self.api_key = api_key
+        self.checksum_key = checksum_key
+        self.enabled = bool(client_id and api_key and checksum_key
+                            and client_id != "your_payos_client_id")
+
+    def _create_signature(self, data: Dict[str, Any]) -> str:
+        """Create HMAC-SHA256 signature from sorted data fields."""
+        # PayOS signature: sort keys, join as key=value&key=value
+        sorted_str = "&".join(
+            f"{k}={v}" for k, v in sorted(data.items())
+            if k in ("amount", "cancelUrl", "description", "orderCode", "returnUrl")
+        )
+        return hmac.new(
+            self.checksum_key.encode("utf-8"),
+            sorted_str.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+
+    def create_payment(self, order_code: int, amount: int, description: str,
+                       return_url: str, cancel_url: str) -> Optional[Dict[str, Any]]:
+        """
+        Create a PayOS payment link.
+
+        Returns dict with checkoutUrl and paymentLinkId, or None on failure.
+        """
+        if not self.enabled:
+            logger.warning("PayOS not configured — skipping payment link creation")
+            return None
+
+        payload = {
+            "orderCode": order_code,
+            "amount": int(amount),
+            "description": description[:25],  # PayOS max 25 chars
+            "returnUrl": return_url,
+            "cancelUrl": cancel_url,
+        }
+        payload["signature"] = self._create_signature(payload)
+        payload["items"] = [{"name": description[:25], "quantity": 1, "price": int(amount)}]
+
+        try:
+            req = request.Request(
+                f"{self.PAYOS_API}/v2/payment-requests",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "x-client-id": self.client_id,
+                    "x-api-key": self.api_key,
+                },
+                method="POST"
+            )
+            with request.urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                if result.get("code") == "00":
+                    return result.get("data")
+                logger.error(f"PayOS error: {result}")
+        except Exception as e:
+            logger.error(f"PayOS create_payment error: {e}")
+        return None
+
+    def verify_webhook(self, body: Dict[str, Any]) -> bool:
+        """Verify PayOS webhook signature."""
+        if not self.enabled:
+            return False
+        received_sig = body.get("signature", "")
+        data = body.get("data", {})
+        check_str = "&".join(
+            f"{k}={data.get(k, '')}" for k in sorted([
+                "accountNumber", "amount", "counterAccountBankId",
+                "counterAccountBankName", "counterAccountName",
+                "counterAccountNumber", "currency", "description",
+                "orderCode", "paymentLinkId", "reference", "transactionDateTime", "virtualAccountName", "virtualAccountNumber"
+            ])
+        )
+        expected = hmac.new(
+            self.checksum_key.encode("utf-8"),
+            check_str.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+        return hmac.compare_digest(expected, received_sig)
 
 
 class DataStore:
@@ -402,9 +496,10 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
     store: Optional[DataStore] = None
     bot: Optional[TelegramClient] = None
+    payos: Optional[PayOSClient] = None
     secret: str = ""
     allow_no_secret: bool = True  # Allow requests without secret in dev mode
-    payos: Optional[Any] = None  # PayOS client instance
+    base_url: str = "https://web-production-46a5.up.railway.app"
 
     def log_message(self, format: str, *args: Any) -> None:
         """Override to use logger."""
@@ -528,6 +623,10 @@ class WebhookHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"status": "not_found"}, 404)
 
+        elif self.path == "/api/create-payment":
+            # POST-style but using GET for simplicity — see do_POST for actual endpoint
+            self._send_json({"error": "Use POST /api/create-payment"}, 405)
+
         else:
             self.send_response(404)
             self.end_headers()
@@ -574,7 +673,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
         # --- PayOS: Create Payment Link ---
         if self.path == "/api/payos/create":
-            if not PAYOS_AVAILABLE or not WebhookHandler.payos:
+            if not WebhookHandler.payos or not WebhookHandler.payos.enabled:
                 self._send_json({"error": "PayOS not configured"}, 503)
                 return
             try:
@@ -592,19 +691,30 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 import hashlib
                 order_code = abs(hash(order_id_str)) % (10 ** 9) or int(time.time())
 
-                payment = CreatePaymentLinkRequest(
+                base = WebhookHandler.base_url
+                result = WebhookHandler.payos.create_payment(
                     order_code=order_code,
                     amount=amount,
                     description=description,
-                    return_url=f"https://k-beauty-order.pages.dev/order-form?payment=success&orderId={order_id_str}",
-                    cancel_url=f"https://k-beauty-order.pages.dev/order-form?payment=cancel&orderId={order_id_str}"
+                    return_url=f"{base}/order-form.html?payment=success&orderId={order_id_str}",
+                    cancel_url=f"{base}/order-form.html?payment=cancel&orderId={order_id_str}"
                 )
-                result = WebhookHandler.payos.payment_requests.create(payment)
-                self._send_json({
-                    "checkoutUrl": result.checkout_url,
-                    "orderCode": order_code,
-                    "qrCode": result.qr_code
-                })
+                if result:
+                    # Save orderCode to order record
+                    if WebhookHandler.store:
+                        orders = WebhookHandler.store._read_json(WebhookHandler.store.orders_file)
+                        if isinstance(orders, list):
+                            for o in orders:
+                                if o.get("orderId") == order_id_str:
+                                    o["payosOrderCode"] = order_code
+                                    WebhookHandler.store._write_json(WebhookHandler.store.orders_file, orders)
+                                    break
+                    self._send_json({
+                        "checkoutUrl": result.get("checkoutUrl"),
+                        "orderCode": order_code
+                    })
+                else:
+                    self._send_json({"error": "PayOS payment creation failed"}, 502)
             except Exception as e:
                 logger.error(f"PayOS create payment error: {e}")
                 self._send_json({"error": str(e)}, 500)
@@ -618,11 +728,9 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 data = json.loads(raw_body)
 
                 # Verify webhook signature from PayOS
-                if PAYOS_AVAILABLE and WebhookHandler.payos:
-                    try:
-                        WebhookHandler.payos.webhooks.verify(data)
-                    except Exception as verify_err:
-                        logger.warning(f"PayOS webhook verification failed: {verify_err}")
+                if WebhookHandler.payos and WebhookHandler.payos.enabled:
+                    if not WebhookHandler.payos.verify_webhook(data):
+                        logger.warning("PayOS webhook signature mismatch")
                         self._send_json({"error": "invalid signature"}, 400)
                         return
 
@@ -670,9 +778,6 @@ class WebhookHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        content_length = int(self.headers.get("Content-Length", 0))
-        post_data = self.rfile.read(content_length)
-        
         # Security Check (relaxed in dev mode)
         auth_header = self.headers.get("X-Webhook-Secret", "")
         if WebhookHandler.secret and auth_header != WebhookHandler.secret and not WebhookHandler.allow_no_secret:
@@ -682,6 +787,8 @@ class WebhookHandler(BaseHTTPRequestHandler):
             return
 
         try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode("utf-8"))
             if WebhookHandler.store and WebhookHandler.bot:
                 # Save Order
@@ -725,6 +832,119 @@ class WebhookHandler(BaseHTTPRequestHandler):
             logger.error(f"Webhook processing error: {e}")
             self.send_response(500)
             self.end_headers()
+
+    def _handle_payos_webhook(self, raw_body: bytes) -> None:
+        """Handle PayOS payment confirmation webhook."""
+        try:
+            body = json.loads(raw_body.decode("utf-8"))
+        except json.JSONDecodeError:
+            self._send_json({"error": "invalid json"}, 400)
+            return
+
+        # Verify signature
+        if WebhookHandler.payos and not WebhookHandler.payos.verify_webhook(body):
+            logger.warning("PayOS webhook signature mismatch")
+            self._send_json({"error": "invalid signature"}, 403)
+            return
+
+        data = body.get("data", {})
+        code = body.get("code", "")
+
+        # Only process successful payments
+        if code != "00":
+            logger.info(f"PayOS webhook non-success code: {code}")
+            self._send_json({"success": True})
+            return
+
+        order_code = str(data.get("orderCode", ""))
+        amount = data.get("amount", 0)
+        description = data.get("description", "")
+
+        logger.info(f"PayOS payment confirmed: orderCode={order_code}, amount={amount}")
+
+        # Find order by orderCode (we store it as numeric suffix of orderId)
+        if WebhookHandler.store:
+            orders = WebhookHandler.store._read_json(WebhookHandler.store.orders_file)
+            matched_order = None
+            if isinstance(orders, list):
+                for o in orders:
+                    stored_code = o.get("payosOrderCode")
+                    if stored_code and str(stored_code) == order_code:
+                        matched_order = o
+                        break
+
+            if matched_order:
+                oid = matched_order.get("orderId", order_code)
+                WebhookHandler.store.update_order_status(oid, "confirmed")
+
+                # Notify admin via Telegram
+                if WebhookHandler.bot:
+                    msg = (
+                        f"💸 *Đã nhận tiền!*\n\n"
+                        f"📦 Đơn: `{oid}`\n"
+                        f"💰 Số tiền: {amount:,}₫\n"
+                        f"🏦 PayOS xác nhận\n"
+                        f"📌 → Trạng thái: 🔵 Đã xác nhận\n\n"
+                        f"Dùng `/update {oid} shipping` khi giao hàng."
+                    )
+                    WebhookHandler.bot.send_message(msg)
+                    logger.info(f"Order {oid} auto-confirmed via PayOS")
+            else:
+                logger.warning(f"PayOS webhook: no order found for orderCode {order_code}")
+
+        self._send_json({"success": True})
+
+    def _handle_create_payment(self, raw_body: bytes) -> None:
+        """Create a PayOS payment link for an order."""
+        if not WebhookHandler.payos or not WebhookHandler.payos.enabled:
+            self._send_json({"error": "PayOS not configured"}, 503)
+            return
+        try:
+            body = json.loads(raw_body.decode("utf-8"))
+        except json.JSONDecodeError:
+            self._send_json({"error": "invalid json"}, 400)
+            return
+
+        order_id = body.get("orderId", "")
+        amount = int(body.get("amount", 0))
+        description = body.get("description", order_id)
+
+        if not order_id or amount <= 0:
+            self._send_json({"error": "missing orderId or amount"}, 400)
+            return
+
+        # Generate numeric order code from orderId (PayOS requires integer)
+        import re
+        numeric_part = re.sub(r'[^0-9]', '', order_id)
+        order_code = int(numeric_part[-9:]) if numeric_part else int(time.time()) % 1000000000
+
+        # Store orderCode on the order record
+        if WebhookHandler.store:
+            orders = WebhookHandler.store._read_json(WebhookHandler.store.orders_file)
+            if isinstance(orders, list):
+                for o in orders:
+                    if o.get("orderId") == order_id:
+                        o["payosOrderCode"] = order_code
+                        WebhookHandler.store._write_json(WebhookHandler.store.orders_file, orders)
+                        break
+
+        base = WebhookHandler.base_url
+        result = WebhookHandler.payos.create_payment(
+            order_code=order_code,
+            amount=amount,
+            description=description,
+            return_url=f"{base}/order-success?orderId={order_id}",
+            cancel_url=f"{base}/order-form.html?cancelled={order_id}"
+        )
+
+        if result:
+            self._send_json({
+                "checkoutUrl": result.get("checkoutUrl"),
+                "paymentLinkId": result.get("paymentLinkId"),
+                "orderCode": order_code
+            })
+        else:
+            self._send_json({"error": "PayOS payment creation failed"}, 502)
 
     def _format_order_message(self, order: Dict[str, Any]) -> str:
         """Format order data into a Telegram message.
@@ -813,29 +1033,23 @@ class KBeautyBot:
         self.store = DataStore(self.orders_file, self.stock_file)
         self.running = True
 
-        # Initialize PayOS client
-        payos_client_id = config.get("PAYOS_CLIENT_ID", "")
-        payos_api_key = config.get("PAYOS_API_KEY", "")
-        payos_checksum = config.get("PAYOS_CHECKSUM_KEY", "")
-        if PAYOS_AVAILABLE and payos_client_id and payos_api_key and payos_checksum:
-            self.payos_client = PayOS(
-                client_id=payos_client_id,
-                api_key=payos_api_key,
-                checksum_key=payos_checksum
-            )
-            logger.info("PayOS payment gateway initialized ✓")
+        # Initialize PayOS client (pure stdlib, no SDK needed)
+        self.payos_client = PayOSClient(
+            client_id=config.get("PAYOS_CLIENT_ID", ""),
+            api_key=config.get("PAYOS_API_KEY", ""),
+            checksum_key=config.get("PAYOS_CHECKSUM_KEY", "")
+        )
+        if self.payos_client.enabled:
+            logger.info("PayOS payment gateway: ENABLED ✓")
         else:
-            self.payos_client = None
-            if not PAYOS_AVAILABLE:
-                logger.warning("PayOS SDK not installed (pip install payos)")
-            else:
-                logger.warning("PayOS credentials not configured in .env")
+            logger.warning("PayOS not configured — set PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY in .env")
 
         # Configure Webhook Handler
         WebhookHandler.store = self.store
         WebhookHandler.bot = self.bot_client
         WebhookHandler.secret = self.secret
         WebhookHandler.payos = self.payos_client
+        WebhookHandler.base_url = config.get("BASE_URL", "https://web-production-46a5.up.railway.app")
 
     def _handle_command(self, message: Dict[str, Any]) -> None:
         """Process Telegram commands."""

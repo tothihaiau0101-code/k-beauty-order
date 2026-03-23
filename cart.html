@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giỏ Hàng — BeaPop</title>
+  <meta name="description" content="Xem và quản lý giỏ hàng của bạn tại BeaPop.">
+  <meta property="og:title" content="Giỏ Hàng — BeaPop">
+  <meta property="og:description" content="Xem và quản lý giỏ hàng của bạn tại BeaPop.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <script src="auth.js" defer></script>
+  <style>
+    .cart-page-wrap { max-width: 1100px; margin: 0 auto; padding: 40px 16px 60px; }
+    .cart-page-title { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 900; color: var(--text-primary); margin-bottom: 8px; text-align: center; }
+    .cart-page-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 28px; text-align: center; }
+
+    /* Cart layout - 2 columns on desktop */
+    .cart-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+    @media (max-width: 868px) { .cart-layout { grid-template-columns: 1fr; } }
+
+    /* Left: Product list */
+    .cart-items { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.08); overflow: hidden; }
+    .cart-item { display: grid; grid-template-columns: 80px 1fr auto; gap: 16px; padding: 16px; border-bottom: 1px solid rgba(0,0,0,0.07); align-items: center; }
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item-img { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; background: #f5f5f5; }
+    .cart-item-info { display: flex; flex-direction: column; gap: 6px; }
+    .cart-item-name { font-size: 0.95rem; font-weight: 700; color: #1a1a1a; }
+    .cart-item-unit { font-size: 0.75rem; color: var(--text-secondary); }
+    .cart-item-price { font-size: 0.82rem; color: #1a8a5e; font-weight: 700; }
+
+    /* Qty controls */
+    .qty-control { display: flex; align-items: center; gap: 6px; }
+    .qty-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.12); background: #f5f5f5; cursor: pointer; font-size: 1rem; font-weight: 700; color: #1a1a1a; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .qty-btn:hover { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.2); }
+    .qty-val { min-width: 28px; text-align: center; font-size: 0.88rem; font-weight: 700; color: #1a1a1a; }
+
+    /* Delete button */
+    .delete-btn { padding: 6px 12px; border-radius: 8px; border: none; background: rgba(220,38,38,0.08); color: #dc2626; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; }
+    .delete-btn:hover { background: rgba(220,38,38,0.15); }
+
+    /* Right: Order summary */
+    .cart-summary { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.08); padding: 24px; height: fit-content; position: sticky; top: 100px; }
+    .summary-title { font-size: 1.1rem; font-weight: 800; color: #1a1a1a; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.88rem; }
+    .summary-row:last-of-type { border-bottom: none; }
+    .summary-label { color: var(--text-secondary); }
+    .summary-value { font-weight: 700; color: #1a1a1a; }
+    .summary-total { display: flex; justify-content: space-between; padding: 16px 0 10px; margin-top: 8px; border-top: 2px solid rgba(0,0,0,0.12); }
+    .total-label { font-size: 1rem; font-weight: 800; color: #1a1a1a; }
+    .total-value { font-size: 1.4rem; font-weight: 900; color: #1a8a5e; }
+
+    /* Checkout button */
+    .checkout-btn { display: block; width: 100%; padding: 16px; margin-top: 20px; background: linear-gradient(135deg, #1a8a5e, #15803d); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 800; cursor: pointer; text-align: center; text-decoration: none; transition: all 0.3s; box-shadow: 0 4px 16px rgba(26,138,94,0.2); }
+    .checkout-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,138,94,0.3); }
+
+    /* Empty state */
+    .cart-empty { text-align: center; padding: 60px 20px; }
+    .cart-empty-icon { font-size: 4rem; margin-bottom: 16px; opacity: 0.5; }
+    .cart-empty-msg { font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; }
+    .cart-empty-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px; }
+    .shop-btn { display: inline-block; padding: 14px 32px; background: #1a1a1a; color: #fff; border-radius: 12px; font-weight: 700; text-decoration: none; transition: all 0.3s; }
+    .shop-btn:hover { background: #333; transform: translateY(-2px); }
+
+    /* Nav cart icon styling */
+    .nav-cart-wrap { position: relative; }
+    .nav-cart { position: relative; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; text-decoration: none; color: var(--text-primary); padding: 8px; border-radius: 8px; transition: background 0.2s; }
+    .nav-cart:hover { background: rgba(0,0,0,0.05); }
+    .nav-cart-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; justify-content: center; padding: 0 4px; border: 2px solid #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <a href="catalog.html" class="nav-logo">BeaPop</a>
+      <div class="nav-links">
+        <a href="catalog.html#k-beauty">Beauty</a>
+        <a href="catalog.html#k-pop">Pop</a>
+        <a href="catalog.html#combos">Combo</a>
+        <a href="order-form.html">Đặt Hàng</a>
+        <a href="policy.html">Chính Sách</a>
+        <div class="nav-cart-wrap">
+          <a href="cart.html" class="nav-cart" id="navCart">
+            🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CART PAGE CONTENT -->
+  <div class="cart-page-wrap">
+    <h1 class="cart-page-title">🛒 Giỏ Hàng Của Bạn</h1>
+    <p class="cart-page-subtitle">Xem lại sản phẩm và tiến hành đặt hàng</p>
+
+    <div id="cartContent">
+      <!-- Dynamic content -->
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid rgba(0,0,0,0.08);">
+    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>Catalog</a>
+      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Đặt Hàng</a>
+      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Chính Sách</a>
+    </div>
+    <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
+  </footer>
+
+  <script>
+    // Product data
+    const PRODUCT_PRICES = {
+      'cosrx-snail':420000,'boj-sun':380000,'anua-toner':450000,'torriden-serum':400000,
+      'skin1004':420000,'mediheal':300000,'roundlab':380000,'romand':250000,
+      'txt-7th':500000,'babymonster':500000,'combo-skincare':1100000,'combo-mix':950000
+    };
+
+    const PRODUCT_NAMES = {
+      'cosrx-snail':'COSRX Snail Mucin','boj-sun':'BOJ Relief Sun SPF50+',
+      'anua-toner':'Anua Heartleaf Toner','torriden-serum':'Torriden HA Serum',
+      'skin1004':'SKIN1004 Centella','mediheal':'Mediheal Blemish Pad',
+      'roundlab':'Round Lab Dokdo Toner','romand':'Romand Juicy Tint',
+      'txt-7th':'TXT — minisode 3','babymonster':'BABYMONSTER Album',
+      'combo-skincare':'Combo Skincare','combo-mix':'Mix Box K-Pop+Beauty'
+    };
+
+    const PRODUCT_IMAGES = {
+      'cosrx-snail':'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&h=300&q=80&fit=crop',
+      'boj-sun':'https://images.unsplash.com/photo-1556228720-1987df4d3f31?w=300&h=300&q=80&fit=crop',
+      'anua-toner':'https://images.unsplash.com/photo-1620916297397-a4a5402a3c6c?w=300&h=300&q=80&fit=crop',
+      'torriden-serum':'https://images.unsplash.com/photo-1571781565023-40f8d4752541?w=300&h=300&q=80&fit=crop',
+      'skin1004':'https://images.unsplash.com/photo-1608248597279-f99d160bfbc8?w=300&h=300&q=80&fit=crop',
+      'mediheal':'https://images.unsplash.com/photo-1596462502278-27bfdd403348?w=300&h=300&q=80&fit=crop',
+      'roundlab':'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?w=300&h=300&q=80&fit=crop',
+      'romand':'https://images.unsplash.com/photo-1631730494960-9a8b0815b76a?w=300&h=300&q=80&fit=crop',
+      'txt-7th':'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&q=80&fit=crop',
+      'babymonster':'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=300&h=300&q=80&fit=crop',
+      'combo-skincare':'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&q=80&fit=crop',
+      'combo-mix':'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=300&h=300&q=80&fit=crop'
+    };
+
+    // Load cart
+    let cart = JSON.parse(localStorage.getItem('kbeauty_cart')) || {};
+
+    function formatPrice(n) {
+      return new Intl.NumberFormat('vi-VN').format(n) + '₫';
+    }
+
+    function updateCartBadge() {
+      const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+      const badge = document.getElementById('navCartBadge');
+      if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'flex' : 'none';
+      }
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cartContent');
+      const items = Object.entries(cart).filter(([,v]) => v > 0);
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="cart-empty">
+            <div class="cart-empty-icon">🛒</div>
+            <div class="cart-empty-msg">Giỏ hàng trống</div>
+            <div class="cart-empty-sub">Thêm sản phẩm để bắt đầu mua sắm</div>
+            <a href="catalog.html" class="shop-btn">🛍️ Tiếp tục mua sắm</a>
+          </div>
+        `;
+        return;
+      }
+
+      let subtotal = 0;
+      const itemsHtml = items.map(([id, qty]) => {
+        const price = PRODUCT_PRICES[id] || 0;
+        const itemTotal = price * qty;
+        subtotal += itemTotal;
+        return `
+          <div class="cart-item" data-id="${id}">
+            <img src="${PRODUCT_IMAGES[id] || 'https://images.unsplash.com/photo-1556228720-1987df4d3f31?w=300&h=300'}" alt="${PRODUCT_NAMES[id] || id}" class="cart-item-img">
+            <div class="cart-item-info">
+              <div class="cart-item-name">${PRODUCT_NAMES[id] || id}</div>
+              <div class="cart-item-unit">Giá đơn vị</div>
+              <div class="cart-item-price">${formatPrice(price)}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+              <div class="qty-control">
+                <button class="qty-btn" onclick="updateQty('${id}', -1)">−</button>
+                <span class="qty-val">${qty}</span>
+                <button class="qty-btn" onclick="updateQty('${id}', 1)">+</button>
+              </div>
+              <button class="delete-btn" onclick="deleteItem('${id}')">🗑 Xoá</button>
+              <div style="font-size:0.9rem;font-weight:800;color:#1a8a5e;">Thành tiền: ${formatPrice(itemTotal)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const itemCount = items.reduce((sum, [,qty]) => sum + qty, 0);
+
+      container.innerHTML = `
+        <div class="cart-layout">
+          <div class="cart-items">
+            ${itemsHtml}
+          </div>
+          <div class="cart-summary">
+            <div class="summary-title">📋 Tóm tắt đơn hàng</div>
+            <div class="summary-row">
+              <span class="summary-label">Số lượng sản phẩm</span>
+              <span class="summary-value">${itemCount} sản phẩm</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Tạm tính</span>
+              <span class="summary-value">${formatPrice(subtotal)}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Phí vận chuyển</span>
+              <span class="summary-value" style="color:#1a8a5e;">Miễn phí</span>
+            </div>
+            <div class="summary-total">
+              <span class="total-label">Tổng cộng</span>
+              <span class="total-value">${formatPrice(subtotal)}</span>
+            </div>
+            <a href="order-form.html" class="checkout-btn">Đặt Hàng Ngay →</a>
+            <div style="text-align:center;margin-top:12px;font-size:0.75rem;color:var(--text-secondary);">
+              🔒 Thanh toán an toàn • Xác nhận trong 30 phút
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateQty(id, delta) {
+      cart[id] = Math.max(0, (cart[id] || 0) + delta);
+      if (cart[id] === 0) delete cart[id];
+      localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
+      updateCartBadge();
+      renderCart();
+    }
+
+    function deleteItem(id) {
+      delete cart[id];
+      localStorage.setItem('kbeauty_cart', JSON.stringify(cart));
+      updateCartBadge();
+      renderCart();
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      updateCartBadge();
+      renderCart();
+    });
+  </script>
+
+</body>
+</html>

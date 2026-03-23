@@ -584,7 +584,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
         # --- PayOS: Create Payment Link ---
         if self.path == "/api/payos/create":
-            if not WebhookHandler.payos or not WebhookHandler.payos.enabled:
+            if not WebhookHandler.payos:
                 self._send_json({"error": "PayOS not configured"}, 503)
                 return
             try:
@@ -603,13 +603,14 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 order_code = abs(hash(order_id_str)) % (10 ** 9) or int(time.time())
 
                 FRONTEND = "https://k-beauty-order.pages.dev"
-                result = WebhookHandler.payos.create_payment(
+                payment_data = CreatePaymentLinkRequest(
                     order_code=order_code,
                     amount=amount,
                     description=description,
                     return_url=f"{FRONTEND}/order-form?payment=success&orderId={order_id_str}",
                     cancel_url=f"{FRONTEND}/order-form?payment=cancel&orderId={order_id_str}"
                 )
+                result = WebhookHandler.payos.payment_requests.create(payment_data)
                 if result:
                     # Save orderCode to order record
                     if WebhookHandler.store:
@@ -620,9 +621,8 @@ class WebhookHandler(BaseHTTPRequestHandler):
                                     o["payosOrderCode"] = order_code
                                     WebhookHandler.store._write_json(WebhookHandler.store.orders_file, orders)
                                     break
-                    checkout_url = result.get("checkoutUrl")
-                    # Log checkoutUrl for debugging
-                    logger.info(f"PayOS checkout URL created for order {order_id_str}: {checkout_url}")
+                    checkout_url = result.checkout_url
+                    logger.info(f"PayOS checkout URL: {checkout_url}")
                     self._send_json({
                         "checkoutUrl": checkout_url,
                         "orderCode": order_code

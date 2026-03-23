@@ -231,20 +231,22 @@ class GHNClient:
 
 
 class DataStore:
-    """Handles JSON file storage for orders and stock."""
+    """Handles JSON file storage for orders, stock, and chats."""
 
-    def __init__(self, orders_file: str, stock_file: str):
+    def __init__(self, orders_file: str, stock_file: str, chats_file: Optional[str] = None):
         """
         Initialize Data Store.
 
         Args:
             orders_file: Path to orders JSON file.
             stock_file: Path to stock JSON file.
+            chats_file: Path to chats JSON file (default: data/chats.json).
         """
         self.orders_file = orders_file
         self.stock_file = stock_file
         self.inventory_history_file = os.path.join(os.path.dirname(orders_file), "inventory_history.json")
         self.customers_file = os.path.join(os.path.dirname(orders_file), "customers.json")
+        self.chats_file = chats_file or os.path.join(os.path.dirname(orders_file), "chats.json")
         self._lock = threading.Lock()
         self._ensure_files()
 
@@ -258,6 +260,8 @@ class DataStore:
             self._write_json(self.inventory_history_file, [])
         if not os.path.exists(self.customers_file):
             self._write_json(self.customers_file, {})
+        if not os.path.exists(self.chats_file):
+            self._write_json(self.chats_file, {})
 
     def _read_json(self, path: str) -> Any:
         """Read JSON file with locking."""
@@ -457,6 +461,69 @@ class DataStore:
             return []
         return sorted(history, key=lambda x: x.get("timestamp", ""), reverse=True)[:limit]
 
+    def add_chat_message(self, session_id: str, name: str, phone: str, message: str, is_customer: bool = True) -> Dict[str, Any]:
+        """Add a customer message to chat session."""
+        chats = self._read_json(self.chats_file)
+        if not isinstance(chats, dict):
+            chats = {}
+
+        if session_id not in chats:
+            chats[session_id] = {
+                "session_id": session_id,
+                "name": name,
+                "phone": phone,
+                "messages": [],
+                "created_at": datetime.now().isoformat(),
+                "last_activity": datetime.now().isoformat()
+            }
+
+        chat = chats[session_id]
+        chat["name"] = name  # Update name if changed
+        chat["phone"] = phone
+        chat["last_activity"] = datetime.now().isoformat()
+
+        chat["messages"].append({
+            "role": "customer",
+            "message": message,
+            "timestamp": datetime.now().isoformat()
+        })
+
+        self._write_json(self.chats_file, chats)
+        logger.info(f"Chat message added to session {session_id}")
+        return {"ok": True, "session_id": session_id}
+
+    def add_chat_reply(self, session_id: str, text: str) -> Dict[str, Any]:
+        """Add a support reply to chat session."""
+        chats = self._read_json(self.chats_file)
+        if not isinstance(chats, dict) or session_id not in chats:
+            return {"error": "session not found"}
+
+        chat = chats[session_id]
+        chat["last_activity"] = datetime.now().isoformat()
+        chat["messages"].append({
+            "role": "support",
+            "message": text,
+            "timestamp": datetime.now().isoformat()
+        })
+
+        self._write_json(self.chats_file, chats)
+        logger.info(f"Chat reply added to session {session_id}")
+        return {"ok": True}
+
+    def get_chat_messages(self, session_id: str) -> List[Dict[str, Any]]:
+        """Get all messages for a chat session."""
+        chats = self._read_json(self.chats_file)
+        if not isinstance(chats, dict) or session_id not in chats:
+            return []
+        return chats[session_id].get("messages", [])
+
+    def get_chat_info(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get chat session info."""
+        chats = self._read_json(self.chats_file)
+        if not isinstance(chats, dict) or session_id not in chats:
+            return None
+        return chats[session_id]
+
 
 class WebhookHandler(BaseHTTPRequestHandler):
     """HTTP Handler for incoming order webhooks."""
@@ -603,6 +670,21 @@ class WebhookHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"status": "not_found"}, 404)
 
+        elif self.path.startswith("/api/chat/"):
+            # GET /api/chat/{sessionId} - Poll for chat messages
+            session_id = self.path.split("/api/chat/")[1].split("?")[0]  # Remove query params
+            if not WebhookHandler.store:
+                self._send_json({"error": "server not ready"}, 500)
+                return
+            messages = WebhookHandler.store.get_chat_messages(session_id)
+            chat_info = WebhookHandler.store.get_chat_info(session_id)
+            self._send_json({
+                "session_id": session_id,
+                "messages": messages,
+                "name": chat_info.get("name") if chat_info else None,
+                "phone": chat_info.get("phone") if chat_info else None
+            })
+
         elif self.path == "/api/create-payment":
             # POST-style but using GET for simplicity — see do_POST for actual endpoint
             self._send_json({"error": "Use POST /api/create-payment"}, 405)
@@ -650,6 +732,45 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Handle POST requests from order form and PayOS webhook."""
+
+        # --- Chat: Send Message ---
+        if self.path == "/api/chat":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                data = json.loads(self.rfile.read(content_length).decode("utf-8"))
+                session_id = data.get("sessionId", "")
+                name = data.get("name", "Anonymous")
+                phone = data.get("phone", "")
+                message = data.get("message", "")
+
+                if not session_id or not message:
+                    self._send_json({"error": "sessionId and message required"}, 400)
+                    return
+
+                if not WebhookHandler.store:
+                    self._send_json({"error": "server not ready"}, 500)
+                    return
+
+                # Save message to chats.json
+                result = WebhookHandler.store.add_chat_message(session_id, name, phone, message)
+
+                # Forward to Telegram
+                if WebhookHandler.bot:
+                    phone_str = f"📞 SĐT: `{phone}`\n" if phone else ""
+                    tg_msg = (
+                        f"💬 *Chat từ web*\n\n"
+                        f"👤 Khách: {name}\n"
+                        f"{phone_str}"
+                        f"💬 {message}\n\n"
+                        f"📌 Reply: `/reply {session_id}` nội dung"
+                    )
+                    WebhookHandler.bot.send_message(tg_msg)
+
+                self._send_json({"ok": True, "session_id": session_id})
+            except Exception as e:
+                logger.error(f"Chat POST error: {e}")
+                self._send_json({"error": str(e)}, 500)
+            return
 
         # --- PayOS: Create Payment Link ---
         if self.path == "/api/payos/create":
@@ -1011,15 +1132,17 @@ class KBeautyBot:
         
         self.orders_file = os.path.join(self.data_dir, config.get("ORDERS_FILE", "orders.json"))
         self.stock_file = config.get("STOCK_FILE", "./stock.json") # Stock usually in tools dir
-        
+        self.chats_file = os.path.join(self.data_dir, "chats.json")
+
         self.bot_client = TelegramClient(self.token, self.chat_id)
-        self.store = DataStore(self.orders_file, self.stock_file)
+        self.store = DataStore(self.orders_file, self.stock_file, self.chats_file)
         self.running = True
 
-        # Initialize PayOS client using official SDK
-        payos_client_id = config.get("PAYOS_CLIENT_ID", "")
-        payos_api_key = config.get("PAYOS_API_KEY", "")
-        payos_checksum_key = config.get("PAYOS_CHECKSUM_KEY", "")
+        # Initialize PayOS client — read from os.environ first (Railway), then config file
+        payos_client_id = os.environ.get("PAYOS_CLIENT_ID") or config.get("PAYOS_CLIENT_ID", "")
+        payos_api_key = os.environ.get("PAYOS_API_KEY") or config.get("PAYOS_API_KEY", "")
+        payos_checksum_key = os.environ.get("PAYOS_CHECKSUM_KEY") or config.get("PAYOS_CHECKSUM_KEY", "")
+        logger.info(f"PayOS init — client_id={'SET' if payos_client_id else 'MISSING'}, api_key={'SET' if payos_api_key else 'MISSING'}, checksum={'SET' if payos_checksum_key else 'MISSING'}")
 
         if PayOS and payos_client_id and payos_api_key and payos_checksum_key:
             self.payos_client = PayOS(
@@ -1146,7 +1269,21 @@ class KBeautyBot:
                                     response += "\n⚠️ Không tạo được vận đơn GHN — thêm thủ công."
                     else:
                         response = f"❌ Không tìm thấy `{oid}` hoặc trạng thái không hợp lệ"
-            
+
+            elif is_admin and text.startswith("/reply"):
+                # /reply {sessionId} {text} - Reply to web chat
+                parts = text.split(maxsplit=2)
+                if len(parts) < 3:
+                    response = "ℹ️ Dùng: `/reply sessionId nội dung`"
+                else:
+                    session_id = parts[1]
+                    reply_text = parts[2]
+                    result = self.store.add_chat_reply(session_id, reply_text)
+                    if result.get("ok"):
+                        response = f"✅ Đã reply session `{session_id}`:\n{reply_text}"
+                    else:
+                        response = f"❌ Session `{session_id}` không tồn tại"
+
             elif is_admin and text == "/test_drip":
                 response = "🚀 Đang kích hoạt chu kỳ Drip Campaign thủ công. Check log!"
                 self.bot_client.send_message(response)
@@ -1161,6 +1298,8 @@ class KBeautyBot:
                     "/orders — 10 đơn gần nhất\n"
                     "/status `ID` — Chi tiết 1 đơn\n"
                     "/update `ID` `status` — Đổi trạng thái\n\n"
+                    "💬 Live Chat:\n"
+                    "/reply `sessionId` `nội dung` — Reply khách web\n\n"
                     "📊 Báo cáo:\n"
                     "/revenue — Doanh thu tháng\n"
                     "/stock — Tồn kho\n\n"

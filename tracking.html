@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tra Cứu Đơn Hàng — K-Beauty & K-Pop Order</title>
-  <meta name="description" content="Tra cứu trạng thái đơn hàng K-Beauty & K-Pop Order bằng mã đơn hoặc số điện thoại.">
+  <title>Tra Cứu Đơn Hàng — BeaPop</title>
+  <meta name="description" content="Tra cứu trạng thái đơn hàng BeaPop bằng mã đơn hoặc số điện thoại.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
   <style>
-    .track-container { max-width: 560px; margin: 0 auto; padding: 20px 16px; }
+    .track-container { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
     .track-form { display: flex; gap: 8px; margin: 24px 0; }
     .track-form input {
       flex: 1; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--border);
@@ -20,41 +20,64 @@
       background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff;
       font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer;
     }
-    .track-result { display: none; margin-top: 24px; }
-    .track-result.show { display: block; }
-    .order-info {
+    .track-form button:hover { opacity: 0.9; }
+    .track-result { margin-top: 24px; }
+    .order-card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
-      padding: 20px; margin-bottom: 20px;
+      padding: 20px; margin-bottom: 16px;
     }
-    .order-info h3 { font-family: 'Outfit', sans-serif; color: var(--accent-pink); margin: 0 0 12px; }
-    .order-info p { color: var(--text-secondary); font-size: 0.85rem; margin: 6px 0; }
-    .order-info strong { color: var(--text-primary); }
-    .timeline { position: relative; padding-left: 32px; }
-    .timeline::before {
-      content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px;
-      background: rgba(255,255,255,0.06);
+    .order-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
     }
-    .timeline-step { position: relative; padding: 12px 0; }
-    .timeline-dot {
-      position: absolute; left: -32px; top: 14px; width: 22px; height: 22px;
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; border: 2px solid rgba(255,255,255,0.1); background: var(--bg-primary);
+    .order-header strong { font-size: 1rem; color: var(--text-primary); }
+    .order-header span { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; background: rgba(168,85,247,0.1); color: #a855f7; font-weight: 700; }
+    .order-products { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 8px; }
+    .order-total { font-size: 0.85rem; color: var(--text-primary); margin-bottom: 16px; }
+    .order-total span { color: #ff5a92; font-weight: 700; }
+    .order-timeline { display: flex; align-items: center; margin-top: 16px; position: relative; }
+    .order-timeline::before {
+      content: ''; position: absolute; left: 15px; top: 50%; right: 15px; height: 2px;
+      background: rgba(255,255,255,0.1); z-index: 0;
     }
-    .timeline-dot.done { background: #10b981; border-color: #10b981; }
-    .timeline-dot.active { background: #a855f7; border-color: #a855f7; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.4); } 50% { box-shadow: 0 0 0 8px rgba(168,85,247,0); } }
-    .timeline-title { font-weight: 700; color: var(--text-primary); font-size: 0.88rem; }
-    .timeline-title.done { color: #10b981; }
-    .timeline-title.active { color: #a855f7; }
-    .timeline-time { color: var(--text-secondary); font-size: 0.75rem; margin-top: 2px; }
+    .timeline-step {
+      position: relative; z-index: 1; flex: 1; text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .timeline-step span {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; margin-bottom: 6px;
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4);
+      border: 2px solid rgba(255,255,255,0.1);
+    }
+    .timeline-step.done span { background: #10b981; border-color: #10b981; color: #fff; }
+    .timeline-step.active span { background: #a855f7; border-color: #a855f7; color: #fff; animation: pulse 1.5s infinite; }
+    .timeline-step small { font-size: 0.65rem; color: var(--text-secondary); text-align: center; max-width: 60px; }
+    .timeline-step.done small { color: #10b981; }
+    .timeline-step.active small { color: #a855f7; }
+    .ghn-link {
+      margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .ghn-link a {
+      color: #a855f7; text-decoration: none; font-size: 0.8rem; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .ghn-link a:hover { text-decoration: underline; }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(168,85,247,0); }
+    }
     .no-result { text-align: center; color: var(--text-secondary); padding: 40px 20px; }
+    .error-msg { color: #ef4444; font-size: 0.8rem; margin-top: 8px; }
   </style>
 </head>
 <body>
 
   <nav class="nav-bar">
     <div class="nav-inner">
-      <a href="catalog.html" class="nav-brand">🇰🇷 K-Beauty</a>
+      <a href="catalog.html" class="nav-brand">🇰🇷 BeaPop</a>
       <div class="nav-links">
         <a href="catalog.html">🧴 Catalog</a>
         <a href="order-form.html">📩 Đặt Hàng</a>
@@ -66,12 +89,13 @@
 
   <div class="track-container">
     <h1 style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:800;text-align:center;color:var(--text-primary);margin-top:20px;">📦 Tra Cứu Đơn Hàng</h1>
-    <p style="text-align:center;color:var(--text-secondary);font-size:0.85rem;">Nhập mã đơn hoặc số điện thoại để xem trạng thái</p>
+    <p style="text-align:center;color:var(--text-secondary);font-size:0.85rem;">Nhập số điện thoại hoặc mã đơn hàng để xem trạng thái</p>
 
     <div class="track-form">
-      <input type="text" id="trackInput" placeholder="Mã đơn (KB-XXXX) hoặc SĐT...">
-      <button onclick="trackOrder()">🔍 Tra cứu</button>
+      <input type="text" id="trackInput" placeholder="Nhập SĐT hoặc mã đơn hàng...">
+      <button onclick="searchOrders()">🔍 Tra cứu</button>
     </div>
+    <div id="errorMsg" class="error-msg"></div>
 
     <div id="trackResult" class="track-result"></div>
   </div>
@@ -83,66 +107,106 @@
       <a href="tracking.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📦 Tra Cứu</a>
       <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📋 Chính Sách</a>
     </div>
-    <p style="font-size:0.72rem;color:var(--text-secondary);margin:0;">© 2025 K-Beauty & K-Pop Order. Made with 💜</p>
+    <p style="font-size:0.72rem;color:var(--text-secondary);margin:0;">© 2026 BeaPop. Made with 💜</p>
   </footer>
 
   <script>
-    const DEMO_ORDERS = {
-      'KB-A1B2': {
-        id: 'KB-A1B2', name: 'Nguyễn Thị Lan', phone: '0901234567',
-        items: 'COSRX Snail Mucin x1, BOJ Sun SPF50+ x1',
-        total: '800,000₫', date: '2026-03-18', status: 2,
-        steps: [
-          { title: 'Đặt hàng', time: '18/03 — 14:30' },
-          { title: 'Xác nhận', time: '18/03 — 16:00' },
-          { title: 'Đang giao', time: '19/03 — 09:00' },
-          { title: 'Hoàn thành', time: '' }
-        ]
-      },
-      'KB-C3D4': {
-        id: 'KB-C3D4', name: 'Trần Minh Anh', phone: '0912345678',
-        items: 'Anua Heartleaf Toner x1, Romand Juicy Tint x2',
-        total: '950,000₫', date: '2026-03-20', status: 3,
-        steps: [
-          { title: 'Đặt hàng', time: '20/03 — 10:15' },
-          { title: 'Xác nhận', time: '20/03 — 11:00' },
-          { title: 'Đang giao', time: '20/03 — 14:30' },
-          { title: 'Hoàn thành', time: '21/03 — 09:00' }
-        ]
-      },
-      'KB-E5F6': {
-        id: 'KB-E5F6', name: 'Lê Hà My', phone: '0987654321',
-        items: 'Combo Skincare Starter x1',
-        total: '1,100,000₫', date: '2026-03-21', status: 0,
-        steps: [
-          { title: 'Đặt hàng', time: '21/03 — 15:00' },
-          { title: 'Xác nhận', time: '' },
-          { title: 'Đang giao', time: '' },
-          { title: 'Hoàn thành', time: '' }
-        ]
-      }
-    };
+    const API_BASE = 'https://web-production-46a5.up.railway.app';
 
-    function trackOrder() {
-      const q = document.getElementById('trackInput').value.trim().toUpperCase();
-      const el = document.getElementById('trackResult');
-      if (!q) { el.className = 'track-result'; return; }
-      let order = DEMO_ORDERS[q];
-      if (!order) order = Object.values(DEMO_ORDERS).find(o => o.phone === q);
-      if (!order) {
-        el.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng.<br><span style="font-size:0.78rem;">Kiểm tra lại mã đơn hoặc SĐT.</span></div>';
-        el.className = 'track-result show'; return;
-      }
-      const icons = ['📝', '✅', '🚚', '🎉'];
-      let html = `<div class="order-info"><h3>Đơn hàng ${order.id}</h3><p><strong>Khách:</strong> ${order.name}</p><p><strong>SĐT:</strong> ${order.phone}</p><p><strong>Sản phẩm:</strong> ${order.items}</p><p><strong>Tổng:</strong> <span style="color:#ff5a92;font-weight:700;">${order.total}</span></p></div><div class="timeline">`;
-      order.steps.forEach((step, i) => {
-        const isDone = i < order.status, isActive = i === order.status;
-        html += `<div class="timeline-step"><div class="timeline-dot ${isDone?'done':isActive?'active':''}">${icons[i]}</div><div class="timeline-title ${isDone?'done':isActive?'active':''}">${step.title}</div><div class="timeline-time">${step.time||(isActive?'Đang xử lý...':'—')}</div></div>`;
-      });
-      html += '</div>';
-      el.innerHTML = html;
-      el.className = 'track-result show';
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 3000);
     }
+
+    async function searchOrders() {
+      const input = document.getElementById('trackInput').value.trim();
+      const resultEl = document.getElementById('trackResult');
+
+      if (!input) {
+        showError('Nhập SĐT hoặc mã đơn hàng');
+        return;
+      }
+
+      // Kiểm tra input là SĐT (toàn số, 9-11 số) hay mã đơn
+      const isPhone = /^\d+$/.test(input) && input.length >= 9 && input.length <= 11;
+      const url = isPhone
+        ? `${API_BASE}/api/orders?phone=${input.replace(/\D/g, '')}`
+        : `${API_BASE}/api/orders/${encodeURIComponent(input)}`;
+
+      resultEl.innerHTML = '<p style="text-align:center;color:var(--text-secondary);">🔍 Đang tìm...</p>';
+      resultEl.style.display = 'block';
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Không tìm thấy');
+        const data = await res.json();
+        const orders = Array.isArray(data) ? data : [data];
+
+        if (!orders || !orders.length) {
+          resultEl.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng nào.<br><span style="font-size:0.78rem;">Kiểm tra lại thông tin hoặc liên hệ hỗ trợ.</span></div>';
+          return;
+        }
+
+        resultEl.innerHTML = orders.map(o => renderOrder(o)).join('');
+      } catch (e) {
+        resultEl.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng nào.<br><span style="font-size:0.78rem;">Kiểm tra lại thông tin hoặc liên hệ hỗ trợ.</span></div>';
+      }
+    }
+
+    function renderOrder(o) {
+      const STATUS_MAP = {
+        pending: { label: 'Chờ xử lý', color: '#f59e0b', step: 0 },
+        confirmed: { label: 'Đã xác nhận', color: '#3b82f6', step: 1 },
+        shipping: { label: 'Đang giao', color: '#8b5cf6', step: 2 },
+        completed: { label: 'Hoàn thành', color: '#10b981', step: 3 },
+        cancelled: { label: 'Đã huỷ', color: '#ef4444', step: -1 },
+      };
+      const s = STATUS_MAP[o.status] || STATUS_MAP.pending;
+      const steps = ['Đặt hàng', 'Xác nhận', 'Đang giao', 'Hoàn thành'];
+      const ghnLink = o.ghnOrderCode
+        ? `<div class="ghn-link"><a href="https://donhang.ghn.vn/?order_code=${o.ghnOrderCode}" target="_blank">🔗 Tra cứu GHN: ${o.ghnOrderCode}</a></div>`
+        : '';
+
+      const timelineHtml = steps.map((st, i) => {
+        const isDone = i < s.step;
+        const isActive = i === s.step && s.step >= 0;
+        const className = isDone ? 'done' : (isActive ? 'active' : '');
+        const icon = isDone ? '✓' : (i + 1);
+        return `
+          <div class="timeline-step ${className}">
+            <span>${icon}</span>
+            <small>${st}</small>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="order-card">
+          <div class="order-header">
+            <strong>#${o.orderId || o.id}</strong>
+            <span style="color:${s.color}">${s.label}</span>
+          </div>
+          <div class="order-products">${o.products || o.items || '—'}</div>
+          <div class="order-total">Tổng: <span>${(o.total || o.total_amount || 0).toLocaleString('vi')}₫</span> · ${o.paymentMethod === 'cod' ? '💵 COD' : '💳 Đã thanh toán'}</div>
+          <div class="order-timeline">
+            ${timelineHtml}
+          </div>
+          ${ghnLink}
+        </div>
+      `;
+    }
+
+    // Allow Enter key to trigger search
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('trackInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchOrders();
+      });
+    });
   </script>
+
+  <!-- LIVE CHAT WIDGET -->
+  <script src="chat-widget.js" defer></script>
 </body>
 </html>

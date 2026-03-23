@@ -28,7 +28,12 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib import request, error as urllib_error
 from urllib.parse import urlencode
 
-# PayOS Client is implemented internally as PayOSClient class
+# PayOS SDK import (official package)
+try:
+    from payos import PayOS, CreatePaymentLinkRequest
+except ImportError:
+    PayOS = None
+    CreatePaymentLinkRequest = None
 
 # Configure Logging
 logging.basicConfig(
@@ -164,114 +169,9 @@ class TelegramClient:
 
 
 # ─────────────────────────────────────────
-# PayOS Integration
+# PayOS Integration - Official SDK
 # Docs: https://payos.vn/docs
 # ─────────────────────────────────────────
-class PayOSClient:
-    """Handles PayOS payment link creation and webhook verification."""
-
-    PAYOS_API = "https://api-merchant.payos.vn"
-
-    def __init__(self, client_id: str, api_key: str, checksum_key: str):
-        self.client_id = client_id
-        self.api_key = api_key
-        self.checksum_key = checksum_key
-        self.enabled = bool(client_id and api_key and checksum_key
-                            and client_id != "your_payos_client_id")
-
-    def _create_signature(self, data: Dict[str, Any]) -> str:
-        """Create HMAC-SHA256 signature from 5 fields sorted alphabetically.
-
-        PayOS v2 requires exactly these 5 fields in alphabetically sorted order:
-        amount, cancelUrl, description, orderCode, returnUrl
-        Joined as: "amount=X&cancelUrl=Y&description=Z&orderCode=N&returnUrl=W"
-        """
-        # Extract only the 5 required fields (PayOS v2 spec)
-        signature_data = {
-            "amount": data["amount"],
-            "cancelUrl": data["cancelUrl"],
-            "description": data["description"],
-            "orderCode": data["orderCode"],
-            "returnUrl": data["returnUrl"],
-        }
-        # Sort keys alphabetically and join as key=value&key=value
-        sorted_str = "&".join(
-            f"{k}={signature_data[k]}" for k in sorted(signature_data.keys())
-        )
-        return hmac.new(
-            self.checksum_key.encode("utf-8"),
-            sorted_str.encode("utf-8"),
-            hashlib.sha256
-        ).hexdigest()
-
-    def create_payment(self, order_code: int, amount: int, description: str,
-                       return_url: str, cancel_url: str) -> Optional[Dict[str, Any]]:
-        """
-        Create a PayOS payment link.
-
-        Returns dict with checkoutUrl and paymentLinkId, or None on failure.
-        """
-        if not self.enabled:
-            logger.warning("PayOS not configured — skipping payment link creation")
-            return None
-
-        payload = {
-            "orderCode": order_code,
-            "amount": int(amount),
-            "description": description[:25],  # PayOS max 25 chars
-            "returnUrl": return_url,
-            "cancelUrl": cancel_url,
-        }
-        payload["signature"] = self._create_signature(payload)
-        payload["items"] = [{"name": description[:25], "quantity": 1, "price": int(amount)}]
-
-        try:
-            req = request.Request(
-                f"{self.PAYOS_API}/v2/payment-requests",
-                data=json.dumps(payload).encode("utf-8"),
-                headers={
-                    "Content-Type": "application/json",
-                    "x-client-id": self.client_id,
-                    "x-api-key": self.api_key,
-                },
-                method="POST"
-            )
-            with request.urlopen(req, timeout=10) as resp:
-                result = json.loads(resp.read().decode("utf-8"))
-                if result.get("code") == "00":
-                    return result.get("data")
-                logger.error(f"PayOS error: {result}")
-        except urllib_error.HTTPError as e:
-            # Read response body to get detailed error from PayOS
-            try:
-                error_body = e.read().decode("utf-8")
-                logger.error(f"PayOS HTTPError {e.code}: {error_body}")
-            except Exception as read_err:
-                logger.error(f"PayOS HTTPError {e.code}: could not read body - {read_err}")
-        except Exception as e:
-            logger.error(f"PayOS create_payment error: {e}")
-        return None
-
-    def verify_webhook(self, body: Dict[str, Any]) -> bool:
-        """Verify PayOS webhook signature."""
-        if not self.enabled:
-            return False
-        received_sig = body.get("signature", "")
-        data = body.get("data", {})
-        check_str = "&".join(
-            f"{k}={data.get(k, '')}" for k in sorted([
-                "accountNumber", "amount", "counterAccountBankId",
-                "counterAccountBankName", "counterAccountName",
-                "counterAccountNumber", "currency", "description",
-                "orderCode", "paymentLinkId", "reference", "transactionDateTime", "virtualAccountName", "virtualAccountNumber"
-            ])
-        )
-        expected = hmac.new(
-            self.checksum_key.encode("utf-8"),
-            check_str.encode("utf-8"),
-            hashlib.sha256
-        ).hexdigest()
-        return hmac.compare_digest(expected, received_sig)
 
 
 class DataStore:
@@ -507,7 +407,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
     store: Optional[DataStore] = None
     bot: Optional[TelegramClient] = None
-    payos: Optional[PayOSClient] = None
+    payos: Optional[PayOS] = None
     secret: str = ""
     allow_no_secret: bool = True  # Allow requests without secret in dev mode
     base_url: str = "https://web-production-46a5.up.railway.app"
@@ -720,8 +620,11 @@ class WebhookHandler(BaseHTTPRequestHandler):
                                     o["payosOrderCode"] = order_code
                                     WebhookHandler.store._write_json(WebhookHandler.store.orders_file, orders)
                                     break
+                    checkout_url = result.get("checkoutUrl")
+                    # Log checkoutUrl for debugging
+                    logger.info(f"PayOS checkout URL created for order {order_id_str}: {checkout_url}")
                     self._send_json({
-                        "checkoutUrl": result.get("checkoutUrl"),
+                        "checkoutUrl": checkout_url,
                         "orderCode": order_code
                     })
                 else:
@@ -1044,15 +947,20 @@ class KBeautyBot:
         self.store = DataStore(self.orders_file, self.stock_file)
         self.running = True
 
-        # Initialize PayOS client (pure stdlib, no SDK needed)
-        self.payos_client = PayOSClient(
-            client_id=config.get("PAYOS_CLIENT_ID", ""),
-            api_key=config.get("PAYOS_API_KEY", ""),
-            checksum_key=config.get("PAYOS_CHECKSUM_KEY", "")
-        )
-        if self.payos_client.enabled:
+        # Initialize PayOS client using official SDK
+        payos_client_id = config.get("PAYOS_CLIENT_ID", "")
+        payos_api_key = config.get("PAYOS_API_KEY", "")
+        payos_checksum_key = config.get("PAYOS_CHECKSUM_KEY", "")
+
+        if PayOS and payos_client_id and payos_api_key and payos_checksum_key:
+            self.payos_client = PayOS(
+                client_id=payos_client_id,
+                api_key=payos_api_key,
+                checksum_key=payos_checksum_key
+            )
             logger.info("PayOS payment gateway: ENABLED ✓")
         else:
+            self.payos_client = None
             logger.warning("PayOS not configured — set PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY in .env")
 
         # Configure Webhook Handler

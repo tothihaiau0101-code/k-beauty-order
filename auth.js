@@ -9,6 +9,16 @@
   const POINTS_LOG_KEY = 'beapop_points_log';
   const USERS_DB_KEY = 'beapop_users_db';
   const RATE_LIMIT_KEY = 'beapop_rate_limit';
+  const VOUCHER_KEY = 'beapop_vouchers';
+
+  /* ---- LOYALTY REWARD MILESTONES ---- */
+  const REWARD_MILESTONES = [
+    { target: 500000,   voucher: { code: 'LOYAL500K',  label: 'Giảm 5%',  type: 'percent', value: 5 } },
+    { target: 1000000,  voucher: { code: 'LOYAL1M',    label: 'Giảm 10%', type: 'percent', value: 10, max: 100000 } },
+    { target: 2000000,  voucher: { code: 'LOYAL2M',    label: 'Giảm 50k', type: 'fixed',   value: 50000 } },
+    { target: 5000000,  voucher: { code: 'LOYAL5M',    label: 'Giảm 15%', type: 'percent', value: 15, max: 200000 } },
+    { target: 10000000, voucher: { code: 'LOYAL10M',   label: 'Giảm 20%', type: 'percent', value: 20, max: 300000 } },
+  ];
 
   /* ---- PASSWORD HASHING (PBKDF2-SHA256, 100k iterations) ---- */
   async function hashPassword(password, saltHex) {
@@ -117,6 +127,8 @@
       const earned=Math.floor((amount/10000)*this.tierMultiplier(user.tier)); if(earned<=0) return 0;
       user.points+=earned; user.totalSpent+=amount; user.orderCount+=1; user.tier=this.calcTier(user.points);
       this.updateProfile(user); this.logPoints('earn',earned,'Đơn hàng '+new Intl.NumberFormat('vi-VN').format(amount)+'₫');
+      // Check loyalty milestones for voucher rewards
+      this.checkMilestones(user.totalSpent);
       return earned;
     },
     redeemPoints(points) {

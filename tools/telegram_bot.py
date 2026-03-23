@@ -56,7 +56,7 @@ def load_env(path: str = ".env") -> Dict[str, str]:
     env_vars = {}
     if not os.path.exists(path):
         logger.warning(f"Env file not found: {path}")
-        return env_vars
+        return dict(os.environ)
 
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -172,6 +172,62 @@ class TelegramClient:
 # PayOS Integration - Official SDK
 # Docs: https://payos.vn/docs
 # ─────────────────────────────────────────
+
+
+class GHNClient:
+    """GHN Express API — tạo vận đơn COD tự động."""
+    API = "https://online-gateway.ghn.vn/shiip/public-api"
+
+    def __init__(self, token: str, shop_id: str):
+        self.token = token
+        self.shop_id = str(shop_id)
+        self.enabled = bool(token and shop_id and token != "your_ghn_token")
+
+    def create_order(self, order: dict) -> Optional[dict]:
+        """Tạo vận đơn GHN, trả về dict với order_code hoặc None."""
+        if not self.enabled:
+            logger.warning("GHN not configured")
+            return None
+        payload = {
+            "payment_type_id": 2,             # 1=người gửi trả, 2=người nhận (COD)
+            "note": order.get("note", ""),
+            "required_note": "KHONGCHOXEMHANG",
+            "to_name": order.get("name", ""),
+            "to_phone": order.get("phone", ""),
+            "to_address": order.get("address", ""),
+            "to_ward_name": "",
+            "to_district_name": "",
+            "to_province_name": "",
+            "cod_amount": int(order.get("total", 0)) + 25000,  # tiền hàng + phí COD
+            "weight": 500,        # gram, mặc định 500g
+            "length": 20,         # cm
+            "width": 15,
+            "height": 10,
+            "service_type_id": 2,  # Chuyển phát nhanh
+            "items": [
+                {"name": order.get("products", "BeaPop Order")[:100],
+                 "quantity": 1, "weight": 500}
+            ]
+        }
+        try:
+            req = request.Request(
+                f"{self.API}/v2/shipping-order/create",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "Token": self.token,
+                    "ShopId": self.shop_id,
+                },
+                method="POST"
+            )
+            with request.urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                if result.get("code") == 200:
+                    return result.get("data")  # chứa order_code, expected_delivery_time
+                logger.error(f"GHN error: {result}")
+        except Exception as e:
+            logger.error(f"GHN create_order error: {e}")
+        return None
 
 
 class DataStore:
@@ -408,6 +464,8 @@ class WebhookHandler(BaseHTTPRequestHandler):
     store: Optional[DataStore] = None
     bot: Optional[TelegramClient] = None
     payos: Optional[PayOS] = None
+    ghn: Optional[Any] = None       # GHNClient instance
+    ghn_config: dict = {}
     secret: str = ""
     allow_no_secret: bool = True  # Allow requests without secret in dev mode
     base_url: str = "https://web-production-46a5.up.railway.app"
@@ -447,6 +505,17 @@ class WebhookHandler(BaseHTTPRequestHandler):
             orders = WebhookHandler.store._read_json(WebhookHandler.store.orders_file)
             if not isinstance(orders, list):
                 orders = []
+            # Filter by phone if provided
+            query_string = self.path.split("?", 1)[1] if "?" in self.path else ""
+            params = {}
+            if query_string:
+                for param in query_string.split("&"):
+                    if "=" in param:
+                        key, value = param.split("=", 1)
+                        params[key] = value
+            phone_filter = params.get("phone", "")
+            if phone_filter:
+                orders = [o for o in orders if o.get("phone", "").replace(" ", "") == phone_filter]
             orders.sort(key=lambda x: x.get("created_at", ""), reverse=True)
             self._send_json(orders)
 
@@ -970,6 +1039,23 @@ class KBeautyBot:
         WebhookHandler.payos = self.payos_client
         WebhookHandler.base_url = config.get("BASE_URL", "https://web-production-46a5.up.railway.app")
 
+        # GHN Shipping client
+        self.ghn = GHNClient(
+            token=config.get("GHN_TOKEN", ""),
+            shop_id=config.get("GHN_SHOP_ID", "")
+        )
+        if self.ghn.enabled:
+            logger.info("GHN shipping: ENABLED ✓")
+        else:
+            logger.warning("GHN not configured — set GHN_TOKEN, GHN_SHOP_ID in .env")
+        WebhookHandler.ghn = self.ghn
+        WebhookHandler.ghn_config = {
+            "province_id": config.get("GHN_PROVINCE_ID", ""),
+            "district_id": config.get("GHN_DISTRICT_ID", ""),
+            "ward_code": config.get("GHN_WARD_CODE", ""),
+            "address": config.get("GHN_ADDRESS", ""),
+        }
+
     def _handle_command(self, message: Dict[str, Any]) -> None:
         """Process Telegram commands."""
         chat_id = message.get("chat_id")
@@ -1037,6 +1123,27 @@ class KBeautyBot:
                     if self.store.update_order_status(oid, new_st):
                         status_labels = {"pending": "🟡 Chờ xác nhận", "confirmed": "🔵 Đã xác nhận", "shipping": "🚚 Đang giao", "completed": "✅ Hoàn thành", "cancelled": "❌ Đã hủy"}
                         response = f"✅ Đơn `{oid}` → {status_labels.get(new_st, new_st)}"
+
+                        # Nếu đơn COD → tự động tạo vận đơn GHN
+                        if new_st == "shipping" and WebhookHandler.ghn and WebhookHandler.ghn.enabled:
+                            order = self.store.get_order_by_id(oid)
+                            if order and order.get("paymentMethod") == "cod":
+                                ghn_result = WebhookHandler.ghn.create_order(order)
+                                if ghn_result:
+                                    mvd = ghn_result.get("order_code", "")
+                                    delivery = ghn_result.get("expected_delivery_time", "")
+                                    # Lưu mã vận đơn vào order
+                                    orders = self.store._read_json(self.store.orders_file)
+                                    if isinstance(orders, list):
+                                        for o in orders:
+                                            if o.get("orderId") == oid:
+                                                o["ghnOrderCode"] = mvd
+                                                o["estimatedDelivery"] = delivery
+                                                self.store._write_json(self.store.orders_file, orders)
+                                                break
+                                    response += f"\n📦 GHN: `{mvd}` | Giao: {delivery[:10] if delivery else 'N/A'}"
+                                else:
+                                    response += "\n⚠️ Không tạo được vận đơn GHN — thêm thủ công."
                     else:
                         response = f"❌ Không tìm thấy `{oid}` hoặc trạng thái không hợp lệ"
             

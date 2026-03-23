@@ -28,15 +28,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib import request, error as urllib_error
 from urllib.parse import urlencode
 
-# PayOS SDK (pip install payos)
-try:
-    from payos import PayOS
-    from payos.types import CreatePaymentLinkRequest
-    PAYOS_AVAILABLE = True
-except ImportError:
-    PAYOS_AVAILABLE = False
-    logger_tmp = logging.getLogger("KBeautyBot")
-    logger_tmp.warning("PayOS SDK not installed. Run: pip install payos")
+# PayOS Client is implemented internally as PayOSClient class
 
 # Configure Logging
 logging.basicConfig(
@@ -691,13 +683,13 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 import hashlib
                 order_code = abs(hash(order_id_str)) % (10 ** 9) or int(time.time())
 
-                base = WebhookHandler.base_url
+                FRONTEND = "https://k-beauty-order.pages.dev"
                 result = WebhookHandler.payos.create_payment(
                     order_code=order_code,
                     amount=amount,
                     description=description,
-                    return_url=f"{base}/order-form.html?payment=success&orderId={order_id_str}",
-                    cancel_url=f"{base}/order-form.html?payment=cancel&orderId={order_id_str}"
+                    return_url=f"{FRONTEND}/order-form?payment=success&orderId={order_id_str}",
+                    cancel_url=f"{FRONTEND}/order-form?payment=cancel&orderId={order_id_str}"
                 )
                 if result:
                     # Save orderCode to order record

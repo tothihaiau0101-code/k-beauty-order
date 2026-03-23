@@ -345,7 +345,10 @@
         <div class="price-row">
           <span class="price">500,000₫</span>
         </div>
-        <a href="order-form.html" class="btn-order btn-order-blue">Đặt Trước</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=txt-7th" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="txt-7th">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -362,7 +365,10 @@
         <div class="price-row">
           <span class="price">600,000₫</span>
         </div>
-        <a href="order-form.html" class="btn-order btn-order-blue">Đặt Trước</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=bts-arirang" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="bts-arirang">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -379,7 +385,10 @@
         <div class="price-row">
           <span class="price">500,000₫</span>
         </div>
-        <a href="order-form.html" class="btn-order btn-order-blue">Đặt Trước</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=babymonster" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="babymonster">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -396,7 +405,10 @@
         <div class="price-row">
           <span class="price">480,000₫</span>
         </div>
-        <a href="order-form.html" class="btn-order btn-order-blue">Đặt Trước</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=kol-comeback" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="kol-comeback">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
       <div class="product-card">
@@ -413,7 +425,10 @@
         <div class="price-row">
           <span class="price">450,000₫</span>
         </div>
-        <a href="order-form.html" class="btn-order btn-order-blue">Đặt Trước</a>
+        <div class="card-actions">
+          <a href="order-form.html?select=nct-wish" class="btn-order btn-buy-now">🛒 Mua Ngay</a>
+          <button class="btn-order btn-add-cart" data-id="nct-wish">➕ Thêm Giỏ</button>
+        </div>
       </div>
 
     </div>
@@ -433,7 +448,7 @@
           <li>Sample Anua Toner</li>
           <li>Sample BoJ Sunscreen</li>
         </ul>
-        <a href="order-form.html" class="btn-order btn-order-pink">Mua Combo</a>
+        <a href="order-form.html" class="btn-order btn-order-pink" style="display:block;width:100%;padding:12px;border-radius:10px;background:#1a1a1a;color:#fff;font-weight:700;text-align:center;text-decoration:none;font-size:0.88rem;cursor:pointer;border:none;font-family:inherit;transition:all 0.2s;">Mua Combo</a>
       </div>
 
       <div class="combo-card">
@@ -443,7 +458,7 @@
           <li>Mini sunscreen SPF50+</li>
           <li>Toner pad 5 miếng</li>
         </ul>
-        <a href="order-form.html" class="btn-order btn-order-pink">Mua Combo</a>
+        <a href="order-form.html" class="btn-order btn-order-pink" style="display:block;width:100%;padding:12px;border-radius:10px;background:#1a1a1a;color:#fff;font-weight:700;text-align:center;text-decoration:none;font-size:0.88rem;cursor:pointer;border:none;font-family:inherit;transition:all 0.2s;">Mua Combo</a>
       </div>
 
       <div class="combo-card">
@@ -454,7 +469,7 @@
           <li>Sticker pack</li>
           <li>Bất ngờ thêm 🎁</li>
         </ul>
-        <a href="order-form.html" class="btn-order btn-order-blue">Mua Combo</a>
+        <a href="order-form.html" class="btn-order btn-order-blue" style="display:block;width:100%;padding:12px;border-radius:10px;background:#1a1a1a;color:#fff;font-weight:700;text-align:center;text-decoration:none;font-size:0.88rem;cursor:pointer;border:none;font-family:inherit;transition:all 0.2s;">Mua Combo</a>
       </div>
 
       <div class="combo-card">
@@ -465,7 +480,7 @@
           <li>1 album random</li>
           <li>Sticker + thiệp tay</li>
         </ul>
-        <a href="order-form.html" class="btn-order btn-order-blue">Mua Combo</a>
+        <a href="order-form.html" class="btn-order btn-order-blue" style="display:block;width:100%;padding:12px;border-radius:10px;background:#1a1a1a;color:#fff;font-weight:700;text-align:center;text-decoration:none;font-size:0.88rem;cursor:pointer;border:none;font-family:inherit;transition:all 0.2s;">Mua Combo</a>
       </div>
     </div>
   </section>
@@ -768,14 +783,18 @@
       'anua-toner':'Anua Heartleaf Toner','torriden-serum':'Torriden HA Serum',
       'skin1004':'SKIN1004 Centella','mediheal':'Mediheal Blemish Pad',
       'roundlab':'Round Lab Dokdo Toner','romand':'Romand Juicy Tint',
-      'txt-7th':'TXT — minisode 3','babymonster':'BABYMONSTER Album',
+      'txt-7th':'TXT — minisode 3','bts-arirang':'BTS — ARIRANG 5th Album',
+      'babymonster':'BABYMONSTER Album','kol-comeback':'KISS OF LIFE — Comeback',
+      'nct-wish':'NCT WISH — Full Album',
       'combo-skincare':'Combo Skincare','combo-mix':'Mix Box K-Pop+Beauty'
     };
 
     const PRODUCT_PRICES = {
       'cosrx-snail':420000,'boj-sun':380000,'anua-toner':450000,'torriden-serum':400000,
       'skin1004':420000,'mediheal':300000,'roundlab':380000,'romand':250000,
-      'txt-7th':500000,'babymonster':500000,'combo-skincare':1100000,'combo-mix':950000
+      'txt-7th':500000,'bts-arirang':500000,'babymonster':500000,
+      'kol-comeback':500000,'nct-wish':500000,
+      'combo-skincare':1100000,'combo-mix':950000
     };
 
     function updateCartUI() {

@@ -78,6 +78,45 @@
     .form-result.success { background: rgba(16,185,129,0.08); color: #059669; }
     .form-result.error { background: rgba(224,85,85,0.08); color: #dc2626; }
 
+    /* Milestone Tracker */
+    .milestone-card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+    .milestone-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .milestone-header-left { display: flex; align-items: center; gap: 8px; }
+    .milestone-header-left span { font-size: 1.1rem; }
+    .milestone-header-left strong { font-size: 0.9rem; font-weight: 700; color: #1a1a1a; }
+    .milestone-spent { font-size: 0.72rem; color: #6b6b7b; background: rgba(0,0,0,0.04); padding: 4px 10px; border-radius: 8px; }
+    .milestone-list { display: flex; flex-direction: column; gap: 10px; }
+    .milestone-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; }
+    .milestone-item.achieved { background: rgba(26,138,94,0.06); }
+    .milestone-item.next { background: rgba(168,85,247,0.06); border: 1px dashed rgba(168,85,247,0.2); }
+    .milestone-item.locked { background: rgba(0,0,0,0.02); opacity: 0.6; }
+    .milestone-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .milestone-info { flex: 1; }
+    .milestone-info-top { display: flex; justify-content: space-between; align-items: center; }
+    .milestone-target { font-size: 0.8rem; font-weight: 700; color: #1a1a1a; }
+    .milestone-reward { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+    .milestone-item.achieved .milestone-reward { background: rgba(26,138,94,0.1); color: #1a8a5e; }
+    .milestone-item.next .milestone-reward { background: rgba(168,85,247,0.1); color: #7c3aed; }
+    .milestone-item.locked .milestone-reward { background: rgba(0,0,0,0.04); color: #9a9aaa; }
+    .milestone-progress-bar { height: 4px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+    .milestone-progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #a855f7, #7c3aed); }
+
+    /* Voucher Wallet */
+    .voucher-card { display: flex; align-items: stretch; border-radius: 12px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .voucher-card.available { border: 1px solid rgba(26,138,94,0.2); }
+    .voucher-card.used { border: 1px solid rgba(0,0,0,0.06); opacity: 0.6; }
+    .voucher-left { width: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 8px; }
+    .voucher-card.available .voucher-left { background: linear-gradient(135deg, #1a8a5e, #15803d); color: #fff; }
+    .voucher-card.used .voucher-left { background: #e5e5e5; color: #999; }
+    .voucher-left .voucher-value { font-size: 1.1rem; font-weight: 900; }
+    .voucher-right { flex: 1; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; background: #fff; }
+    .voucher-code { font-size: 0.82rem; font-weight: 700; font-family: 'Inter', monospace; }
+    .voucher-desc { font-size: 0.7rem; color: #6b6b7b; margin-top: 2px; }
+    .voucher-status { font-size: 0.68rem; margin-top: 3px; font-weight: 600; }
+    .voucher-card.available .voucher-status { color: #1a8a5e; }
+    .voucher-card.used .voucher-status { color: #999; }
+    .voucher-copy-btn { padding: 6px 12px; border: 1px solid rgba(26,138,94,0.2); border-radius: 8px; background: rgba(26,138,94,0.06); color: #1a8a5e; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
+
     /* Not logged in */
     .not-logged-in { text-align: center; padding: 60px 20px; }
     .not-logged-in h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
@@ -197,6 +236,22 @@
     });
   }
 
+  function copyVoucherCode(code, btn) {
+    navigator.clipboard.writeText(code).then(function() {
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.style.background = '#1a8a5e';
+      btn.style.color = '#fff';
+      setTimeout(function() {
+        btn.textContent = originalText;
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 1500);
+    }).catch(function() {
+      alert('Không thể sao chép. Vui lòng copy thủ công: ' + code);
+    });
+  }
+
   function renderAccount() {
     const container = document.getElementById('accountContent');
     const user = window.BeaPop?.Auth?.getUser();
@@ -290,6 +345,63 @@
             <small>Áp dụng khi thanh toán</small>
           </div>
         </div>
+      </div>
+
+      <!-- 🎯 Mục Tiêu Thưởng -->
+      <div class="section-card">
+        <div class="section-title"><span>🎯</span> Mục Tiêu Thưởng</div>
+        <div class="milestone-list">
+          ${Auth.getMilestones().map(function(m, idx) {
+            const milestoneSpent = user.totalSpent || 0;
+            const earned = milestoneSpent >= m.target;
+            const prevTarget = idx === 0 ? 0 : Auth.getMilestones()[idx - 1].target;
+            const isNext = !earned && milestoneSpent >= prevTarget;
+            const statusClass = earned ? 'achieved' : isNext ? 'next' : 'locked';
+            const icon = earned ? '✅' : isNext ? '🔥' : '🔒';
+            const progress = isNext && prevTarget < m.target
+              ? Math.min(100, Math.round(((milestoneSpent - prevTarget) / (m.target - prevTarget)) * 100))
+              : (earned ? 100 : 0);
+            return '<div class="milestone-item ' + statusClass + '">' +
+              '<div class="milestone-icon">' + icon + '</div>' +
+              '<div class="milestone-info">' +
+                '<div class="milestone-info-top">' +
+                  '<span class="milestone-target">' + new Intl.NumberFormat('vi-VN').format(m.target) + '₫</span>' +
+                  '<span class="milestone-reward">' + m.voucher.label + '</span>' +
+                '</div>' +
+                (isNext ? '<div class="milestone-progress-bar"><div class="milestone-progress-fill" style="width:' + progress + '%"></div></div>' : '') +
+              '</div>' +
+            '</div>';
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- 🎟️ Voucher Của Tôi -->
+      <div class="section-card">
+        <div class="section-title"><span>🎟️</span> Voucher Của Tôi</div>
+        ${function() {
+          const vouchers = Auth.getVouchers();
+          if (vouchers.length === 0) {
+            return '<div style="text-align:center;color:#9a9aaa;font-size:0.8rem;padding:16px 0;">Mua hàng để mở khoá voucher giảm giá 🎁</div>';
+          }
+          return vouchers.map(function(v) {
+            const statusClass = v.used ? 'used' : 'available';
+            const statusText = v.used ? 'Đã dùng ' + new Date(v.usedAt).toLocaleDateString('vi-VN') : 'Sẵn dùng';
+            const valueDisplay = v.type === 'percent'
+              ? (v.max ? v.value + '% (≤' + new Intl.NumberFormat('vi-VN').format(v.max) + '₫)' : v.value + '%')
+              : new Intl.NumberFormat('vi-VN').format(v.value) + '₫';
+            return '<div class="voucher-card ' + statusClass + '">' +
+              '<div class="voucher-left"><div class="voucher-value">' + valueDisplay + '</div></div>' +
+              '<div class="voucher-right">' +
+                '<div>' +
+                  '<div class="voucher-code">' + v.code + '</div>' +
+                  '<div class="voucher-desc">' + v.label + '</div>' +
+                  '<div class="voucher-status">' + statusText + '</div>' +
+                '</div>' +
+                (!v.used ? '<button class="voucher-copy-btn" onclick="copyVoucherCode(\'' + v.code + '\', this)">Copy</button>' : '') +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }()}
       </div>
 
       <div class="section-card">

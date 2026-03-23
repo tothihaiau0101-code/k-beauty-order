@@ -26,6 +26,16 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib import request, error as urllib_error
 from urllib.parse import urlencode
 
+# PayOS SDK (pip install payos)
+try:
+    from payos import PayOS
+    from payos.types import CreatePaymentLinkRequest
+    PAYOS_AVAILABLE = True
+except ImportError:
+    PAYOS_AVAILABLE = False
+    logger_tmp = logging.getLogger("KBeautyBot")
+    logger_tmp.warning("PayOS SDK not installed. Run: pip install payos")
+
 # Configure Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -173,6 +183,7 @@ class DataStore:
         self.orders_file = orders_file
         self.stock_file = stock_file
         self.inventory_history_file = os.path.join(os.path.dirname(orders_file), "inventory_history.json")
+        self.customers_file = os.path.join(os.path.dirname(orders_file), "customers.json")
         self._lock = threading.Lock()
         self._ensure_files()
 
@@ -184,6 +195,8 @@ class DataStore:
             self._write_json(self.stock_file, [])
         if not os.path.exists(self.inventory_history_file):
             self._write_json(self.inventory_history_file, [])
+        if not os.path.exists(self.customers_file):
+            self._write_json(self.customers_file, {})
 
     def _read_json(self, path: str) -> Any:
         """Read JSON file with locking."""
@@ -200,6 +213,28 @@ class DataStore:
             os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
+
+    def get_customer(self, chat_id: str) -> Optional[Dict[str, Any]]:
+        customers = self._read_json(self.customers_file)
+        if isinstance(customers, dict):
+            return customers.get(str(chat_id))
+        return None
+
+    def save_customer(self, chat_id: str, data: Dict[str, Any]) -> None:
+        customers = self._read_json(self.customers_file)
+        if not isinstance(customers, dict):
+            customers = {}
+        customers[str(chat_id)] = data
+        self._write_json(self.customers_file, customers)
+
+    def increment_referral(self, referrer_id: str) -> bool:
+        customers = self._read_json(self.customers_file)
+        if isinstance(customers, dict) and str(referrer_id) in customers:
+            c = customers[str(referrer_id)]
+            c["invited_count"] = c.get("invited_count", 0) + 1
+            self._write_json(self.customers_file, customers)
+            return True
+        return False
 
     def add_order(self, order: Dict[str, Any]) -> None:
         """
@@ -369,6 +404,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
     bot: Optional[TelegramClient] = None
     secret: str = ""
     allow_no_secret: bool = True  # Allow requests without secret in dev mode
+    payos: Optional[Any] = None  # PayOS client instance
 
     def log_message(self, format: str, *args: Any) -> None:
         """Override to use logger."""
@@ -483,6 +519,15 @@ class WebhookHandler(BaseHTTPRequestHandler):
             history = WebhookHandler.store.get_inventory_history()
             self._send_json(history)
 
+        elif self.path.startswith("/api/order-status/"):
+            order_id = self.path.split("/api/order-status/")[1]
+            orders = WebhookHandler.store._read_json(WebhookHandler.store.orders_file)
+            order = next((o for o in orders if o.get("id") == order_id), None)
+            if order:
+                self._send_json({"status": order.get("status", "pending")})
+            else:
+                self._send_json({"status": "not_found"}, 404)
+
         else:
             self.send_response(404)
             self.end_headers()
@@ -525,7 +570,101 @@ class WebhookHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self) -> None:
-        """Handle POST requests from order form."""
+        """Handle POST requests from order form and PayOS webhook."""
+
+        # --- PayOS: Create Payment Link ---
+        if self.path == "/api/payos/create":
+            if not PAYOS_AVAILABLE or not WebhookHandler.payos:
+                self._send_json({"error": "PayOS not configured"}, 503)
+                return
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                data = json.loads(self.rfile.read(content_length).decode("utf-8"))
+                order_id_str = data.get("orderId", "")  # e.g. "KB-A1B2"
+                amount = int(data.get("amount", 0))
+                description = data.get("description", order_id_str)[:25]  # PayOS max 25 chars
+
+                if not amount or amount <= 0:
+                    self._send_json({"error": "invalid amount"}, 400)
+                    return
+
+                # Convert orderId to a numeric code for PayOS (use timestamp-based)
+                import hashlib
+                order_code = abs(hash(order_id_str)) % (10 ** 9) or int(time.time())
+
+                payment = CreatePaymentLinkRequest(
+                    order_code=order_code,
+                    amount=amount,
+                    description=description,
+                    return_url=f"https://k-beauty-order.pages.dev/order-form?payment=success&orderId={order_id_str}",
+                    cancel_url=f"https://k-beauty-order.pages.dev/order-form?payment=cancel&orderId={order_id_str}"
+                )
+                result = WebhookHandler.payos.payment_requests.create(payment)
+                self._send_json({
+                    "checkoutUrl": result.checkout_url,
+                    "orderCode": order_code,
+                    "qrCode": result.qr_code
+                })
+            except Exception as e:
+                logger.error(f"PayOS create payment error: {e}")
+                self._send_json({"error": str(e)}, 500)
+            return
+
+        # --- PayOS: Receive Payment Confirmation Webhook ---
+        if self.path == "/webhook/payos":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                raw_body = self.rfile.read(content_length).decode("utf-8")
+                data = json.loads(raw_body)
+
+                # Verify webhook signature from PayOS
+                if PAYOS_AVAILABLE and WebhookHandler.payos:
+                    try:
+                        WebhookHandler.payos.webhooks.verify(data)
+                    except Exception as verify_err:
+                        logger.warning(f"PayOS webhook verification failed: {verify_err}")
+                        self._send_json({"error": "invalid signature"}, 400)
+                        return
+
+                webhook_data = data.get("data", data)
+                status = webhook_data.get("status", "").upper()
+                order_code = str(webhook_data.get("orderCode", ""))
+                amount = webhook_data.get("amount", 0)
+
+                if status == "PAID" and WebhookHandler.store:
+                    # Find order by matching orderCode stored in order
+                    orders = WebhookHandler.store._read_json(WebhookHandler.store.orders_file)
+                    matched_order = None
+                    if isinstance(orders, list):
+                        for o in orders:
+                            if str(o.get("payosOrderCode", "")) == order_code:
+                                matched_order = o
+                                break
+
+                    if matched_order:
+                        oid = matched_order.get("orderId", matched_order.get("id", order_code))
+                        WebhookHandler.store.update_order_status(oid, "confirmed")
+                        # Notify admin via Telegram
+                        if WebhookHandler.bot:
+                            name = matched_order.get("name", matched_order.get("customer_name", "Khách"))
+                            msg = (
+                                f"💳 *Thanh Toán Thành Công!*\n\n"
+                                f"📦 Đơn: `#{oid}`\n"
+                                f"👤 Khách: {name}\n"
+                                f"💰 Số tiền: {amount:,}₫\n"
+                                f"✅ Trạng thái: Đã xác nhận"
+                            )
+                            WebhookHandler.bot.send_message(msg)
+                        logger.info(f"PayOS confirmed payment for order {oid}")
+                    else:
+                        logger.warning(f"PayOS webhook: no matching order for code {order_code}")
+
+                self._send_json({"success": True})
+            except Exception as e:
+                logger.error(f"PayOS webhook error: {e}")
+                self._send_json({"error": str(e)}, 500)
+            return
+
         if self.path != "/webhook/order":
             self.send_response(404)
             self.end_headers()
@@ -674,23 +813,42 @@ class KBeautyBot:
         self.store = DataStore(self.orders_file, self.stock_file)
         self.running = True
 
+        # Initialize PayOS client
+        payos_client_id = config.get("PAYOS_CLIENT_ID", "")
+        payos_api_key = config.get("PAYOS_API_KEY", "")
+        payos_checksum = config.get("PAYOS_CHECKSUM_KEY", "")
+        if PAYOS_AVAILABLE and payos_client_id and payos_api_key and payos_checksum:
+            self.payos_client = PayOS(
+                client_id=payos_client_id,
+                api_key=payos_api_key,
+                checksum_key=payos_checksum
+            )
+            logger.info("PayOS payment gateway initialized ✓")
+        else:
+            self.payos_client = None
+            if not PAYOS_AVAILABLE:
+                logger.warning("PayOS SDK not installed (pip install payos)")
+            else:
+                logger.warning("PayOS credentials not configured in .env")
+
         # Configure Webhook Handler
         WebhookHandler.store = self.store
         WebhookHandler.bot = self.bot_client
         WebhookHandler.secret = self.secret
+        WebhookHandler.payos = self.payos_client
 
     def _handle_command(self, message: Dict[str, Any]) -> None:
         """Process Telegram commands."""
         chat_id = message.get("chat_id")
         text = message.get("text", "").strip()
+        sender_name = message.get("from", {}).get("first_name", "Bạn")
         
-        # Security: Only allow configured chat_id to use commands
-        if str(chat_id) != str(self.chat_id):
-            return
-
+        is_admin = (str(chat_id) == str(self.chat_id))
         response = ""
+
         try:
-            if text == "/orders":
+            # ----- ADMIN COMMANDS -----
+            if is_admin and text == "/orders":
                 orders = self.store.get_recent_orders(10)
                 if not orders:
                     response = "📭 Chưa có đơn hàng nào."
@@ -705,7 +863,7 @@ class KBeautyBot:
                         icon = status_icons.get(status, '⬜')
                         response += f"{i}. {icon} #{oid} — {name} — {total:,}₫\n"
             
-            elif text == "/stock":
+            elif is_admin and text == "/stock":
                 stock = self.store.get_stock()
                 if not stock:
                     response = "📦 Dữ liệu kho trống."
@@ -715,13 +873,13 @@ class KBeautyBot:
                         status = "✅" if item.get("stock", 0) > 0 else "❌"
                         response += f"{status} {item.get('name', 'N/A')} ({item.get('stock', 0)})\n"
             
-            elif text == "/revenue":
+            elif is_admin and text == "/revenue":
                 revenue = self.store.calculate_monthly_revenue()
                 month = datetime.now().strftime("%m/%Y")
                 order_count = len([o for o in self.store._read_json(self.store.orders_file) if isinstance(o, dict) and o.get('created_at', '').startswith(datetime.now().strftime('%Y-%m'))])
                 response = f"📊 *Doanh Thu Tháng {month}*\n\n💰 {revenue:,.0f}₫\n📦 {order_count} đơn"
             
-            elif text.startswith("/status"):
+            elif is_admin and text.startswith("/status"):
                 parts = text.split(maxsplit=1)
                 if len(parts) < 2:
                     response = "ℹ️ Dùng: `/status KB-XXXX`"
@@ -737,7 +895,7 @@ class KBeautyBot:
                         st = order.get('status', 'pending')
                         response = f"📦 *Đơn #{oid}*\n\n👤 {name}\n💰 {total:,}₫\n📌 {status_labels.get(st, st)}\n🕐 {order.get('created_at', 'N/A')[:16]}"
             
-            elif text.startswith("/update"):
+            elif is_admin and text.startswith("/update"):
                 parts = text.split()
                 if len(parts) < 3:
                     response = "ℹ️ Dùng: `/update KB-XXXX confirmed`\n\nTrạng thái: `pending` `confirmed` `shipping` `completed` `cancelled`"
@@ -749,7 +907,14 @@ class KBeautyBot:
                     else:
                         response = f"❌ Không tìm thấy `{oid}` hoặc trạng thái không hợp lệ"
             
-            elif text == "/start" or text == "/help":
+            elif is_admin and text == "/test_drip":
+                response = "🚀 Đang kích hoạt chu kỳ Drip Campaign thủ công. Check log!"
+                self.bot_client.send_message(response)
+                # Call drip once directly (don't block)
+                threading.Thread(target=self._run_drip_campaign, daemon=True).start()
+                return
+            
+            elif is_admin and (text == "/start" or text == "/help"):
                 response = (
                     "👋 *Chào Admin K-Beauty Order!*\n\n"
                     "📋 Quản lý đơn:\n"
@@ -761,12 +926,62 @@ class KBeautyBot:
                     "/stock — Tồn kho\n\n"
                     "📌 Trạng thái: pending → confirmed → shipping → completed"
                 )
+            
+            # ----- CUSTOMER COMMANDS -----
+            elif not is_admin and text.startswith("/start"):
+                # Check for referral payload
+                parts = text.split()
+                referred_by = ""
+                if len(parts) > 1 and parts[1].startswith("ref_"):
+                    referred_by = parts[1].replace("ref_", "")
+                
+                # Register customer if not exists
+                customer = self.store.get_customer(str(chat_id))
+                if not customer:
+                    customer = {
+                        "chat_id": str(chat_id),
+                        "name": sender_name,
+                        "referred_by": referred_by,
+                        "invited_count": 0,
+                        "joined_at": datetime.now().isoformat()
+                    }
+                    self.store.save_customer(str(chat_id), customer)
+                    
+                    # Notify referrer if exists
+                    if referred_by and referred_by != str(chat_id):
+                        if self.store.increment_referral(referred_by):
+                            ref_msg = (
+                                f"🎉 *Chúc mừng!* Bạn vừa mời thành công 1 người bạn tham gia BeaPop.\n"
+                                f"Lượt giới thiệu của bạn đã tăng lên! Hãy nhắc bạn ấy mua hàng để bạn được cộng điểm nhé."
+                            )
+                            self.bot_client._request("sendMessage", {"chat_id": referred_by, "text": ref_msg, "parse_mode": "Markdown"})
+                
+                # Send Welcome Message + Voucher
+                response = (
+                    f"👋 Chào mừng {sender_name} đến với *BeaPop* - Mỹ phẩm Hàn & K-Pop chính hãng!\n\n"
+                    f"🎁 *Tặng bạn Voucher 10% cho đơn hàng đầu tiên!*\n"
+                    f"👉 Nhập mã: `WELCOME10` tại bước thanh toán.\n\n"
+                    f"🛒 Đặt hàng siêu tốc tại Web: [BeaPop Store](https://kbeauty-beapop.com)\n\n"
+                    f"💡 *Mẹo:* Bạn có thể dùng lệnh /ref để lấy link giới thiệu, mời bạn bè và nhận thêm lợi ích từ BeaPop!"
+                )
+                
+            elif not is_admin and text == "/ref":
+                customer = self.store.get_customer(str(chat_id))
+                invited = customer.get("invited_count", 0) if customer else 0
+                
+                response = (
+                    f"🔗 *Link giới thiệu của bạn:*\n\n"
+                    f"`https://t.me/BeaPop_Bot?start=ref_{chat_id}`\n\n"
+                    f"👨‍👩‍👧‍👦 Bạn đã giới thiệu thành công: *{invited}* người.\n"
+                    f"🎁 Gửi link này cho bạn bè. Khi họ bấm vào, hệ thống sẽ tự động ghi nhận cho bạn. Càng nhiều bạn tham gia, đặc quyền của bạn càng lớn!"
+                )
+                
             else:
-                return # Ignore unknown commands
+                if not is_admin:
+                    response = "🤖 Cám ơn bạn đã quan tâm BeaPop. Hiện tại mình chỉ là Bot tự động.\n🛒 Vui lòng truy cập website hoặc nhắn `/start` để nhận Voucher nhé!"
 
+            # Send response if any
             if response:
-                # Override chat_id for response to match incoming message
-                # Note: send_message uses self.chat_id initialized, but for safety we ensure it matches
                 payload = {
                     "chat_id": chat_id,
                     "text": response,
@@ -798,6 +1013,57 @@ class KBeautyBot:
         while self.running:
             server.handle_request()
 
+    def _run_drip_campaign(self) -> None:
+        """Background loop to send drip messages."""
+        logger.info("Started Drip Campaign thread...")
+        while self.running:
+            try:
+                customers = self.store._read_json(self.store.customers_file)
+                if isinstance(customers, dict):
+                    now = datetime.now()
+                    for cid, data in customers.items():
+                        joined_str = data.get("joined_at")
+                        if not joined_str:
+                            continue
+                        try:
+                            joined = datetime.fromisoformat(joined_str)
+                        except ValueError:
+                            continue
+                        
+                        days_passed = (now - joined).days
+                        drip_state = data.get("drip_state", 0)
+                        
+                        if days_passed >= 1 and drip_state < 1:
+                            msg = (
+                                f"🌟 Chào {data.get('name', 'bạn')}! Bạn đã ngắm được gợi ý nào ưng ý tại BeaPop chưa?\n"
+                                f"🔥 Top 3 Best Seller hôm nay đang vơi nhanh lắm, xem thử nhé:\n"
+                                f"1️⃣ Nước hoa hồng Anua Heartleaf\n"
+                                f"2️⃣ Tinh chất chống nắng BoJ\n"
+                                f"3️⃣ Serum cấp nước Torriden\n\n"
+                                f"👉 Đừng quên bạn có mã `WELCOME10` giảm 10% nha. Nhấn link mua ngay: [BeaPop Store](https://kbeauty-beapop.com/order-form.html)"
+                            )
+                            if self.bot_client._request("sendMessage", {"chat_id": cid, "text": msg, "parse_mode": "Markdown"}):
+                                data["drip_state"] = 1
+                                self.store._write_json(self.store.customers_file, customers)
+                                
+                        elif days_passed >= 2 and drip_state < 2:
+                            msg = (
+                                f"⏰ Ting ting! Mã `WELCOME10` của {data.get('name', 'bạn')} sắp hết hạn rồi!\n"
+                                f"Đừng bỏ lỡ cơ hội sở hữu mỹ phẩm Hàn Quốc chính hãng với ưu đãi đặc biệt này.\n\n"
+                                f"🛒 Chốt đơn lẹ tại: [BeaPop Store](https://kbeauty-beapop.com/order-form.html)"
+                            )
+                            if self.bot_client._request("sendMessage", {"chat_id": cid, "text": msg, "parse_mode": "Markdown"}):
+                                data["drip_state"] = 2
+                                self.store._write_json(self.store.customers_file, customers)
+
+                for _ in range(3600):
+                    if not self.running:
+                        break
+                    time.sleep(1)
+            except Exception as e:
+                logger.error(f"Drip Campaign error: {e}")
+                time.sleep(60)
+
     def run(self) -> None:
         """Start the bot."""
         # HTTP-only mode (no Telegram token set)
@@ -815,6 +1081,10 @@ class KBeautyBot:
         server_thread = threading.Thread(target=self._run_server, daemon=True)
         server_thread.start()
 
+        # Start Drip Campaign Thread
+        drip_thread = threading.Thread(target=self._run_drip_campaign, daemon=True)
+        drip_thread.start()
+
         # Start Polling in Main Thread
         try:
             self._poll_telegram()
@@ -831,7 +1101,8 @@ def main() -> None:
 
     # Railway env vars take priority over .env file
     for key in ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "WEBHOOK_PORT",
-                "WEBHOOK_SECRET", "DATA_DIR"]:
+                "WEBHOOK_SECRET", "DATA_DIR",
+                "PAYOS_CLIENT_ID", "PAYOS_API_KEY", "PAYOS_CHECKSUM_KEY"]:
         val = os.environ.get(key)
         if val:
             config[key] = val

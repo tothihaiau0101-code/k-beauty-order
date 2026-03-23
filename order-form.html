@@ -252,9 +252,9 @@
         <div class="picker-title">💳 Phương thức thanh toán</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="paymentMethods">
           <label class="pay-method active" data-method="bank" onclick="selectPayment('bank')">
-            <div style="font-size:1.4rem;margin-bottom:4px;">🏦</div>
-            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">Chuyển khoản</div>
-            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">QR Code ngân hàng</div>
+            <div style="font-size:1.4rem;margin-bottom:4px;">💳</div>
+            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">PayOS</div>
+            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">QR tự động · Xác nhận tức thì</div>
           </label>
           <label class="pay-method" data-method="momo" onclick="selectPayment('momo')">
             <div style="font-size:1.4rem;margin-bottom:4px;">📱</div>
@@ -363,6 +363,24 @@
           if (user.address) { document.getElementById('address').value = user.address; filled = true; }
           if (filled) document.getElementById('autofillBadge').style.display = 'block';
         }
+      }
+
+      // ---- M59: DETECT RETURN FROM PayOS ----
+      const _params = new URLSearchParams(window.location.search);
+      if (_params.get('payment') === 'success') {
+        const _oid = _params.get('orderId');
+        if (_oid) {
+          fetch(`${_API}/api/order-status/${_oid}`).then(r => r.json()).then(d => {
+            if (d.status === 'confirmed') {
+              showSuccessBanner(_oid);
+            } else {
+              // Chờ webhook (PayOS có thể chậm vài giây)
+              setTimeout(() => showSuccessBanner(_oid), 3000);
+            }
+          }).catch(() => showSuccessBanner(_oid));
+        }
+      } else if (_params.get('payment') === 'cancel') {
+        showToast('Bạn đã huỷ thanh toán. Đơn hàng vẫn được giữ lại.');
       }
     });
 
@@ -549,6 +567,43 @@
         total += p.price * qty;
       });
 
+      // Apply voucher discount
+      let discountAmt = 0;
+      if (activeVoucher) {
+        if (activeVoucher.type === 'percent') {
+          discountAmt = Math.round(total * activeVoucher.value / 100);
+          if (activeVoucher.max) discountAmt = Math.min(discountAmt, activeVoucher.max);
+        } else {
+          discountAmt = activeVoucher.value;
+        }
+      }
+      const finalTotal = Math.max(0, total - discountAmt);
+
+      const paymentMethod = document.getElementById('paymentMethod').value;
+      let payosCheckoutUrl = null;
+      let payosOrderCode = null;
+
+      // If bank (PayOS), create payment link first
+      if (paymentMethod === 'bank') {
+        try {
+          const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:5000' : 'https://web-production-46a5.up.railway.app';
+          const desc = `BeaPop ${orderId}`.slice(0, 25);
+          const resp = await fetch(_API + '/api/payos/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, amount: Math.round(finalTotal), description: desc })
+          });
+          if (resp.ok) {
+            const result = await resp.json();
+            payosCheckoutUrl = result.checkoutUrl;
+            payosOrderCode = result.orderCode;
+          }
+        } catch (err) {
+          console.warn('PayOS create payment failed, falling back to static QR:', err.message);
+        }
+      }
+
       const data = {
         orderId,
         name: document.getElementById('name').value.trim(),
@@ -556,13 +611,14 @@
         address: document.getElementById('address').value.trim(),
         items,
         products: items.map(i => `${i.name} x${i.qty}`).join(', '),
-        total,
-        paymentMethod: document.getElementById('paymentMethod').value,
+        total: finalTotal,
+        paymentMethod,
+        payosOrderCode,
         note: document.getElementById('note').value.trim(),
         timestamp: new Date().toISOString()
       };
 
-      // Webhook with 5s timeout
+      // Send order webhook
       try {
         const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
           ? 'http://localhost:5000' : 'https://web-production-46a5.up.railway.app';
@@ -575,14 +631,14 @@
           signal: controller.signal
         });
         clearTimeout(timeout);
-        console.log('✅ Webhook sent');
+        console.log('✅ Order webhook sent');
       } catch (err) {
         console.warn('⚠️ Webhook skip:', err.message);
       }
 
-      // Always show payment modal (regardless of webhook)
+      // Show payment modal
       const itemSummary = items.map(i => `${i.name.split(' ')[0]} x${i.qty}`).join(' ');
-      showPaymentModal(orderId, total, itemSummary);
+      showPaymentModal(orderId, finalTotal, itemSummary, payosCheckoutUrl);
 
       // Hide form
       document.getElementById('orderForm').style.display = 'none';
@@ -595,15 +651,7 @@
 
       // Clear Cart
       localStorage.removeItem('kbeauty_cart');
-      
-      document.getElementById('orderId').textContent = orderId;
-      document.getElementById('transferNote').textContent = orderId;
-      document.getElementById('displayAmount').textContent = formatPrice(total);
-      document.getElementById('qrCode').src =
-        `https://img.vietqr.io/image/970436-0791000067719-compact.png?amount=${Math.round(total)}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent('TO THI HAI AU')}`;
-      document.getElementById('successCard').classList.add('show');
 
-      // Reset button
       btn.disabled = false;
       btn.textContent = '📩 Đặt Hàng Ngay';
     });
@@ -612,6 +660,43 @@
     renderProducts('picker-beauty', PRODUCTS.beauty);
     renderProducts('picker-kpop', PRODUCTS.kpop);
     renderProducts('picker-combo', PRODUCTS.combo);
+
+    // ─── PAYOS RETURN DETECTION ───
+    (function() {
+      const _p = new URLSearchParams(window.location.search);
+      const _payment = _p.get('payment');
+      const _oid = _p.get('orderId');
+
+      function showSuccessBanner(orderId) {
+        const banner = document.createElement('div');
+        banner.id = 'payos-success-banner';
+        banner.style.cssText = [
+          'position:fixed;top:0;left:0;width:100%;z-index:9999',
+          'background:#1a8a5e;color:#fff;padding:18px 20px',
+          'text-align:center;font-weight:700;font-size:0.95rem',
+          'box-shadow:0 4px 20px rgba(26,138,94,0.3)',
+          'transform:translateY(-100%);transition:transform 0.4s cubic-bezier(0.16,1,0.3,1)'
+        ].join(';');
+        banner.innerHTML = `✅ Đặt hàng thành công! Mã đơn: <strong style="font-family:monospace;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:6px;">${orderId}</strong> — Chúng tôi sẽ liên hệ sớm nhé! 🎉`;
+        document.body.prepend(banner);
+        requestAnimationFrame(() => { banner.style.transform = 'translateY(0)'; });
+        // Xoá param khỏi URL
+        window.history.replaceState({}, '', window.location.pathname);
+        // Auto-dismiss sau 8s
+        setTimeout(() => { banner.style.transform = 'translateY(-100%)'; }, 8000);
+      }
+
+      if (_payment === 'success' && _oid) {
+        // Poll backend để xác nhận
+        fetch(_API + '/api/order-status/' + _oid)
+          .then(r => r.json())
+          .then(d => showSuccessBanner(_oid))
+          .catch(() => showSuccessBanner(_oid));
+      } else if (_payment === 'cancel') {
+        window.history.replaceState({}, '', window.location.pathname);
+        setTimeout(() => showToast('Bạn đã huỷ thanh toán. Đơn hàng vẫn được giữ lại.'), 500);
+      }
+    })();
 
     // ─── AUTO-SELECT FROM URL OR CART ───
     (function() {
@@ -677,15 +762,15 @@
   </script>
 
   <!-- PAYMENT MODAL -->
-  <div id="paymentModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;">
-    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;padding:32px 24px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(255,90,146,0.2);border:1px solid rgba(255,255,255,0.1);text-align:center;">
-      <h2 style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:8px;">✅ Đặt hàng thành công!</h2>
-      <p style="color:rgba(255,255,255,0.6);font-size:0.85rem;margin-bottom:16px;">Mã đơn: <span id="modalOrderId" style="color:#a855f7;font-weight:700;font-family:'Outfit',monospace;">KB-0000</span></p>
+  <div id="paymentModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:20px;padding:32px 24px;max-width:380px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.15);border:1px solid rgba(0,0,0,0.07);text-align:center;">
+      <h2 id="modalTitle" style="font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:800;color:#1a1a1a;margin-bottom:6px;">⏳ Đang chờ thanh toán</h2>
+      <p style="color:#6b6b7b;font-size:0.83rem;margin-bottom:16px;">Mã đơn: <span id="modalOrderId" style="color:#7c3aed;font-weight:700;font-family:'Outfit',monospace;">KB-0000</span></p>
       <div id="paymentInfo"></div>
-      <p style="color:rgba(255,255,255,0.5);font-size:0.75rem;margin-top:12px;">Ghi chú CK: <span id="modalTransferNote" style="color:#a855f7;font-weight:700;">KB-0000</span></p>
-      <button onclick="document.getElementById('paymentModal').style.display='none'" style="margin-top:20px;width:100%;padding:14px;border:none;border-radius:8px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.3s;">✓ Xác nhận</button>
-      <a href="catalog.html" style="display:block;text-align:center;margin-top:12px;color:rgba(255,255,255,0.5);font-size:0.8rem;text-decoration:none;">← Quay lại Catalog</a>
-      <p style="color:rgba(255,255,255,0.4);font-size:0.72rem;margin-top:10px;">📞 Chúng tôi sẽ liên hệ xác nhận qua SĐT của bạn</p>
+      <p style="color:#9a9aaa;font-size:0.73rem;margin-top:10px;">Ghi chú CK: <span id="modalTransferNote" style="color:#7c3aed;font-weight:600;">KB-0000</span></p>
+      <button onclick="document.getElementById('paymentModal').style.display='none'" style="margin-top:18px;width:100%;padding:13px;border:none;border-radius:10px;background:#1a8a5e;color:#fff;font-size:0.93rem;font-weight:700;cursor:pointer;transition:all 0.3s;">✓ Xác nhận</button>
+      <a href="catalog.html" style="display:block;text-align:center;margin-top:10px;color:#9a9aaa;font-size:0.78rem;text-decoration:none;">← Quay lại Catalog</a>
+      <p style="color:#9a9aaa;font-size:0.7rem;margin-top:8px;">📞 Chúng tôi sẽ liên hệ xác nhận qua SĐT của bạn</p>
     </div>
   </div>
 
@@ -706,7 +791,29 @@
       });
     }
 
-    function showPaymentModal(orderId, amount, itemSummary) {
+    // ---- M59: SHOW SUCCESS BANNER AFTER PayOS PAYMENT ----
+    function showSuccessBanner(orderId) {
+      // Remove existing banner if any
+      const existing = document.querySelector('.success-banner');
+      if (existing) existing.remove();
+
+      const banner = document.createElement('div');
+      banner.className = 'success-banner';
+      banner.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:2000;background:#1a8a5e;color:#fff;padding:16px;text-align:center;font-weight:700;font-size:1rem;animation:slideDown 0.4s ease;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+      banner.innerHTML = `✅ Đặt hàng thành công! Mã đơn: <strong>${orderId}</strong> — Chúng tôi sẽ liên hệ sớm nhé!`;
+      document.body.prepend(banner);
+      // Remove param khỏi URL
+      window.history.replaceState({}, '', window.location.pathname);
+      // Auto-hide after 8 seconds
+      setTimeout(() => {
+        banner.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+        banner.style.transform = 'translateY(-100%)';
+        banner.style.opacity = '0';
+        setTimeout(() => banner.remove(), 400);
+      }, 8000);
+    }
+
+    function showPaymentModal(orderId, amount, itemSummary, payosCheckoutUrl) {
       const method = document.getElementById('paymentMethod').value;
       const transferNote = orderId;
       const displayNote = `${orderId} ${itemSummary}`.slice(0, 50);
@@ -716,56 +823,69 @@
       const amtStr = formatVND(amount);
 
       if (method === 'bank') {
-        // VietQR: only orderId in addInfo (no special chars)
-        const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${BANK_ACC}-compact.png?amount=${Math.round(amount)}&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(BANK_NAME)}`;
-        infoEl.innerHTML = `
-          <img src="${qrUrl}" alt="VietQR" style="width:200px;height:200px;border-radius:12px;background:#fff;padding:4px;margin:12px 0;box-shadow:0 4px 16px rgba(0,0,0,0.3);">
-          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin:12px 0;text-align:left;">
-            <p style="color:#fff;font-size:0.85rem;margin:0;"><strong style="color:#a855f7;">NH:</strong> Vietcombank (VCB)</p>
-            <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">STK:</strong> ${BANK_ACC} <button onclick="copyText('${BANK_ACC}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(168,85,247,0.3);border-radius:6px;background:rgba(168,85,247,0.1);color:#a855f7;font-size:0.7rem;cursor:pointer;">Copy</button></p>
-            <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Chủ TK:</strong> ${BANK_NAME}</p>
-            <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Số tiền:</strong> <span style="color:#ff5a92;font-weight:700;">${amtStr}</span></p>
-            <p style="color:#fff;font-size:0.85rem;margin:5px 0;"><strong style="color:#a855f7;">Nội dung:</strong> <span style="color:#fbbf24;">${displayNote}</span> <button onclick="copyText('${transferNote}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(168,85,247,0.3);border-radius:6px;background:rgba(168,85,247,0.1);color:#a855f7;font-size:0.7rem;cursor:pointer;">Copy</button></p>
-          </div>
-          <p style="color:rgba(255,255,255,0.4);font-size:0.72rem;margin-top:4px;">📱 Mở app ngân hàng → Quét QR → Tự điền STK + số tiền</p>`;
-
+        if (payosCheckoutUrl) {
+          // PayOS checkout URL available → show prominent button
+          infoEl.innerHTML = `
+            <div style="background:rgba(26,138,94,0.06);border:1.5px solid rgba(26,138,94,0.25);border-radius:14px;padding:22px;margin:12px 0;">
+              <div style="font-size:2.2rem;margin-bottom:8px;">💳</div>
+              <p style="color:#1a8a5e;font-size:1rem;font-weight:700;">Thanh toán qua PayOS</p>
+              <p style="color:#1a1a1a;font-size:0.88rem;margin:10px 0;">Số tiền: <span style="color:#1a8a5e;font-weight:800;font-size:1.15rem;">${amtStr}</span></p>
+              <p style="color:#6b6b7b;font-size:0.75rem;margin-bottom:16px;">Quét QR hoặc chuyển khoản tự động — Xác nhận tức thì</p>
+              <a href="${payosCheckoutUrl}" target="_blank" style="display:inline-block;width:100%;padding:14px;background:#1a8a5e;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.93rem;box-sizing:border-box;transition:opacity 0.2s;">🚀 Thanh toán ngay qua PayOS</a>
+              <p style="color:#9a9aaa;font-size:0.7rem;margin-top:10px;">✅ Hệ thống tự xác nhận đơn sau khi nhận tiền</p>
+            </div>`;
+        } else {
+          // Fallback: static VietQR
+          const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${BANK_ACC}-compact.png?amount=${Math.round(amount)}&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(BANK_NAME)}`;
+          infoEl.innerHTML = `
+            <img src="${qrUrl}" alt="VietQR" style="width:190px;height:190px;border-radius:12px;background:#fff;padding:4px;margin:10px 0;box-shadow:0 4px 16px rgba(0,0,0,0.1);border:1px solid rgba(0,0,0,0.07);">
+            <div style="background:#f8f8f8;border-radius:10px;padding:14px;margin:10px 0;text-align:left;border:1px solid rgba(0,0,0,0.07);">
+              <p style="color:#1a1a1a;font-size:0.85rem;margin:0;"><strong style="color:#7c3aed;">NH:</strong> ACB</p>
+              <p style="color:#1a1a1a;font-size:0.85rem;margin:5px 0;"><strong style="color:#7c3aed;">STK:</strong> ${BANK_ACC} <button onclick="copyText('${BANK_ACC}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(124,58,237,0.2);border-radius:6px;background:rgba(124,58,237,0.06);color:#7c3aed;font-size:0.7rem;cursor:pointer;">Copy</button></p>
+              <p style="color:#1a1a1a;font-size:0.85rem;margin:5px 0;"><strong style="color:#7c3aed;">Số tiền:</strong> <span style="color:#1a8a5e;font-weight:700;">${amtStr}</span></p>
+              <p style="color:#1a1a1a;font-size:0.85rem;margin:5px 0;"><strong style="color:#7c3aed;">Nội dung:</strong> <span style="color:#d4a017;">${displayNote}</span> <button onclick="copyText('${transferNote}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(124,58,237,0.2);border-radius:6px;background:rgba(124,58,237,0.06);color:#7c3aed;font-size:0.7rem;cursor:pointer;">Copy</button></p>
+            </div>
+            <p style="color:#9a9aaa;font-size:0.72rem;margin-top:4px;">📱 Mở app ngân hàng → Quét QR → Tự điền STK + số tiền</p>`;
+        }
       } else if (method === 'momo') {
         // MoMo deep link
         const momoLink = `https://nhantien.momo.vn/${MOMO_PHONE}`;
         infoEl.innerHTML = `
-          <div style="background:rgba(214,48,141,0.1);border:1px solid rgba(214,48,141,0.3);border-radius:12px;padding:20px;margin:12px 0;">
-            <div style="font-size:2.5rem;margin-bottom:8px;">📱</div>
-            <p style="color:#d6308d;font-size:1.1rem;font-weight:700;">Chuyển qua MoMo</p>
-            <p style="color:#fff;font-size:0.9rem;margin-top:10px;"><strong>Số tiền:</strong> <span style="color:#ff5a92;font-weight:700;font-size:1.1rem;">${amtStr}</span></p>
-            <p style="color:#fff;font-size:0.85rem;margin-top:6px;"><strong>SĐT:</strong> ${MOMO_PHONE} <button onclick="copyText('${MOMO_PHONE}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(214,48,141,0.3);border-radius:6px;background:rgba(214,48,141,0.15);color:#d6308d;font-size:0.7rem;cursor:pointer;">Copy</button></p>
-            <p style="color:#fff;font-size:0.85rem;margin-top:4px;"><strong>Nội dung CK:</strong> <span style="color:#fbbf24;">${transferNote}</span> <button onclick="copyText('${transferNote}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(214,48,141,0.3);border-radius:6px;background:rgba(214,48,141,0.15);color:#d6308d;font-size:0.7rem;cursor:pointer;">Copy</button></p>
-            <a href="${momoLink}" target="_blank" style="display:inline-block;margin-top:14px;padding:12px 28px;background:linear-gradient(135deg,#d6308d,#a1136e);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem;">🚀 Mở MoMo chuyển ngay</a>
+          <div style="background:rgba(214,48,141,0.06);border:1.5px solid rgba(214,48,141,0.2);border-radius:14px;padding:20px;margin:12px 0;">
+            <div style="font-size:2.2rem;margin-bottom:8px;">📱</div>
+            <p style="color:#a01870;font-size:1rem;font-weight:700;">Chuyển qua MoMo</p>
+            <p style="color:#1a1a1a;font-size:0.88rem;margin-top:10px;">Số tiền: <span style="color:#a01870;font-weight:800;font-size:1.1rem;">${amtStr}</span></p>
+            <p style="color:#1a1a1a;font-size:0.83rem;margin-top:6px;">SĐT: ${MOMO_PHONE} <button onclick="copyText('${MOMO_PHONE}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(160,24,112,0.2);border-radius:6px;background:rgba(160,24,112,0.06);color:#a01870;font-size:0.7rem;cursor:pointer;">Copy</button></p>
+            <p style="color:#1a1a1a;font-size:0.83rem;margin-top:4px;">Nội dung CK: <span style="color:#d4a017;font-weight:600;">${transferNote}</span></p>
+            <a href="${momoLink}" target="_blank" style="display:inline-block;margin-top:14px;padding:12px 28px;background:#d6308d;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem;">🚀 Mở MoMo chuyển ngay</a>
           </div>`;
 
       } else if (method === 'zalopay') {
         const zaloLink = `https://social.zalopay.vn/${MOMO_PHONE}`;
         infoEl.innerHTML = `
-          <div style="background:rgba(0,132,255,0.1);border:1px solid rgba(0,132,255,0.3);border-radius:12px;padding:20px;margin:12px 0;">
-            <div style="font-size:2.5rem;margin-bottom:8px;">💙</div>
-            <p style="color:#0084ff;font-size:1.1rem;font-weight:700;">Chuyển qua ZaloPay</p>
-            <p style="color:#fff;font-size:0.9rem;margin-top:10px;"><strong>Số tiền:</strong> <span style="color:#ff5a92;font-weight:700;font-size:1.1rem;">${amtStr}</span></p>
-            <p style="color:#fff;font-size:0.85rem;margin-top:6px;"><strong>SĐT:</strong> ${MOMO_PHONE} <button onclick="copyText('${MOMO_PHONE}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(0,132,255,0.3);border-radius:6px;background:rgba(0,132,255,0.15);color:#0084ff;font-size:0.7rem;cursor:pointer;">Copy</button></p>
-            <p style="color:#fff;font-size:0.85rem;margin-top:4px;"><strong>Nội dung CK:</strong> <span style="color:#fbbf24;">${transferNote}</span> <button onclick="copyText('${transferNote}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(0,132,255,0.3);border-radius:6px;background:rgba(0,132,255,0.15);color:#0084ff;font-size:0.7rem;cursor:pointer;">Copy</button></p>
-            <a href="${zaloLink}" target="_blank" style="display:inline-block;margin-top:14px;padding:12px 28px;background:linear-gradient(135deg,#0084ff,#005ecb);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem;">🚀 Mở ZaloPay chuyển ngay</a>
+          <div style="background:rgba(0,132,255,0.06);border:1.5px solid rgba(0,132,255,0.2);border-radius:14px;padding:20px;margin:12px 0;">
+            <div style="font-size:2.2rem;margin-bottom:8px;">💙</div>
+            <p style="color:#005ecb;font-size:1rem;font-weight:700;">Chuyển qua ZaloPay</p>
+            <p style="color:#1a1a1a;font-size:0.88rem;margin-top:10px;">Số tiền: <span style="color:#005ecb;font-weight:800;font-size:1.1rem;">${amtStr}</span></p>
+            <p style="color:#1a1a1a;font-size:0.83rem;margin-top:6px;">SĐT: ${MOMO_PHONE} <button onclick="copyText('${MOMO_PHONE}',this)" style="margin-left:6px;padding:2px 8px;border:1px solid rgba(0,94,203,0.2);border-radius:6px;background:rgba(0,94,203,0.06);color:#005ecb;font-size:0.7rem;cursor:pointer;">Copy</button></p>
+            <p style="color:#1a1a1a;font-size:0.83rem;margin-top:4px;">Nội dung CK: <span style="color:#d4a017;font-weight:600;">${transferNote}</span></p>
+            <a href="${zaloLink}" target="_blank" style="display:inline-block;margin-top:14px;padding:12px 28px;background:#0084ff;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem;">🚀 Mở ZaloPay chuyển ngay</a>
           </div>`;
 
       } else if (method === 'cod') {
+        // COD — success is instant (no payment needed upfront)
+        document.getElementById('modalTitle').textContent = '✅ Đặt hàng thành công!';
         infoEl.innerHTML = `
-          <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:12px;padding:20px;margin:12px 0;">
-            <div style="font-size:2.5rem;margin-bottom:8px;">🚚</div>
-            <p style="color:#22c55e;font-size:1.1rem;font-weight:700;">Thanh toán khi nhận hàng</p>
-            <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;margin-top:12px;text-align:left;">
-              <p style="color:#fff;font-size:0.85rem;margin:0;"><strong>Tiền hàng:</strong> <span style="color:#ff5a92;">${amtStr}</span></p>
-              <p style="color:#fff;font-size:0.85rem;margin:4px 0;"><strong>Phí ship COD:</strong> <span style="color:#fbbf24;">+25,000₫</span></p>
-              <div style="height:1px;background:rgba(255,255,255,0.1);margin:8px 0;"></div>
-              <p style="color:#fff;font-size:0.95rem;margin:0;"><strong>Tổng thu:</strong> <span style="color:#22c55e;font-weight:700;font-size:1.1rem;">${formatVND(amount + 25000)}</span></p>
+          <div style="background:rgba(26,138,94,0.06);border:1.5px solid rgba(26,138,94,0.2);border-radius:14px;padding:20px;margin:12px 0;">
+            <div style="font-size:2.2rem;margin-bottom:8px;">🚚</div>
+            <p style="color:#1a8a5e;font-size:1rem;font-weight:700;">Thanh toán khi nhận hàng</p>
+            <div style="background:#f8f8f8;border-radius:10px;padding:12px;margin-top:12px;text-align:left;border:1px solid rgba(0,0,0,0.07);">
+              <p style="color:#1a1a1a;font-size:0.85rem;margin:0;">Tiền hàng: <span style="color:#1a8a5e;font-weight:700;">${amtStr}</span></p>
+              <p style="color:#1a1a1a;font-size:0.85rem;margin:4px 0;">Phí ship COD: <span style="color:#d4a017;">+25,000₫</span></p>
+              <div style="height:1px;background:rgba(0,0,0,0.07);margin:8px 0;"></div>
+              <p style="color:#1a1a1a;font-size:0.93rem;margin:0;font-weight:700;">Tổng thu: <span style="color:#1a8a5e;">${formatVND(amount + 25000)}</span></p>
             </div>
-            <p style="color:rgba(255,255,255,0.5);font-size:0.78rem;margin-top:10px;">📦 Shipper thu tiền khi giao — Chuẩn bị sẵn số tiền nhé!</p>
+            <p style="color:#6b6b7b;font-size:0.78rem;margin-top:10px;">📦 Shipper thu tiền khi giao — Chuẩn bị sẵn số tiền nhé!</p>
           </div>`;
       }
       document.getElementById('paymentModal').style.display = 'flex';

@@ -241,6 +241,13 @@ class PayOSClient:
                 if result.get("code") == "00":
                     return result.get("data")
                 logger.error(f"PayOS error: {result}")
+        except urllib_error.HTTPError as e:
+            # Read response body to get detailed error from PayOS
+            try:
+                error_body = e.read().decode("utf-8")
+                logger.error(f"PayOS HTTPError {e.code}: {error_body}")
+            except Exception as read_err:
+                logger.error(f"PayOS HTTPError {e.code}: could not read body - {read_err}")
         except Exception as e:
             logger.error(f"PayOS create_payment error: {e}")
         return None
@@ -1250,7 +1257,21 @@ class KBeautyBot:
                         
                         days_passed = (now - joined).days
                         drip_state = data.get("drip_state", 0)
-                        
+
+                        # Check if customer has any orders
+                        has_orders = False
+                        orders = self.store._read_json(self.store.orders_file)
+                        if isinstance(orders, list):
+                            for order in orders:
+                                order_chat_id = order.get("chat_id", order.get("customer_chat_id", ""))
+                                if str(order_chat_id) == str(cid):
+                                    has_orders = True
+                                    break
+
+                        # Skip if customer already has orders
+                        if has_orders:
+                            continue
+
                         if days_passed >= 1 and drip_state < 1:
                             msg = (
                                 f"🌟 Chào {data.get('name', 'bạn')}! Bạn đã ngắm được gợi ý nào ưng ý tại BeaPop chưa?\n"
@@ -1263,7 +1284,7 @@ class KBeautyBot:
                             if self.bot_client._request("sendMessage", {"chat_id": cid, "text": msg, "parse_mode": "Markdown"}):
                                 data["drip_state"] = 1
                                 self.store._write_json(self.store.customers_file, customers)
-                                
+
                         elif days_passed >= 2 and drip_state < 2:
                             msg = (
                                 f"⏰ Ting ting! Mã `WELCOME10` của {data.get('name', 'bạn')} sắp hết hạn rồi!\n"

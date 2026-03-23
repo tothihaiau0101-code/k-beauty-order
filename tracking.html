@@ -89,10 +89,10 @@
 
   <div class="track-container">
     <h1 style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:800;text-align:center;color:var(--text-primary);margin-top:20px;">📦 Tra Cứu Đơn Hàng</h1>
-    <p style="text-align:center;color:var(--text-secondary);font-size:0.85rem;">Nhập số điện thoại để xem trạng thái đơn hàng</p>
+    <p style="text-align:center;color:var(--text-secondary);font-size:0.85rem;">Nhập số điện thoại hoặc mã đơn hàng để xem trạng thái</p>
 
     <div class="track-form">
-      <input type="tel" id="trackPhone" placeholder="Nhập số điện thoại đặt hàng (ví dụ: 0901234567)...">
+      <input type="text" id="trackInput" placeholder="Nhập SĐT hoặc mã đơn hàng...">
       <button onclick="searchOrders()">🔍 Tra cứu</button>
     </div>
     <div id="errorMsg" class="error-msg"></div>
@@ -121,31 +121,37 @@
     }
 
     async function searchOrders() {
-      const phoneInput = document.getElementById('trackPhone').value;
-      const phone = phoneInput.replace(/\D/g, '');
+      const input = document.getElementById('trackInput').value.trim();
       const resultEl = document.getElementById('trackResult');
 
-      if (!phone || phone.length < 9) {
-        showError('Nhập SĐT hợp lệ (ít nhất 9 số)');
+      if (!input) {
+        showError('Nhập SĐT hoặc mã đơn hàng');
         return;
       }
+
+      // Kiểm tra input là SĐT (toàn số, 9-11 số) hay mã đơn
+      const isPhone = /^\d+$/.test(input) && input.length >= 9 && input.length <= 11;
+      const url = isPhone
+        ? `${API_BASE}/api/orders?phone=${input.replace(/\D/g, '')}`
+        : `${API_BASE}/api/orders/${encodeURIComponent(input)}`;
 
       resultEl.innerHTML = '<p style="text-align:center;color:var(--text-secondary);">🔍 Đang tìm...</p>';
       resultEl.style.display = 'block';
 
       try {
-        const res = await fetch(`${API_BASE}/api/orders?phone=${phone}`);
+        const res = await fetch(url);
         if (!res.ok) throw new Error('Không tìm thấy');
-        const orders = await res.json();
+        const data = await res.json();
+        const orders = Array.isArray(data) ? data : [data];
 
         if (!orders || !orders.length) {
-          resultEl.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng nào.<br><span style="font-size:0.78rem;">Kiểm tra lại số điện thoại hoặc liên hệ hỗ trợ.</span></div>';
+          resultEl.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng nào.<br><span style="font-size:0.78rem;">Kiểm tra lại thông tin hoặc liên hệ hỗ trợ.</span></div>';
           return;
         }
 
         resultEl.innerHTML = orders.map(o => renderOrder(o)).join('');
       } catch (e) {
-        resultEl.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng nào.<br><span style="font-size:0.78rem;">Kiểm tra lại số điện thoại hoặc liên hệ hỗ trợ.</span></div>';
+        resultEl.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng nào.<br><span style="font-size:0.78rem;">Kiểm tra lại thông tin hoặc liên hệ hỗ trợ.</span></div>';
       }
     }
 
@@ -194,7 +200,7 @@
 
     // Allow Enter key to trigger search
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('trackPhone').addEventListener('keypress', (e) => {
+      document.getElementById('trackInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') searchOrders();
       });
     });

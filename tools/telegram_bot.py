@@ -180,11 +180,23 @@ class PayOSClient:
                             and client_id != "your_payos_client_id")
 
     def _create_signature(self, data: Dict[str, Any]) -> str:
-        """Create HMAC-SHA256 signature from sorted data fields."""
-        # PayOS signature: sort keys, join as key=value&key=value
+        """Create HMAC-SHA256 signature from 5 fields sorted alphabetically.
+
+        PayOS v2 requires exactly these 5 fields in alphabetically sorted order:
+        amount, cancelUrl, description, orderCode, returnUrl
+        Joined as: "amount=X&cancelUrl=Y&description=Z&orderCode=N&returnUrl=W"
+        """
+        # Extract only the 5 required fields (PayOS v2 spec)
+        signature_data = {
+            "amount": data["amount"],
+            "cancelUrl": data["cancelUrl"],
+            "description": data["description"],
+            "orderCode": data["orderCode"],
+            "returnUrl": data["returnUrl"],
+        }
+        # Sort keys alphabetically and join as key=value&key=value
         sorted_str = "&".join(
-            f"{k}={v}" for k, v in sorted(data.items())
-            if k in ("amount", "cancelUrl", "description", "orderCode", "returnUrl")
+            f"{k}={signature_data[k]}" for k in sorted(signature_data.keys())
         )
         return hmac.new(
             self.checksum_key.encode("utf-8"),

@@ -47,6 +47,7 @@
   let userName = '';
   let userPhone = '';
   let isWaitingForReply = false;
+  let hasShownWelcome = false;
 
   // Create chat widget HTML
   function createWidget() {
@@ -419,6 +420,12 @@
       chatPopup.classList.toggle('open', isChatOpen);
 
       if (isChatOpen) {
+        // Show auto-welcome message on first open
+        if (!hasShownWelcome) {
+          showAutoWelcome();
+          hasShownWelcome = true;
+        }
+
         // Check if user needs to enter name
         const user = getUserInfo();
         if (user && user.name) {
@@ -591,6 +598,27 @@
       .catch(err => {
         console.warn('Chat poll error:', err);
       });
+  }
+
+  // Show auto-welcome message when user opens chat for the first time
+  function showAutoWelcome() {
+    const welcomeMessage = "Xin chào! 👋 Chào mừng bạn đến với BeaPop — Shop mỹ phẩm & album K-Pop chính hãng từ Hàn Quốc 🇰🇷\n\nCảm ơn bạn đã ghé thăm! Shop sẽ phản hồi tin nhắn của bạn sớm nhất có thể. Trong thời gian chờ, bạn có thể xem thêm sản phẩm tại mục Catalog nhé! 💜";
+
+    // Remove existing welcome message if any
+    const messagesContainer = document.getElementById('chatMessages');
+    const existingWelcome = messagesContainer.querySelector('.chat-welcome');
+    if (existingWelcome) {
+      existingWelcome.remove();
+    }
+
+    // Create and insert the auto-welcome message as a support-style message (left bubble)
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-message support';
+    msgDiv.innerHTML = `${escapeHtml(welcomeMessage)}<div class="chat-message-time">${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>`;
+
+    messagesContainer.appendChild(msgDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    lastMessageCount++;
   }
 
   // Initialize widget when DOM is ready

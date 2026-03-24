@@ -270,7 +270,6 @@
         <a href="catalog.html">📦 Catalog</a>
         <a href="order-form.html">📩 Đặt Hàng</a>
         <a href="#" class="active">⚙️ Admin</a>
-        <a href="tester.html">🎁 Tester</a>
       </div>
     </div>
   </nav>
@@ -508,572 +507,81 @@
     </div>
   </div>
 
-  <script>
-    const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000'
-      : 'https://web-production-46a5.up.railway.app';
-    let allOrders = [];
-    let currentSort = { key: 'created_at', asc: false };
+  <script type="module">
+    // ─── ES MODULE IMPORTS ───
+    import { getAuthToken, formatVND } from './src/admin/utils.js';
+    import { initOrders } from './src/admin/orders.js';
+    import { initStock } from './src/admin/stock.js';
+    import { initAnalytics } from './src/admin/analytics.js';
 
-    const STATUS_MAP = {
-      pending:   { label: 'Chờ xác nhận', icon: '🟡', cls: 'status-pending' },
-      confirmed: { label: 'Đã xác nhận',  icon: '🔵', cls: 'status-confirmed' },
-      shipping:  { label: 'Đang giao',    icon: '🚚', cls: 'status-shipping' },
-      completed: { label: 'Hoàn thành',   icon: '✅', cls: 'status-completed' },
-      cancelled: { label: 'Đã hủy',       icon: '❌', cls: 'status-cancelled' }
-    };
+    // Expose utils globally for formatting
+    window._utils = { formatVND };
 
-    // ─── FETCH DATA ───
-    async function loadData() {
-      try {
-        const [ordersRes, statsRes] = await Promise.all([
-          fetch(`${API}/api/orders`),
-          fetch(`${API}/api/stats`)
-        ]);
-        if (ordersRes.ok) {
-          allOrders = await ordersRes.json();
-          renderTable();
-        }
-        if (statsRes.ok) {
-          const s = await statsRes.json();
-          document.getElementById('kpiTotal').textContent = s.total_orders;
-          document.getElementById('kpiPending').textContent = s.pending;
-          document.getElementById('kpiShipping').textContent = s.shipping;
-          document.getElementById('kpiRevenue').textContent = formatVND(s.revenue);
-        }
-        document.getElementById('lastRefresh').textContent = `Cập nhật: ${new Date().toLocaleTimeString('vi')}`;
-      } catch (e) {
-        document.getElementById('emptyState').style.display = 'block';
-        document.getElementById('emptyState').innerHTML =
-          '<div class="empty-icon">⚠️</div>' +
-          '<p>Không kết nối được server</p>' +
-          '<p style="font-size:0.8rem;margin-top:8px;">Chạy <code>cd tools && python telegram_bot.py</code> trước</p>';
-      }
-    }
+    // ─── AUTH GUARD ───
+    const _token = getAuthToken();
+    if (!_token) window.location.href = 'login.html';
 
-    // ─── RENDER TABLE ───
-    function renderTable() {
-      const search = document.getElementById('searchInput').value.toLowerCase();
-      const filterSt = document.getElementById('filterStatus').value;
-
-      let filtered = allOrders.filter(o => {
-        const name = (o.name || o.customer_name || '').toLowerCase();
-        const phone = (o.phone || '').toLowerCase();
-        const oid = (o.orderId || o.id || '').toLowerCase();
-        const matchSearch = !search || name.includes(search) || phone.includes(search) || oid.includes(search);
-        const matchStatus = !filterSt || (o.status || 'pending') === filterSt;
-        return matchSearch && matchStatus;
-      });
-
-      // Sort
-      filtered.sort((a, b) => {
-        let va = a[currentSort.key] || '';
-        let vb = b[currentSort.key] || '';
-        if (currentSort.key === 'total') {
-          va = parseFloat(a.total || a.total_amount || 0);
-          vb = parseFloat(b.total || b.total_amount || 0);
-        }
-        if (va < vb) return currentSort.asc ? -1 : 1;
-        if (va > vb) return currentSort.asc ? 1 : -1;
-        return 0;
-      });
-
-      const tbody = document.getElementById('orderBody');
-      const empty = document.getElementById('emptyState');
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = '';
-        empty.style.display = 'block';
-        return;
-      }
-      empty.style.display = 'none';
-
-      tbody.innerHTML = filtered.map(o => {
-        const oid = o.orderId || o.id || '—';
-        const name = o.name || o.customer_name || '—';
-        const phone = o.phone || '—';
-        const total = o.total || o.total_amount || 0;
-        const status = o.status || 'pending';
-        const st = STATUS_MAP[status] || STATUS_MAP.pending;
-        const time = o.created_at ? o.created_at.slice(0,16).replace('T',' ') : '—';
-        return `<tr onclick="openModal('${oid}')">
-          <td><strong>${oid}</strong></td>
-          <td>${name}</td>
-          <td>${phone}</td>
-          <td style="color:var(--accent-pink);font-weight:600">${formatVND(total)}</td>
-          <td><span class="status-badge ${st.cls}">${st.icon} ${st.label}</span></td>
-          <td style="color:var(--text-secondary)">${time}</td>
-        </tr>`;
-      }).join('');
-    }
-
-    // ─── SORT ───
-    function sortBy(key) {
-      if (currentSort.key === key) currentSort.asc = !currentSort.asc;
-      else { currentSort.key = key; currentSort.asc = true; }
-      renderTable();
-    }
-
-    // ─── MODAL ───
-    function openModal(oid) {
-      const o = allOrders.find(x => (x.orderId || x.id) === oid);
-      if (!o) return;
-
-      const status = o.status || 'pending';
-      const st = STATUS_MAP[status] || STATUS_MAP.pending;
-      const name = o.name || o.customer_name || '—';
-      const total = o.total || o.total_amount || 0;
-      const items = o.items || [];
-      const time = o.created_at ? o.created_at.slice(0,16).replace('T',' ') : '—';
-
-      let itemsHtml = '';
-      if (items.length > 0) {
-        itemsHtml = items.map(i =>
-          `<div class="item-line">
-            <span>▪️ ${i.name || 'Item'} x${i.qty || 1}</span>
-            <span class="item-total">${formatVND((i.price || 0) * (i.qty || 1))}</span>
-          </div>`
-        ).join('');
-      } else {
-        const prod = o.products || '';
-        itemsHtml = prod ? `<div class="item-line"><span>▪️ ${prod}</span></div>` : '<div style="color:var(--text-secondary)">Không có chi tiết</div>';
-      }
-
-      const statuses = ['pending','confirmed','shipping','completed','cancelled'];
-      const statusBtns = statuses.map(s => {
-        const sm = STATUS_MAP[s];
-        const isActive = s === status ? 'active' : '';
-        return `<button class="status-btn ${isActive}" onclick="updateStatus('${oid}','${s}')">${sm.icon} ${sm.label}</button>`;
-      }).join('');
-
-      document.getElementById('modalContent').innerHTML = `
-        <button class="modal-close" onclick="closeModal()">✕</button>
-        <h2>📦 Đơn #${oid}</h2>
-        <div class="modal-row"><span class="label">👤 Khách hàng</span><span class="value">${name}</span></div>
-        <div class="modal-row"><span class="label">📞 Số điện thoại</span><span class="value">${o.phone || '—'}</span></div>
-        <div class="modal-row"><span class="label">📍 Địa chỉ</span><span class="value">${o.address || '—'}</span></div>
-        <div class="modal-row"><span class="label">🕐 Thời gian</span><span class="value">${time}</span></div>
-        <div class="modal-row"><span class="label">📌 Trạng thái</span><span class="value"><span class="status-badge ${st.cls}">${st.icon} ${st.label}</span></span></div>
-        <div class="modal-divider"></div>
-        <div style="font-weight:600;font-size:0.85rem;margin-bottom:8px;">📦 Sản phẩm:</div>
-        <div class="modal-items">${itemsHtml}</div>
-        <div class="modal-divider"></div>
-        <div class="modal-row"><span class="label" style="font-weight:700;font-size:0.95rem;">💰 Tổng cộng</span><span class="value" style="font-size:1.1rem;color:var(--accent-pink);font-weight:800;">${formatVND(total)}</span></div>
-        ${o.note ? `<div class="modal-row"><span class="label">📝 Ghi chú</span><span class="value">${o.note}</span></div>` : ''}
-        <div class="modal-divider"></div>
-        <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Đổi trạng thái:</div>
-        <div class="status-actions">${statusBtns}</div>
-      `;
-      document.getElementById('modalOverlay').classList.add('active');
-    }
-
-    function closeModal() {
-      document.getElementById('modalOverlay').classList.remove('active');
-    }
-
-    // ─── UPDATE STATUS ───
-    async function updateStatus(oid, newStatus) {
-      try {
-        const res = await fetch(`${API}/api/orders/${oid}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        });
-        if (res.ok) {
-          closeModal();
-          await loadData();
-          // Re-open modal with updated data
-          setTimeout(() => openModal(oid), 200);
-        }
-      } catch (e) {
-        alert('Lỗi kết nối server');
-      }
-    }
-
-    // ─── EXPORT CSV ───
-    function exportCSV() {
-      if (allOrders.length === 0) return alert('Không có dữ liệu');
-      const headers = ['Mã đơn','Ngày','Khách hàng','SĐT','Địa chỉ','Sản phẩm','Tổng tiền','Trạng thái'];
-      const rows = allOrders.map(o => {
-        const items = (o.items || []).map(i => `${i.name||''}x${i.qty||1}`).join('; ') || o.products || '';
-        const status = o.status || 'pending';
-        const statusLabel = STATUS_MAP[status]?.label || status;
-        return [
-          o.orderId || o.id || '',
-          (o.created_at||'').slice(0,10),
-          o.name || o.customer_name || '',
-          o.phone || '',
-          o.address || '',
-          items,
-          o.total || o.total_amount || 0,
-          statusLabel
-        ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
-      });
-      const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `don-hang-${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    // ─── HELPERS ───
-    function formatVND(n) {
-      n = parseFloat(n) || 0;
-      if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0','') + 'M';
-      if (n > 0) return n.toLocaleString('vi') + '₫';
-      return '0₫';
-    }
-
-    // ─── TOGGLE CHART ───
-    let chartLoaded = false;
-    function toggleChart() {
-      const section = document.querySelector('.chart-section');
-      const label = document.querySelector('#kpiRevenueCard .kpi-label');
-      if (section.classList.contains('visible')) {
-        section.classList.remove('visible');
-        label.textContent = 'Doanh thu tháng ▼';
-      } else {
-        section.classList.add('visible');
-        label.textContent = 'Doanh thu tháng ▲';
-        if (!chartLoaded) {
-          fetch(`${API}/api/revenue-monthly`).then(r => r.json()).then(renderChart);
-          chartLoaded = true;
+    // ─── INITIALIZE MODULES ───
+    window._orders = initOrders({
+      onStatsLoaded: (s) => {
+        document.getElementById('kpiTotal').textContent = s.total_orders;
+        document.getElementById('kpiPending').textContent = s.pending;
+        document.getElementById('kpiShipping').textContent = s.shipping;
+        document.getElementById('kpiRevenue').textContent = formatVND(s.revenue);
+      },
+      onEmptyState: (opts) => {
+        const el = document.getElementById('emptyState');
+        if (el) {
+          el.style.display = 'block';
+          el.innerHTML = '<div class="empty-icon">⚠️</div>' +
+            '<p>' + opts.message + '</p>' +
+            '<p style="font-size:0.8rem;margin-top:8px;">' + opts.hint + '</p>';
         }
       }
-    }
+    });
 
-    // ─── RENDER CHART ───
-    function renderChart(data) {
-      const container = document.getElementById('chartContainer');
-      const summary = document.getElementById('chartSummary');
-      if (!data || data.length === 0) return;
+    window._stock = initStock();
+    window._analytics = initAnalytics(() => window._orders.getAllOrders());
 
-      const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
-      const currentMonth = new Date().toISOString().slice(0,7);
-      const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
-      const totalOrders = data.reduce((s, d) => s + d.orders, 0);
-      const avgRevenue = data.filter(d => d.revenue > 0).length > 0
-        ? totalRevenue / data.filter(d => d.revenue > 0).length : 0;
-
-      container.innerHTML = data.map((d, i) => {
-        const pct = maxRevenue > 0 ? (d.revenue / maxRevenue * 100) : 0;
-        const isCurrent = d.month === currentMonth;
-        const barClass = d.revenue === 0 ? 'empty' : (isCurrent ? 'current' : '');
-        return `<div class="chart-bar-wrap">
-          <div class="chart-bar-value">${d.revenue > 0 ? formatVND(d.revenue) : ''}</div>
-          <div class="chart-bar ${barClass}" style="height:0%" data-height="${Math.max(pct, d.revenue > 0 ? 3 : 1)}%"
-               title="${d.label}: ${formatVND(d.revenue)} — ${d.orders} đơn"></div>
-          <div class="chart-bar-label">${d.label}</div>
-        </div>`;
-      }).join('');
-
-      // Animate bars
-      setTimeout(() => {
-        container.querySelectorAll('.chart-bar').forEach((bar, i) => {
-          setTimeout(() => {
-            bar.style.height = bar.dataset.height;
-          }, i * 60);
-        });
-      }, 100);
-
-      summary.innerHTML = `
-        <div class="chart-summary-item">
-          <div class="chart-summary-value">${formatVND(totalRevenue)}</div>
-          <div class="chart-summary-label">Tổng 12 tháng</div>
-        </div>
-        <div class="chart-summary-item">
-          <div class="chart-summary-value">${totalOrders}</div>
-          <div class="chart-summary-label">Tổng đơn</div>
-        </div>
-        <div class="chart-summary-item">
-          <div class="chart-summary-value">${formatVND(avgRevenue)}</div>
-          <div class="chart-summary-label">Trung bình/tháng</div>
-        </div>
-      `;
-    }
-
-    // ─── EVENTS ───
-    document.getElementById('searchInput').addEventListener('input', renderTable);
-    document.getElementById('filterStatus').addEventListener('change', renderTable);
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeStockModal(); } });
-
-    // Auto-refresh every 30s
-    loadData();
-    setInterval(loadData, 30000);
-
-    // ─── TAB SWITCH ───
-    const TAB_MAP = ['orders','stock','customers','analytics','loyalty'];
-    function switchTab(tab) {
+    // ─── EXPOSE GLOBALS FOR HTML ONCLICK HANDLERS ───
+    window.switchTab = async (tab) => {
+      const TAB_MAP = ['orders','stock','customers','analytics','loyalty'];
+      if (window._orders.getAllOrders().length === 0) await window._orders.loadData();
       const idx = TAB_MAP.indexOf(tab);
       document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
       TAB_MAP.forEach(t => {
         const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
         if (el) el.classList.toggle('active', t === tab);
       });
-      if (tab === 'stock') loadStock();
-      if (tab === 'customers') loadCustomers();
-      if (tab === 'analytics') loadAnalytics();
-      if (tab === 'loyalty') loadLoyalty();
-    }
+      if (tab === 'stock') window._stock.loadStock();
+      if (tab === 'customers') window._analytics.loadCustomers();
+      if (tab === 'analytics') window._analytics.loadAnalytics();
+      if (tab === 'loyalty') window._analytics.loadLoyalty();
+    };
 
-    // ─── ANALYTICS (M50) ───
-    function loadAnalytics() {
-      const orders = JSON.parse(localStorage.getItem('kb_orders') || '[]');
-      const total = orders.length || 1;
-      const completed = orders.filter(o => o.status === 'completed').length;
-      document.getElementById('convRate').textContent = Math.round(completed / total * 100) + '%';
-      const cancelled = orders.filter(o => o.status === 'cancelled').length;
-      const shipped = orders.filter(o => o.status === 'shipping' || o.status === 'completed').length;
-      document.getElementById('deliveryRate').textContent = shipped ? Math.round(completed / shipped * 100) + '%' : '—';
-      document.getElementById('cancelRate').textContent = Math.round(cancelled / total * 100) + '%';
-      const revenue = orders.reduce((s, o) => s + (o.total || 0), 0);
-      document.getElementById('avgOrder').textContent = Math.round(revenue / total).toLocaleString('vi') + '₫';
-      // Top products
-      const prod = {};
-      orders.forEach(o => (o.items || []).forEach(it => { prod[it.name] = (prod[it.name] || 0) + (it.qty || 1); }));
-      const sorted = Object.entries(prod).sort((a, b) => b[1] - a[1]).slice(0, 5);
-      const topEl = document.getElementById('topProducts');
-      if (sorted.length) {
-        topEl.innerHTML = sorted.map((p, i) => {
-          const pct = Math.round(p[1] / (sorted[0][1] || 1) * 100);
-          return `<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:0.82rem;"><span style="color:var(--text-primary);">${i+1}. ${p[0]}</span><span style="color:#a855f7;font-weight:700;">${p[1]} sold</span></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;margin-top:4px;"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#a855f7,#ec4899);border-radius:3px;"></div></div></div>`;
-        }).join('');
-      } else {
-        topEl.innerHTML = '<p style="color:var(--text-secondary);font-size:0.82rem;">Chưa có dữ liệu sản phẩm</p>';
-      }
-      // Weekly chart
-      const days = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const key = d.toISOString().slice(0, 10);
-        const label = d.toLocaleDateString('vi', {weekday:'short'});
-        const count = orders.filter(o => (o.date || '').startsWith(key)).length;
-        days.push({label, count});
-      }
-      const maxD = Math.max(...days.map(d => d.count), 1);
-      document.getElementById('weeklyChart').innerHTML = days.map(d => {
-        const h = Math.round(d.count / maxD * 120);
-        return `<div style="flex:1;text-align:center;"><div style="height:${h || 4}px;background:linear-gradient(180deg,#a855f7,#7c3aed);border-radius:4px 4px 0 0;margin:0 auto;width:70%;min-height:4px;"></div><div style="font-size:0.68rem;color:var(--text-secondary);margin-top:6px;">${d.label}</div><div style="font-size:0.7rem;color:#a855f7;font-weight:700;">${d.count}</div></div>`;
-      }).join('');
-    }
+    // Re-export functions needed by HTML onclick handlers
+    window.openModal = window._orders.openModal;
+    window.closeModal = window._orders.closeModal;
+    window.updateStatus = window._orders.updateStatus;
+    window.exportCSV = window._orders.exportCSV;
+    window.sortBy = window._orders.sortBy;
 
-    // ─── LOYALTY (M51) ───
-    function loadLoyalty() {
-      const orders = JSON.parse(localStorage.getItem('kb_orders') || '[]');
-      const cust = {};
-      orders.forEach(o => {
-        const key = o.phone || o.name || 'Unknown';
-        if (!cust[key]) cust[key] = { name: o.name || 'N/A', phone: o.phone || 'N/A', spent: 0 };
-        cust[key].spent += o.total || 0;
-      });
-      const list = Object.values(cust).sort((a, b) => b.spent - a.spent);
-      const body = document.getElementById('loyaltyBody');
-      if (!list.length) {
-        body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-secondary);">Chưa có dữ liệu khách hàng</td></tr>';
-        return;
-      }
-      body.innerHTML = list.map(c => {
-        const pts = Math.floor(c.spent / 10000);
-        const tier = pts >= 200 ? ['💎 VIP', 'tier-gold'] : pts >= 100 ? ['🥇 Gold', 'tier-gold'] : pts >= 50 ? ['🥈 Silver', 'tier-silver'] : ['🥉 Bronze', 'tier-bronze'];
-        return `<tr><td style="font-weight:600;">${c.name}</td><td>${c.phone}</td><td style="color:#ff5a92;font-weight:600;">${c.spent.toLocaleString('vi')}₫</td><td style="color:#a855f7;font-weight:700;">${pts} ⭐</td><td><span class="tier-badge ${tier[1]}">${tier[0]}</span></td></tr>`;
-      }).join('');
-    }
+    window.openStockModal = window._stock.openStockModal;
+    window.closeStockModal = window._stock.closeStockModal;
+    window.confirmStock = window._stock.confirmStock;
 
-    // ─── STOCK DATA ───
-    let stockData = [];
-    async function loadStock() {
-      try {
-        const [stockRes, histRes] = await Promise.all([
-          fetch(`${API}/api/inventory`),
-          fetch(`${API}/api/inventory/history`)
-        ]);
-        stockData = await stockRes.json();
-        const history = await histRes.json();
-        renderStockTable(stockData);
-        renderHistory(history);
-      } catch(e) { console.error('Load stock error', e); }
-    }
+    window.toggleChart = window._analytics.toggleChart;
+    window.renderChart = window._analytics.renderChart;
+    window.renderCustomers = window._analytics.renderCustomers;
 
-    function renderStockTable(items) {
-      document.getElementById('skuTotal').textContent = items.length;
-      document.getElementById('skuInStock').textContent = items.filter(i => i.stock > 2).length;
-      document.getElementById('skuLow').textContent = items.filter(i => i.stock > 0 && i.stock <= 2).length;
-      document.getElementById('skuOut').textContent = items.filter(i => i.stock === 0).length;
+    // ─── EVENTS ───
+    document.getElementById('searchInput')?.addEventListener('input', () => window._orders.renderTable());
+    document.getElementById('filterStatus')?.addEventListener('change', () => window._orders.renderTable());
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { window.closeModal(); window.closeStockModal(); } });
 
-      document.getElementById('stockBody').innerHTML = items.map(p => {
-        const bc = p.stock === 0 ? 'out-stock' : p.stock <= 2 ? 'low-stock' : 'in-stock';
-        const bt = p.stock === 0 ? 'Hết hàng' : p.stock <= 2 ? `Còn ${p.stock}` : `${p.stock} sp`;
-        return `<tr>
-          <td><strong>${p.id}</strong></td>
-          <td>${p.name}</td>
-          <td>${p.category || ''}</td>
-          <td><span class="stock-badge ${bc}">${bt}</span></td>
-          <td>${formatVND(p.price)}</td>
-          <td style="white-space:nowrap;">
-            <button class="btn-stock btn-in" onclick="openStockModal('${p.id}','in')">+ Nhập</button>
-            <button class="btn-stock btn-out" onclick="openStockModal('${p.id}','out')" ${p.stock === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>- Xuất</button>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-
-    function renderHistory(items) {
-      const body = document.getElementById('historyBody');
-      if (!items || items.length === 0) {
-        body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Chưa có lịch sử</td></tr>';
-        return;
-      }
-      body.innerHTML = items.slice(0, 20).map(h => `<tr>
-        <td>${(h.timestamp || '').slice(0, 16).replace('T', ' ')}</td>
-        <td>${h.name || h.id}</td>
-        <td><span class="history-action ${h.action}">${h.action === 'in' ? '📥 Nhập' : '📤 Xuất'}</span></td>
-        <td><strong>${h.qty}</strong></td>
-        <td>${h.note || '—'}</td>
-        <td>${h.stock_after}</td>
-      </tr>`).join('');
-    }
-
-    // ─── STOCK MODAL ───
-    let stockModalId = '', stockModalAction = '';
-    function openStockModal(id, action) {
-      stockModalId = id; stockModalAction = action;
-      const p = stockData.find(i => i.id === id);
-      document.getElementById('stockModalTitle').textContent = action === 'in' ? `📥 Nhập hàng: ${p?.name || id}` : `📤 Xuất hàng: ${p?.name || id}`;
-      document.getElementById('stockQty').value = 1;
-      document.getElementById('stockNote').value = '';
-      const btn = document.getElementById('stockConfirmBtn');
-      btn.className = action === 'in' ? 'btn-confirm-in' : 'btn-confirm-out';
-      btn.textContent = action === 'in' ? '✅ Nhập' : '📤 Xuất';
-      document.getElementById('stockModal').classList.add('show');
-    }
-    function closeStockModal() { document.getElementById('stockModal').classList.remove('show'); }
-    async function confirmStock() {
-      const qty = parseInt(document.getElementById('stockQty').value) || 0;
-      const note = document.getElementById('stockNote').value;
-      if (qty <= 0) return alert('Số lượng phải > 0');
-      try {
-        const res = await fetch(`${API}/api/inventory/${stockModalId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: stockModalAction, quantity: qty, note })
-        });
-        const result = await res.json();
-        if (result.error) return alert('Lỗi: ' + result.error);
-        closeStockModal();
-        loadStock();
-      } catch(e) { alert('Lỗi kết nối API'); }
-    }
-
-    // ─── CUSTOMERS DATA ───
-    let customerData = [];
-    async function loadCustomers() {
-      try {
-        const res = await fetch(`${API}/api/orders`);
-        if (!res.ok) return;
-        const orders = await res.json();
-
-        // Group by phone number
-        const customerMap = new Map();
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        for (const o of orders) {
-          const phone = o.phone || '';
-          if (!phone) continue;
-
-          if (!customerMap.has(phone)) {
-            customerMap.set(phone, {
-              phone: phone,
-              name: o.name || o.customer_name || '—',
-              orders: 0,
-              totalSpent: 0,
-              lastOrder: null
-            });
-          }
-
-          const cust = customerMap.get(phone);
-          cust.orders += 1;
-          cust.totalSpent += parseFloat(o.total || o.total_amount || 0);
-
-          const orderDate = o.created_at ? new Date(o.created_at) : null;
-          if (orderDate && (!cust.lastOrder || orderDate > cust.lastOrder)) {
-            cust.lastOrder = orderDate;
-          }
-
-          // Check if new customer (first order within 30 days)
-          if (orderDate && orderDate < thirtyDaysAgo) {
-            cust.isNew = false;
-          }
-        }
-
-        // Mark customers as new if their first order is within 30 days
-        for (const cust of customerMap.values()) {
-          if (!cust.lastOrder || cust.lastOrder >= thirtyDaysAgo) {
-            cust.isNew = true;
-          }
-        }
-
-        customerData = Array.from(customerMap.values());
-        renderCustomers();
-      } catch(e) {
-        console.error('Load customers error', e);
-        document.getElementById('customerEmpty').style.display = 'block';
-      }
-    }
-
-    function getTier(orders) {
-      if (orders >= 6) return { label: '🥇 Gold', cls: 'tier-gold' };
-      if (orders >= 3) return { label: '🥈 Silver', cls: 'tier-silver' };
-      return { label: '🥉 Bronze', cls: 'tier-bronze' };
-    }
-
-    function renderCustomers() {
-      const search = document.getElementById('customerSearch').value.toLowerCase();
-
-      let filtered = customerData.filter(c => {
-        if (!search) return true;
-        return (c.name || '').toLowerCase().includes(search) || (c.phone || '').toLowerCase().includes(search);
-      });
-
-      // Update KPIs
-      const totalCustomers = customerData.length;
-      const newCustomers = customerData.filter(c => c.isNew).length;
-      const vipCustomers = customerData.filter(c => c.orders >= 3).length;
-
-      document.getElementById('custTotal').textContent = totalCustomers;
-      document.getElementById('custNew').textContent = newCustomers;
-      document.getElementById('custVip').textContent = vipCustomers;
-
-      const tbody = document.getElementById('customerBody');
-      const empty = document.getElementById('customerEmpty');
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = '';
-        empty.style.display = 'block';
-        return;
-      }
-      empty.style.display = 'none';
-
-      // Sort by total spent desc
-      filtered.sort((a, b) => b.totalSpent - a.totalSpent);
-
-      tbody.innerHTML = filtered.map((c, i) => {
-        const tier = getTier(c.orders);
-        const lastOrderStr = c.lastOrder ? c.lastOrder.toISOString().slice(0, 16).replace('T', ' ') : '—';
-        return `<tr>
-          <td>${i + 1}</td>
-          <td>${c.name}</td>
-          <td>${c.phone}</td>
-          <td>${c.orders}</td>
-          <td style="color:var(--accent-pink);font-weight:600">${formatVND(c.totalSpent)}</td>
-          <td style="color:var(--text-secondary)">${lastOrderStr}</td>
-          <td><span class="tier-badge ${tier.cls}">${tier.label}</span></td>
-        </tr>`;
-      }).join('');
-    }
+    // Auto-refresh every 30s
+    window._orders.loadData();
+    setInterval(() => window._orders.loadData(), 30000);
   </script>
 </body>
 </html>

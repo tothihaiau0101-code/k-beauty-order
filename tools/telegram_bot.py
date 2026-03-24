@@ -31,7 +31,9 @@ from urllib.parse import urlencode
 # PayOS SDK import (official package)
 try:
     from payos import PayOS, CreatePaymentLinkRequest
-except ImportError:
+except Exception as e:
+    import logging
+    logging.getLogger("KBeautyBot.Init").error(f"Failed to import PayOS: {e}")
     PayOS = None
     CreatePaymentLinkRequest = None
 

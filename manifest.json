@@ -1,0 +1,26 @@
+{
+  "name": "K-Beauty Order System",
+  "short_name": "K-Beauty",
+  "description": "Premium K-Beauty products ordering platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f13",
+  "theme_color": "#d63384",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "business"],
+  "lang": "en-US"
+}

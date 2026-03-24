@@ -1,0 +1,2 @@
+# Allow .env to be uploaded to Railway
+!.env

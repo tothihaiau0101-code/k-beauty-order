@@ -11,6 +11,80 @@ M41 Cart Dropdown · M42 Search · M43 Order Confirm · M26 Voucher · M44 Revie
 
 ## 🔴 SPRINT 4A — Còn thiếu (Worker làm ngay)
 
+### MISSION 62: Sửa lỗi Service Worker Failed (PWA)
+**File**: `index.html`, `sw.js`, `offline.html` [NEW] · **Effort**: 30m
+
+**Vấn đề:** Giao diện báo lỗi "Service Worker Failed" do đường dẫn tĩnh tuyệt đối (`/sw.js`) không hoạt động đúng trên sub-folder hoặc Pages, đồng thời script thiếu file `offline.html`.
+
+**Yêu cầu Worker sửa như sau:**
+
+**Bước 1 — Sửa đường dẫn tuyệt đối trong `index.html`:**
+Ở thẻ `<link rel="manifest">` và lệnh đăng ký `navigator.serviceWorker.register`, sửa `/` thành `./`:
+```html
+<link rel="manifest" href="./manifest.json">
+<!-- ... -->
+navigator.serviceWorker.register('./sw.js')
+```
+
+**Bước 2 — Sửa mảng `STATIC_ASSETS` trong `sw.js`:**
+Cập nhật file cache đúng với thực tế thư mục `k-beauty-order`:
+```javascript
+const OFFLINE_PAGE = './offline.html';
+
+const STATIC_ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './offline.html',
+  './styles.css',
+  './auth.js',
+  './chat-widget.js',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap'
+];
+```
+
+**Bước 3 — Tạo file `offline.html` [NEW]:**
+Tạo file HTML hiển thị lỗi mất kết nối mạng. Màu nền `#0f0f13`, chữ `You are offline` và chứa nút `Thử lại` để reload trang (`window.location.reload()`).
+
+**Commit**: `fix(M62): service worker relative paths and offline page fallback`
+
+---
+
+### MISSION 63: Trang Đăng Ký Trải Nghiệm & Review (BeaPop Tester)
+**File**: `tester.html` [NEW], `catalog.html` (và các file có navbar) · **Effort**: 2h
+
+**Cơ chế:** Chương trình tặng sản phẩm miễn phí (hoặc minisize) để người dùng dùng thử và viết review thật trên website.
+
+**Yêu cầu Worker thực hiện:**
+
+**Bước 1 — Tạo giao diện `tester.html` [NEW]:**
+- Kế thừa `<nav>`, CSS background và `<footer>` từ `catalog.html`.
+- **Hero Banner**: "BeaPop Tester — Trở thành người dùng thử mỹ phẩm Hàn Quốc miễn phí và chia sẻ cảm nhận của bạn".
+- **Danh sách Chiến dịch (Campaigns)**: Hiển thị 2-3 sản phẩm đang mở đăng ký test (Ví dụ: "Test Sữa Rửa Mặt RoundLab", "Kem Chống Nắng BoJ"). Mỗi thẻ có hiển thị số lượng slot (VD: "Còn 10/50 slot") và nút **"Đăng ký dùng thử"**.
+
+**Bước 2 — Modal Giới Thiệu & Form Đăng ký:**
+- Khi bấm "Đăng ký dùng thử", hiển thị modal form yêu cầu nhập:
+  - Tên, SĐT, Địa chỉ nhận quà.
+  - Tình trạng da (Select: Dầu / Khô / Hỗn hợp / Nhạy cảm).
+  - Link MXH (Facebook/TikTok/IG) — Tuỳ chọn, nhưng ghi chú "Ưu tiên duyệt nếu có link MXH".
+- Khi user submit: 
+  - Validate dữ liệu, lưu LocalStorage (vd: `kbeauty_tester`).
+  - Đóng form, hiện CSS Toast xanh lá: "✅ Đăng ký thành công! BeaPop sẽ liên hệ qua Zalo/SĐT nếu bạn được chọn."
+
+**Bước 3 — Nút Báo cáo Review dành cho Tester:**
+- Ở dưới cùng trang (hoặc góc trên), có nút/banner: **"Bạn đã nhận được sản phẩm test? Viết review ngay"**.
+- Nút này sẽ link sang trang `reviews.html` với query param đặc biệt, hoặc mở một popup riêng trên trang báo cáo để Tester gắn link bài post của họ & review sao.
+
+**Bước 4 — Thêm link vào Navbar toàn trang:**
+- Mở `catalog.html`, `order-form.html`, `reviews.html`, `admin.html`, `account.html`, thêm link vào phần `<div class="nav-links">`:
+  ```html
+  <a href="tester.html">🎁 Tester</a>
+  ```
+
+**Commit**: `feat(M63): new product tester and review application page`
+
+---
+
 ### MISSION 61: Trang Giỏ Hàng riêng (cart.html)
 **File**: `cart.html` [NEW], `catalog.html`, `order-form.html` · **Effort**: 2h
 
@@ -1081,7 +1155,7 @@ railway variables set GHN_TOKEN=xxx GHN_SHOP_ID=xxx GHN_PROVINCE_ID=201 GHN_DIST
 
 ```bash
 # Sprint 4A (ưu tiên):
-mekong run -p "Đóng vai Engineer. Đọc file cto_dispatch_missions.md. Thực hiện Sprint 4A: M45 (filter), M4 (social), M46 (tracking page). Mỗi mission commit riêng. Xong deploy."
+mekong run -p "Đóng vai Engineer. Đọc file cto_dispatch_missions.md. Thực hiện Sprint 4A: M62 (Sửa lỗi Service Worker PWA), M63 (Tạo trang Đăng ký Tester tester.html), M45 (filter), M4 (social), M46 (tracking page). Làm theo đúng thứ tự. Mỗi mission commit riêng. Xong deploy."
 
 # Sprint 5:
 mekong run -p "Đóng vai Engineer. Đọc file cto_dispatch_missions.md. Thực hiện Sprint 5: M47 (blog), M48 (PWA). Mỗi mission commit riêng. Xong deploy."

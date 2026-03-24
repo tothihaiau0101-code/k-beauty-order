@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hướng Dẫn Mekong CLI — K-Beauty Order</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a;--bg2:#111827;--bg3:#1e293b;--bg4:#293548;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --accent:#6366f1;--accent2:#818cf8;--accent3:#a5b4fc;
+  --green:#34d399;--yellow:#fbbf24;--red:#f87171;--cyan:#22d3ee;--pink:#f472b6;--orange:#fb923c;
+  --border:#1e293b;--radius:12px;
+}
+html{scroll-behavior:smooth;font-size:15px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh}
+
+/* Sidebar */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:280px;background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;padding:24px 0;z-index:10;transition:transform .3s}
+.sidebar-header{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.sidebar-header h2{font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,var(--accent2),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar-header p{font-size:.75rem;color:var(--text3);margin-top:4px}
+.nav-group{margin:8px 0}
+.nav-group-title{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:8px 20px 4px;font-weight:600}
+.nav-link{display:flex;align-items:center;gap:8px;padding:6px 20px;color:var(--text2);text-decoration:none;font-size:.82rem;transition:all .15s;border-left:2px solid transparent}
+.nav-link:hover{color:var(--text);background:rgba(99,102,241,.08);border-left-color:var(--accent2)}
+.nav-link .emoji{font-size:.9rem;width:20px;text-align:center}
+
+/* Main */
+.main{margin-left:280px;flex:1;max-width:900px;padding:40px 60px 80px}
+
+/* Hero */
+.hero{text-align:center;padding:60px 0 50px;border-bottom:1px solid var(--border);margin-bottom:50px}
+.hero h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,var(--accent2),var(--cyan),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;letter-spacing:-.5px}
+.hero .subtitle{color:var(--text2);font-size:1rem}
+.hero .badges{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.badge{font-size:.72rem;padding:4px 12px;border-radius:20px;font-weight:500;border:1px solid}
+.badge.ver{border-color:var(--accent);color:var(--accent2)}
+.badge.date{border-color:var(--text3);color:var(--text3)}
+.badge.proj{border-color:var(--pink);color:var(--pink)}
+
+/* Architecture diagram */
+.arch-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin:24px 0;overflow-x:auto}
+.arch-layer{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:8px;margin:4px 0;transition:all .2s;cursor:default}
+.arch-layer:hover{transform:translateX(4px)}
+.arch-layer .num{font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:4px;min-width:26px;text-align:center}
+.arch-layer .name{font-weight:600;font-size:.9rem;min-width:120px}
+.arch-layer .desc{font-size:.78rem;color:var(--text2)}
+.l0{background:rgba(99,102,241,.08)}.l0 .num{background:var(--accent);color:#fff}
+.l1{background:rgba(244,114,182,.08)}.l1 .num{background:var(--pink);color:#fff}
+.l2{background:rgba(251,191,36,.08)}.l2 .num{background:var(--yellow);color:#000}
+.l3{background:rgba(52,211,153,.08)}.l3 .num{background:var(--green);color:#000}
+.l4{background:rgba(34,211,238,.08)}.l4 .num{background:var(--cyan);color:#000}
+.l5{background:rgba(129,140,248,.08)}.l5 .num{background:var(--accent2);color:#fff}
+.l6{background:rgba(251,146,60,.08)}.l6 .num{background:var(--orange);color:#000}
+
+/* Sections */
+.section{margin-bottom:56px}
+.section-title{font-size:1.5rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.section-desc{color:var(--text2);font-size:.88rem;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+
+/* Command card */
+.cmd{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;transition:border-color .2s}
+.cmd:hover{border-color:var(--accent)}
+.cmd-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.cmd-name{font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:600;color:var(--accent3)}
+.cmd-star{color:var(--yellow);font-size:1.1rem}
+.cmd-purpose{color:var(--text2);font-size:.85rem;margin-bottom:16px;line-height:1.6}
+
+/* Code blocks */
+pre{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.8;color:var(--accent3)}
+code{font-family:'JetBrains Mono',monospace;font-size:.8rem;background:var(--bg3);padding:2px 6px;border-radius:4px;color:var(--cyan)}
+pre code{background:none;padding:0;color:inherit}
+.comment{color:var(--text3)}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.82rem}
+th{background:var(--bg3);text-align:left;padding:10px 14px;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);border-bottom:2px solid var(--accent)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text2)}
+td:first-child{font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:500;white-space:nowrap}
+tr:hover td{background:rgba(99,102,241,.04)}
+
+/* Tip box */
+.tip{background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(34,211,238,.05));border:1px solid rgba(99,102,241,.2);border-radius:var(--radius);padding:16px 20px;margin:16px 0;font-size:.85rem;display:flex;gap:10px;align-items:flex-start}
+.tip.warn{background:linear-gradient(135deg,rgba(251,191,36,.1),rgba(251,146,60,.05));border-color:rgba(251,191,36,.2)}
+.tip.kbeauty{background:linear-gradient(135deg,rgba(244,114,182,.1),rgba(244,114,182,.03));border-color:rgba(244,114,182,.2)}
+.tip .icon{font-size:1.1rem;flex-shrink:0}
+
+/* Flow */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0}
+.flow-step{background:var(--bg3);padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:500;color:var(--accent3)}
+.flow-arrow{color:var(--text3);font-size:.8rem}
+
+/* Quick ref */
+.quick-ref{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+.qr-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.qr-card h4{font-size:.82rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+
+/* Agent table */
+.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.agent-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;transition:border-color .2s}
+.agent-card:hover{border-color:var(--accent)}
+.agent-card .role{font-weight:700;font-size:.85rem;margin-bottom:4px}
+.agent-card .model{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--cyan)}
+.agent-card .desc{font-size:.75rem;color:var(--text3);margin-top:6px}
+
+/* Responsive */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .main{margin-left:0;padding:24px 20px 60px}
+  .quick-ref,.agent-grid{grid-template-columns:1fr}
+  .hero h1{font-size:1.6rem}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h2>🌊 Mekong CLI</h2>
+    <p>Hướng dẫn sử dụng v5.0</p>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Tổng quan</div>
+    <a href="#arch" class="nav-link"><span class="emoji">🏗</span> Kiến trúc 6 tầng</a>
+    <a href="#setup" class="nav-link"><span class="emoji">⚙</span> Cài đặt & Cấu hình</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Tầng 0 — Meta</div>
+    <a href="#meta" class="nav-link"><span class="emoji">🔧</span> help · cook · init · status</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Tầng 1 — Studio</div>
+    <a href="#studio" class="nav-link"><span class="emoji">🎨</span> brainstorm · design · content</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Tầng 2 — Founder</div>
+    <a href="#founder" class="nav-link"><span class="emoji">🏛</span> intel · binh-phap · fundraise</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Tầng 3 — Business</div>
+    <a href="#business" class="nav-link"><span class="emoji">💼</span> sales · marketing · finance</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Tầng 4 — Product</div>
+    <a href="#product" class="nav-link"><span class="emoji">📦</span> plan · sprint · launch · ship</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Tầng 5 — Engineering</div>
+    <a href="#engineering" class="nav-link"><span class="emoji">🛠</span> code · fix · review · deploy</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Tầng 6 — Ops</div>
+    <a href="#ops" class="nav-link"><span class="emoji">⚙</span> ops · sync · monitor</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Nâng cao</div>
+    <a href="#water" class="nav-link"><span class="emoji">🌊</span> Water Protocol 水</a>
+    <a href="#agents" class="nav-link"><span class="emoji">🤖</span> Agents & Routing</a>
+    <a href="#quickref" class="nav-link"><span class="emoji">📌</span> Quick Reference</a>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main">
+
+<!-- Hero -->
+<div class="hero">
+  <h1>Hướng Dẫn Sử Dụng Mekong CLI</h1>
+  <p class="subtitle">Tài liệu chi tiết theo kiến trúc 6 tầng — Dự án K-Beauty Order</p>
+  <div class="badges">
+    <span class="badge ver">v5.0</span>
+    <span class="badge date">22/03/2026</span>
+    <span class="badge proj">🌸 K-Beauty Order</span>
+  </div>
+</div>
+
+<!-- Architecture -->
+<div class="section" id="arch">
+  <h2 class="section-title">🏗 Kiến Trúc 6 Tầng</h2>
+  <p class="section-desc">Mekong CLI là nền tảng kinh doanh vận hành bằng AI, tổ chức theo 6 tầng từ chiến lược đến thực thi.</p>
+  <div class="arch-box">
+    <div class="arch-layer l1"><span class="num">1</span><span class="name">STUDIO</span><span class="desc">Sáng tạo — brainstorm, design, branding, content</span></div>
+    <div class="arch-layer l2"><span class="num">2</span><span class="name">FOUNDER</span><span class="desc">Chiến lược — fundraise, intel, binh-phap, SWOT</span></div>
+    <div class="arch-layer l3"><span class="num">3</span><span class="name">BUSINESS</span><span class="desc">Kinh doanh — sales, marketing, finance, CRM</span></div>
+    <div class="arch-layer l4"><span class="num">4</span><span class="name">PRODUCT</span><span class="desc">Sản phẩm — plan, sprint, roadmap, launch, ship</span></div>
+    <div class="arch-layer l5"><span class="num">5</span><span class="name">ENGINEERING</span><span class="desc">Kỹ thuật — code, fix, review, deploy, test</span></div>
+    <div class="arch-layer l6"><span class="num">6</span><span class="name">OPS</span><span class="desc">Vận hành — ops, status, monitor, sync, security</span></div>
+    <div class="arch-layer l0"><span class="num">0</span><span class="name">META</span><span class="desc">Xuyên suốt — help, cook, init, bootstrap, status</span></div>
+  </div>
+  <div class="tip">
+    <span class="icon">💡</span>
+    <div><strong>Nguyên lý cốt lõi:</strong> PEV (Plan→Execute→Verify) · MCU billing · Water Protocol 水 · Jidoka (tự kiểm)</div>
+  </div>
+</div>
+
+<!-- Setup -->
+<div class="section" id="setup">
+  <h2 class="section-title">⚙ Cài Đặt & Cấu Hình</h2>
+  <p class="section-desc">Thiết lập Mekong CLI trên máy của bạn.</p>
+  <pre><code><span class="comment"># Cài đặt Python CLI</span>
+pip install -e .
+
+<span class="comment"># Cấu hình LLM — hỗ trợ MỌI nhà cung cấp</span>
+export LLM_BASE_URL="https://api.anthropic.com"
+export LLM_API_KEY="sk-ant-..."
+export LLM_MODEL="claude-sonnet-4-6"
+
+<span class="comment"># Kiểm tra sức khỏe</span>
+mekong doctor check</code></pre>
+</div>
+
+<!-- TẦNG 0 — META -->
+<div class="section" id="meta">
+  <h2 class="section-title">🔧 Tầng 0 — META</h2>
+  <p class="section-desc">Các lệnh xuyên suốt — nền tảng cho mọi hoạt động.</p>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/help</span></div>
+    <p class="cmd-purpose">Hiển thị danh sách tất cả lệnh. Tự nhận diện persona (dev / non-tech) để hiển thị phù hợp.</p>
+    <pre><code>mekong help              <span class="comment"># Xem tất cả lệnh</span>
+mekong help cook         <span class="comment"># Chi tiết lệnh cook</span></code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/cook</span><span class="cmd-star">⭐</span></div>
+    <p class="cmd-purpose">Lệnh <strong>số 1 quan trọng nhất!</strong> Nhận mô tả bằng ngôn ngữ tự nhiên → tự phân loại → chọn agent + model → thực thi PEV pipeline → billing.</p>
+    <pre><code><span class="comment"># CMO viết content marketing</span>
+mekong cook "viết email marketing cho bộ serum mới"
+
+<span class="comment"># CTO fix bug</span>
+mekong cook "sửa lỗi validation SĐT trong order-form" --agent cto
+
+<span class="comment"># Xem kế hoạch trước, không tốn MCU</span>
+mekong cook "thêm loyalty points" --dry-run
+
+<span class="comment"># Data agent phân tích</span>
+mekong cook "phân tích top 10 sản phẩm bán chạy Q1" --agent data</code></pre>
+    <table>
+      <tr><th>Flag</th><th>Mô tả</th></tr>
+      <tr><td>--agent &lt;role&gt;</td><td>Chỉ định agent: cto · cmo · coo · cfo · cs · sales · editor · data</td></tr>
+      <tr><td>--model &lt;id&gt;</td><td>Chỉ định model LLM cụ thể</td></tr>
+      <tr><td>--dry-run</td><td>Chỉ lên kế hoạch, không thực thi, không tính MCU</td></tr>
+      <tr><td>--no-bill</td><td>Thực thi nhưng không tính MCU (dev/test)</td></tr>
+      <tr><td>--strict</td><td>Fail ngay nếu verify không pass</td></tr>
+      <tr><td>--verbose</td><td>Hiện chi tiết routing và quyết định</td></tr>
+    </table>
+    <div class="flow">
+      <span class="flow-step">SCAN</span><span class="flow-arrow">→</span>
+      <span class="flow-step">CLASSIFY</span><span class="flow-arrow">→</span>
+      <span class="flow-step">MODEL SELECT</span><span class="flow-arrow">→</span>
+      <span class="flow-step">PEV EXECUTE</span><span class="flow-arrow">→</span>
+      <span class="flow-step">BILLING</span><span class="flow-arrow">→</span>
+      <span class="flow-step">MEMORY</span>
+    </div>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/init</span></div>
+    <p class="cmd-purpose">Tự động setup toàn bộ cấu trúc AgencyOS. <strong>Không hỏi gì</strong> — zero questions, auto-detect.</p>
+    <pre><code>mekong init              <span class="comment"># Khởi tạo trong thư mục hiện tại</span></code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/bootstrap</span><span class="cmd-star">⭐</span></div>
+    <p class="cmd-purpose">Orchestrator lớn nhất — toàn bộ quy trình: hỏi yêu cầu → research → tech stack → plan → design → code → test → review → deploy → docs.</p>
+    <pre><code>mekong bootstrap "website đặt hàng mỹ phẩm Hàn, hỗ trợ COD, tích hợp Telegram"</code></pre>
+    <div class="tip kbeauty"><span class="icon">🌸</span><div>Đây chính là cách dự án K-Beauty Order được khởi tạo!</div></div>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/status</span></div>
+    <p class="cmd-purpose">Dashboard sức khỏe: Ollama, API keys, MCU balance, git status, company config.</p>
+    <pre><code>mekong status</code></pre>
+  </div>
+</div>
+
+<!-- TẦNG 1 — STUDIO -->
+<div class="section" id="studio">
+  <h2 class="section-title">🎨 Tầng 1 — STUDIO</h2>
+  <p class="section-desc">Tầng sáng tạo & thiết kế — nơi ý tưởng được sinh ra.</p>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/brainstorm</span></div>
+    <p class="cmd-purpose">Động não ý tưởng. Nhận phân tích đa chiều với 2-3 giải pháp kèm pros/cons. <strong>Chỉ tư vấn, không code.</strong></p>
+    <pre><code>mekong brainstorm "nên dùng Shopify hay tự build cho K-Beauty?"
+mekong brainstorm "chiến lược pricing cho dòng serum cao cấp"</code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/design</span></div>
+    <p class="cmd-purpose">Tạo design guidelines, wireframes HTML cho developers.</p>
+    <pre><code>mekong design "form đặt hàng mobile-first cho K-Beauty"</code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/branding · /content · /video</span></div>
+    <p class="cmd-purpose">Brand identity (logo, colors) · Viết nội dung theo brand voice · Kịch bản video marketing.</p>
+    <pre><code>mekong branding "K-Beauty VN — mỹ phẩm Hàn tại Việt Nam"
+mekong content "mô tả COSRX Snail Mucin cho website"
+mekong video "script TikTok 60s review skincare Hàn Quốc"</code></pre>
+  </div>
+</div>
+
+<!-- TẦNG 2 — FOUNDER -->
+<div class="section" id="founder">
+  <h2 class="section-title">🏛 Tầng 2 — FOUNDER</h2>
+  <p class="section-desc">Chiến lược cấp cao — tầm nhìn, huy động vốn, tình báo thị trường.</p>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/intel</span></div>
+    <p class="cmd-purpose">Thu thập tình báo: phân tích đối thủ, xu hướng thị trường, profile nhà đầu tư.</p>
+    <pre><code>mekong intel "Hasaki.vn"                     <span class="comment"># Deep dive đối thủ</span>
+mekong intel market "mỹ phẩm Hàn Quốc VN"   <span class="comment"># Phân tích thị trường</span></code></pre>
+    <div class="tip kbeauty"><span class="icon">🌸</span><div>Dùng <code>mekong intel "Hasaki.vn"</code> trước khi ra mắt để hiểu pricing, strengths của đối thủ.</div></div>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/binh-phap · /swot · /okr · /fundraise · /competitor</span></div>
+    <p class="cmd-purpose">Chiến lược Binh Pháp Tôn Tử · SWOT · OKR · Huy động vốn · So sánh đối thủ.</p>
+    <pre><code>mekong binh-phap "chiến lược thâm nhập thị trường mỹ phẩm Hàn tại VN"
+mekong swot "K-Beauty Order"
+mekong okr "Q2 2026 — tăng trưởng đơn hàng 200%"
+mekong fundraise "seed round $200K cho K-Beauty VN"
+mekong competitor "so sánh K-Beauty với Hasaki, Lixibox"</code></pre>
+  </div>
+</div>
+
+<!-- TẦNG 3 — BUSINESS -->
+<div class="section" id="business">
+  <h2 class="section-title">💼 Tầng 3 — BUSINESS</h2>
+  <p class="section-desc">Sales, marketing, tài chính, khách hàng.</p>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/sales</span></div>
+    <p class="cmd-purpose">Pipeline bán hàng: lead → qualify → proposal → close → invoice.</p>
+    <pre><code>mekong sales                    <span class="comment"># Pipeline overview</span>
+mekong sales forecast           <span class="comment"># Dự báo doanh thu</span></code></pre>
+    <table>
+      <tr><th>Sub-command</th><th>Công dụng</th></tr>
+      <tr><td>/sales/lead</td><td>Tìm & qualify leads — ví dụ: tìm KOL mỹ phẩm</td></tr>
+      <tr><td>/sales/proposal</td><td>Tạo proposals — đề xuất hợp tác brand Hàn</td></tr>
+      <tr><td>/sales/close</td><td>Closing scripts — chốt deal nhà phân phối</td></tr>
+    </table>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/marketing</span></div>
+    <p class="cmd-purpose">Hub marketing: content, ads, SEO, analytics.</p>
+    <pre><code>mekong marketing                 <span class="comment"># Dashboard</span>
+mekong marketing ideas           <span class="comment"># Generate ý tưởng</span>
+mekong marketing calendar        <span class="comment"># Lịch nội dung</span></code></pre>
+    <table>
+      <tr><th>Sub-command</th><th>Ví dụ K-Beauty</th></tr>
+      <tr><td>/marketing/social</td><td>Bài TikTok, Instagram về skincare routine</td></tr>
+      <tr><td>/marketing/email</td><td>Email flash sale mỹ phẩm</td></tr>
+      <tr><td>/marketing/ads</td><td>Facebook Ads cho serum mới</td></tr>
+      <tr><td>/marketing/seo</td><td>Tối ưu từ khóa "mỹ phẩm Hàn Quốc"</td></tr>
+    </table>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/finance</span></div>
+    <p class="cmd-purpose">Quản lý tài chính: invoicing, expense tracking, runway, tax.</p>
+    <pre><code>mekong finance                   <span class="comment"># Dashboard</span>
+mekong finance forecast          <span class="comment"># Dự báo 3-6 tháng</span>
+mekong finance report monthly    <span class="comment"># Báo cáo tháng</span></code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/crm · /affiliate · /pricing · /leadgen</span></div>
+    <p class="cmd-purpose">CRM khách hàng · Tiếp thị liên kết · Chiến lược giá · Tạo leads.</p>
+    <pre><code>mekong pricing "định giá bộ skincare combo 3 bước"
+mekong leadgen "tìm khách tiềm năng mỹ phẩm Hàn ở TPHCM"</code></pre>
+  </div>
+</div>
+
+<!-- TẦNG 4 — PRODUCT -->
+<div class="section" id="product">
+  <h2 class="section-title">📦 Tầng 4 — PRODUCT</h2>
+  <p class="section-desc">Lập kế hoạch, quản lý sprint, phát hành sản phẩm.</p>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/plan</span><span class="cmd-star">⭐</span></div>
+    <p class="cmd-purpose">Chia mục tiêu lớn → subtasks nhỏ, tự phân công agent + model + tính MCU.</p>
+    <pre><code>mekong plan "xây dựng hệ thống loyalty points cho K-Beauty"
+mekong plan "tích hợp thanh toán MoMo và VNPay" --execute</code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/sprint · /roadmap</span></div>
+    <p class="cmd-purpose">Quản lý sprint 1-2 tuần · Lộ trình sản phẩm dài hạn.</p>
+    <pre><code>mekong sprint plan "2 weeks"     <span class="comment"># Sprint mới</span>
+mekong roadmap "K-Beauty 2026"   <span class="comment"># Product roadmap</span></code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/launch</span><span class="cmd-star">⭐</span></div>
+    <p class="cmd-purpose">Tạo bản copy ra mắt cho Product Hunt, Hacker News, Reddit — kèm launch checklist.</p>
+    <pre><code>mekong launch "K-Beauty Order" --tagline "Korean beauty, Vietnamese price"</code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/ship</span></div>
+    <p class="cmd-purpose">Deploy feature ra production — pre-deploy checklist + rollback plan.</p>
+    <pre><code>mekong ship feature "loyalty"    <span class="comment"># Ship tính năng</span>
+mekong ship hotfix "bug123"      <span class="comment"># Emergency fix</span></code></pre>
+  </div>
+</div>
+
+<!-- TẦNG 5 — ENGINEERING -->
+<div class="section" id="engineering">
+  <h2 class="section-title">🛠 Tầng 5 — ENGINEERING</h2>
+  <p class="section-desc">Viết code, debug, review, deploy — trái tim kỹ thuật.</p>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/code</span><span class="cmd-star">⭐</span></div>
+    <p class="cmd-purpose">Code theo implementation plan. 6 bước: Analysis → Implementation → Testing → Code Review → User Approval → Finalize.</p>
+    <pre><code>mekong code                <span class="comment"># Tự tìm plan mới nhất</span>
+mekong code "phase-01"     <span class="comment"># Code phase cụ thể</span></code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/fix</span><span class="cmd-star">⭐</span></div>
+    <p class="cmd-purpose">Debug BẮT BUỘC qua: SCAN → Root Cause → Jidoka Gate → Minimal Fix.</p>
+    <pre><code>mekong fix "đơn hàng không hiển thị trên admin.html"
+mekong fix "lỗi Telegram khi có emoji" --file tools/telegram_bot.py</code></pre>
+    <div class="tip warn"><span class="icon">⚠️</span><div><strong>Jidoka:</strong> Tự động DỪNG khi đụng DB schema, payment, authentication. Cần CEO approve.</div></div>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/review</span></div>
+    <p class="cmd-purpose">Review theo domain: code (security, performance) · content (SEO, tone) · ops (idempotent).</p>
+    <pre><code>mekong review order-form.html --full
+mekong review telegram_bot.py --security</code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/deploy</span><span class="cmd-star">⭐</span></div>
+    <p class="cmd-purpose">Multi-strategy: Blue-Green · Canary · Rolling · Recreate. Kèm CI/CD.</p>
+    <pre><code>mekong deploy blue-green production   <span class="comment"># Zero downtime</span>
+mekong deploy canary staging          <span class="comment"># 10% traffic test</span></code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/test · /refactor · /debug · /lint · /schema</span></div>
+    <p class="cmd-purpose">Test suite · Tái cấu trúc code · Debug sâu · Lint · Schema management.</p>
+    <pre><code>mekong test e2e
+mekong refactor "tách logic thanh toán ra module riêng"</code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">Git commands</span></div>
+    <table>
+      <tr><th>Lệnh</th><th>Công dụng</th></tr>
+      <tr><td>/git-branch</td><td>Quản lý branch</td></tr>
+      <tr><td>/git-merge</td><td>Merge branch</td></tr>
+      <tr><td>/git-rebase</td><td>Rebase</td></tr>
+      <tr><td>/git-stash</td><td>Stash thay đổi</td></tr>
+      <tr><td>/git-tag</td><td>Tạo tag release</td></tr>
+      <tr><td>/git-squash</td><td>Gộp commits</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- TẦNG 6 — OPS -->
+<div class="section" id="ops">
+  <h2 class="section-title">⚙ Tầng 6 — OPS</h2>
+  <p class="section-desc">Monitoring, billing, automation, đồng bộ hệ thống.</p>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/ops</span></div>
+    <p class="cmd-purpose">Hub vận hành: billing, reporting, team, automation.</p>
+    <pre><code>mekong ops                 <span class="comment"># Dashboard</span>
+mekong ops automate        <span class="comment"># Gợi ý automation</span>
+mekong ops report weekly   <span class="comment"># Báo cáo tuần</span></code></pre>
+  </div>
+
+  <div class="cmd">
+    <div class="cmd-header"><span class="cmd-name">/sync-* · /monitor · /rollback · /security</span></div>
+    <p class="cmd-purpose">Đồng bộ agents/tasks/artifacts · Giám sát metrics · Rollback khẩn cấp · Audit bảo mật.</p>
+    <pre><code>mekong sync-all            <span class="comment"># Đồng bộ tất cả</span>
+mekong monitor             <span class="comment"># Dashboard metrics</span>
+mekong rollback "v1.1.0"   <span class="comment"># Quay lại version trước</span>
+mekong security            <span class="comment"># Audit bảo mật</span></code></pre>
+  </div>
+</div>
+
+<!-- Water Protocol -->
+<div class="section" id="water">
+  <h2 class="section-title">🌊 Water Protocol 水</h2>
+  <p class="section-desc">Cơ chế truyền tải ngữ cảnh đa agent giữa các tầng.</p>
+  <div class="flow">
+    <span class="flow-step">🎨 Studio</span><span class="flow-arrow">──水──▶</span>
+    <span class="flow-step">🏛 Founder</span><span class="flow-arrow">──水──▶</span>
+    <span class="flow-step">💼 Business</span><span class="flow-arrow">──水──▶</span>
+    <span class="flow-step">📦 Product</span><span class="flow-arrow">──水──▶</span>
+    <span class="flow-step">🛠 Engineering</span><span class="flow-arrow">──水──▶</span>
+    <span class="flow-step">⚙ Ops</span>
+  </div>
+  <div class="tip kbeauty">
+    <span class="icon">🌸</span>
+    <div><strong>K-Beauty flow:</strong> brainstorm (quyết định loyalty) → plan (4 subtasks) → code (CTO triển khai) → review → ship → ops monitor. Mỗi bước tự động truyền context qua <code>.mekong/memory.json</code></div>
+  </div>
+</div>
+
+<!-- Agents -->
+<div class="section" id="agents">
+  <h2 class="section-title">🤖 Hệ Thống Agent & Model Routing</h2>
+  <p class="section-desc">8 agent mặc định, mỗi agent có model và vai trò riêng.</p>
+  <div class="agent-grid">
+    <div class="agent-card"><div class="role">🧑‍💻 CTO</div><div class="model">claude-opus-4-6 / claude-sonnet-4-6</div><div class="desc">Code, architecture, technical decisions</div></div>
+    <div class="agent-card"><div class="role">📢 CMO</div><div class="model">gemini-2.0-flash</div><div class="desc">Content, marketing, social media</div></div>
+    <div class="agent-card"><div class="role">🔧 COO</div><div class="model">ollama:llama3.2:3b (local)</div><div class="desc">Ops, infra, setup, config</div></div>
+    <div class="agent-card"><div class="role">💰 CFO</div><div class="model">ollama:qwen2.5:7b (local)</div><div class="desc">Finance, metrics, sensitive data</div></div>
+    <div class="agent-card"><div class="role">🎧 CS</div><div class="model">claude-haiku-4-5</div><div class="desc">Customer support, trả lời khách</div></div>
+    <div class="agent-card"><div class="role">🤝 Sales</div><div class="model">claude-sonnet-4-6</div><div class="desc">Proposal, closing, follow-up</div></div>
+    <div class="agent-card"><div class="role">✍️ Editor</div><div class="model">gemini-2.0-flash</div><div class="desc">Long-form writing, copywriting</div></div>
+    <div class="agent-card"><div class="role">📊 Data</div><div class="model">ollama:qwen2.5:7b (local)</div><div class="desc">Reports, analytics, dashboards</div></div>
+  </div>
+  <table>
+    <tr><th>Complexity</th><th>MCU</th><th>Ví dụ</th></tr>
+    <tr><td>Simple (0-3 bước)</td><td>1 MCU</td><td>Viết 1 email, fix 1 dòng code</td></tr>
+    <tr><td>Standard (4-8 bước)</td><td>3 MCU</td><td>Tạo landing page, fix module</td></tr>
+    <tr><td>Complex (9+ bước)</td><td>5 MCU</td><td>Thiết kế architecture, full feature</td></tr>
+  </table>
+  <div class="tip warn"><span class="icon">🔒</span><div><strong>Bảo mật:</strong> Khi goal chứa password, secret, key, token → BẮT BUỘC dùng local model, không gọi cloud API.</div></div>
+</div>
+
+<!-- Quick Reference -->
+<div class="section" id="quickref">
+  <h2 class="section-title">📌 Quick Reference K-Beauty</h2>
+  <p class="section-desc">Lệnh hay dùng nhất cho dự án K-Beauty Order.</p>
+  <div class="quick-ref">
+    <div class="qr-card">
+      <h4>📅 Hàng ngày</h4>
+      <pre><code>mekong status
+mekong cook "trả lời khách hỏi về serum"
+mekong cook "viết caption IG sản phẩm mới"</code></pre>
+    </div>
+    <div class="qr-card">
+      <h4>📊 Hàng tuần</h4>
+      <pre><code>mekong finance report weekly
+mekong sales report weekly
+mekong marketing calendar
+mekong sprint</code></pre>
+    </div>
+    <div class="qr-card">
+      <h4>🚀 Phát triển tính năng</h4>
+      <pre><code>mekong brainstorm "cách tốt nhất?"
+mekong plan "mô tả tính năng"
+mekong code
+mekong review --full
+mekong ship feature "tên"</code></pre>
+    </div>
+    <div class="qr-card">
+      <h4>🐛 Khi có bug</h4>
+      <pre><code>mekong fix "mô tả bug" --file path
+mekong test
+mekong ship hotfix "bugID"</code></pre>
+    </div>
+  </div>
+  <div class="tip"><span class="icon">💡</span><div><strong>Mẹo:</strong> Bắt đầu với <code>/cook</code> cho mọi thứ. Mekong CLI sẽ tự phân loại và chọn agent phù hợp. Chỉ dùng lệnh chuyên biệt khi cần kiểm soát chi tiết hơn.</div></div>
+</div>
+
+<div style="text-align:center;padding:40px 0;color:var(--text3);font-size:.8rem;border-top:1px solid var(--border);margin-top:40px">
+  Mekong CLI × AgencyOS — Dự án K-Beauty Order · v5.0 · 22/03/2026
+</div>
+
+</main>
+</div>
+</body>
+</html>

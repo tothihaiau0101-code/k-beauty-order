@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeaPop Tester — Đăng Ký Trải Nghiệm</title>
+  <meta name="description" content="Chương trình dùng thử mỹ phẩm Hàn Quốc miễn phí tại BeaPop">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .tester-page { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+    .hero-banner { text-align: center; background: linear-gradient(135deg, rgba(168,85,247,0.1), rgba(124,58,237,0.2)); border: 1px solid rgba(168,85,247,0.2); border-radius: 20px; padding: 40px 20px; margin-bottom: 30px; }
+    .hero-banner h1 { font-family: 'Outfit', sans-serif; font-size: 2rem; color: #fff; margin: 0 0 10px; }
+    .hero-banner p { color: rgba(255,255,255,0.7); font-size: 0.95rem; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+    
+    .section-title { font-family: 'Outfit', sans-serif; font-size: 1.4rem; color: #fff; margin: 0 0 20px; display: flex; align-items: center; gap: 10px; }
+    
+    .campaign-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .campaign-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; transition: transform 0.2s, border-color 0.2s; }
+    .campaign-card:hover { transform: translateY(-3px); border-color: rgba(168,85,247,0.3); }
+    .comp-img { width: 100%; height: 180px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+    .comp-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0 0 8px; }
+    .comp-desc { font-size: 0.82rem; color: rgba(255,255,255,0.6); margin: 0 0 16px; line-height: 1.4; }
+    .comp-slot { display: inline-block; padding: 4px 10px; background: rgba(34,197,94,0.1); color: #22c55e; border-radius: 8px; font-size: 0.75rem; font-weight: 600; margin-bottom: 16px; }
+    .btn-register { width: 100%; padding: 12px; border: none; border-radius: 12px; background: linear-gradient(135deg, #a855f7, #7c3aed); color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .btn-register:hover { box-shadow: 0 4px 15px rgba(168,85,247,0.4); transform: translateY(-1px); }
+
+    .report-banner { background: rgba(34,197,94,0.05); border: 1px dashed rgba(34,197,94,0.3); border-radius: 16px; padding: 24px; text-align: center; }
+    .report-banner h3 { color: #22c55e; font-size: 1.1rem; margin: 0 0 8px; }
+    .report-banner p { color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 0 0 16px; }
+    .btn-report { padding: 10px 24px; background: #22c55e; color: #fff; border: none; border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; }
+
+    /* Modal Form */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 1000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; padding: 16px; }
+    .modal-overlay.show { display: flex; opacity: 1; }
+    .form-modal { background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; width: 100%; max-width: 450px; padding: 24px; position: relative; transform: translateY(20px); transition: transform 0.3s; }
+    .modal-overlay.show .form-modal { transform: translateY(0); }
+    .btn-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: rgba(255,255,255,0.5); font-size: 1.2rem; cursor: pointer; }
+    .btn-close:hover { color: #fff; }
+    
+    .form-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0 0 6px; }
+    .form-subtitle { font-size: 0.8rem; color: #a855f7; margin: 0 0 20px; font-weight: 600; }
+    
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 0.85rem; font-family: inherit; box-sizing: border-box; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #a855f7; }
+    
+    .success-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); background: #10b981; color: #fff; padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 0.85rem; z-index: 2000; pointer-events: none; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 10px 30px rgba(16,185,129,0.3); }
+    .success-toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="main-nav">
+    <a href="catalog.html" class="nav-logo">BeaPop</a>
+    <div class="nav-links">
+      <a href="catalog.html#k-beauty">Beauty</a>
+      <a href="catalog.html#k-pop">Pop</a>
+      <a href="order-form.html">Đặt Hàng</a>
+      <a href="reviews.html">Đánh Giá</a>
+      <a href="tester.html" class="active" style="color:#a855f7;">🎁 Tester</a>
+    </div>
+  </nav>
+
+  <div class="tester-page">
+    
+    <div class="hero-banner">
+      <h1>BeaPop Tester</h1>
+      <p>Trở thành người dùng thử mỹ phẩm Hàn Quốc miễn phí và chia sẻ cảm nhận của bạn! Chương trình đặc quyền dành cho các tín đồ K-Beauty.</p>
+    </div>
+
+    <h2 class="section-title">✨ Chiến dịch đang mở</h2>
+    <div class="campaign-grid">
+      
+      <div class="campaign-card">
+        <div class="comp-img">🌊</div>
+        <h3 class="comp-title">Test Sữa Rửa Mặt RoundLab Dokdo</h3>
+        <p class="comp-desc">Sữa rửa mặt dạng bọt siêu nhẹ dịu làm sạch sâu từ nước biển sâu Ulleungdo. Phù hợp mọi loại da.</p>
+        <div class="comp-slot">Còn 10/50 slot</div>
+        <button class="btn-register" onclick="openForm('Round Lab Dokdo Cleanser')">Đăng ký dùng thử</button>
+      </div>
+
+      <div class="campaign-card">
+        <div class="comp-img">☀️</div>
+        <h3 class="comp-title">Test Kem Chống Nắng BoJ Relief Sun</h3>
+        <p class="comp-desc">Kem chống nắng men vi sinh & gạo Beauty of Joseon đỉnh cao. Texture mỏng nhẹ, không vệt trắng.</p>
+        <div class="comp-slot">Còn 5/30 slot</div>
+        <button class="btn-register" onclick="openForm('Beauty of Joseon Relief Sun')">Đăng ký dùng thử</button>
+      </div>
+    </div>
+
+    <div class="report-banner">
+      <h3>Bạn đã nhận được sản phẩm test?</h3>
+      <p>Viết review ngay để duy trì đặc quyền Tester và nhận thêm Reward Point cho các đơn hàng tiếp theo!</p>
+      <a href="reviews.html?from=tester" class="btn-report">Viết review ngay</a>
+    </div>
+
+  </div>
+
+  <!-- Modal Form -->
+  <div class="modal-overlay" id="testerModal" onclick="closeForm(event)">
+    <div class="form-modal" onclick="event.stopPropagation()">
+      <button class="btn-close" onclick="closeForm(true)">✕</button>
+      <h3 class="form-title">Đăng ký BeaPop Tester</h3>
+      <p class="form-subtitle" id="formProductName">Sản phẩm: ...</p>
+      
+      <form id="testerForm">
+        <div class="form-group">
+          <label>Họ và tên *</label>
+          <input type="text" id="tName" required placeholder="Nhập họ tên...">
+        </div>
+        <div class="form-group">
+          <label>Số điện thoại Zalo *</label>
+          <input type="tel" id="tPhone" required placeholder="090..." pattern="[0-9]{10}">
+        </div>
+        <div class="form-group">
+          <label>Địa chỉ nhận quà *</label>
+          <input type="text" id="tAddress" required placeholder="Số nhà, đường, phường, quận, TP...">
+        </div>
+        <div class="form-group">
+          <label>Tình trạng da *</label>
+          <select id="tSkin" required>
+            <option value="">-- Chọn loại da --</option>
+            <option value="Dầu">Da Dầu / Hỗn hợp thiên dầu</option>
+            <option value="Khô">Da Khô / Hỗn hợp thiên khô</option>
+            <option value="Hỗn hợp">Da Hỗn hợp</option>
+            <option value="Nhạy cảm">Da Nhạy cảm / Dễ nổi mụn</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Link Facebook / TikTok / IG</label>
+          <input type="url" id="tSocial" placeholder="https://facebook.com/...">
+          <span style="font-size:0.7rem;color:rgba(255,255,255,0.4);display:block;margin-top:4px;">*Ưu tiên duyệt nếu bạn có link MXH (Không bắt buộc)</span>
+        </div>
+        
+        <button type="submit" class="btn-register" style="margin-top: 10px;">Gửi Đơn Đăng Ký</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="success-toast" id="toast">✅ Đăng ký thành công! BeaPop sẽ liên hệ qua Zalo/SĐT nếu bạn được chọn.</div>
+
+  <!-- FOOTER -->
+  <footer style="text-align:center;padding:30px 16px;border-top:1px solid var(--border);">
+    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
+      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">Catalog</a>
+      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">Đặt Hàng</a>
+      <a href="reviews.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">Đánh Giá</a>
+      <a href="tester.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">Tester</a>
+      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">Chính Sách</a>
+    </div>
+    <p style="color:var(--text-secondary);font-size:0.7rem;margin:0;">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</p>
+  </footer>
+
+  <script src="auth.js"></script>
+  <script>
+    const modal = document.getElementById('testerModal');
+    let currentProduct = '';
+
+    function openForm(productName) {
+      currentProduct = productName;
+      document.getElementById('formProductName').textContent = `Sản phẩm: ${productName}`;
+      
+      // Auto-fill from auth profile if available
+      if (window.BeaPop && window.BeaPop.Auth && window.BeaPop.Auth.isLoggedIn()) {
+        const user = window.BeaPop.Auth.getUser();
+        if (user && user.name) document.getElementById('tName').value = user.name;
+        if (user && user.phone) document.getElementById('tPhone').value = user.phone;
+        if (user && user.address) document.getElementById('tAddress').value = user.address;
+      }
+      
+      modal.classList.add('show');
+    }
+
+    function closeForm(e) {
+      if (e === true || e.target === modal) {
+        modal.classList.remove('show');
+      }
+    }
+
+    document.getElementById('testerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const appData = {
+        product: currentProduct,
+        name: document.getElementById('tName').value,
+        phone: document.getElementById('tPhone').value,
+        address: document.getElementById('tAddress').value,
+        skin: document.getElementById('tSkin').value,
+        social: document.getElementById('tSocial').value,
+        timestamp: new Date().toISOString()
+      };
+      
+      const apps = JSON.parse(localStorage.getItem('kbeauty_testers') || '[]');
+      apps.push(appData);
+      localStorage.setItem('kbeauty_testers', JSON.stringify(apps));
+      
+      document.getElementById('testerForm').reset();
+      closeForm(true);
+      
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    });
+  </script>
+</body>
+</html>

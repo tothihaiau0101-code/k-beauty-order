@@ -1,2 +1,0 @@
-# No external dependencies — uses Python stdlib only
-# Kept for Railway compatibility

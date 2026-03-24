@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Premium K-Beauty Order System">
+    <meta name="theme-color" content="#d63384">
+    
+    <title>K-Beauty Order</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="K-Beauty">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+    <!-- Fonts & Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0f0f13;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary: #d63384;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(214, 51, 132, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(51, 132, 214, 0.15) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        p { color: var(--text-muted); line-height: 1.6; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .install-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            display: none; /* Hidden by default, shown via JS if installable */
+        }
+        
+        .install-btn:hover { opacity: 0.9; }
+
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo">K-Beauty Order</div>
+            <button id="installBtn" class="install-btn">Install App</button>
+        </header>
+
+        <main>
+            <section class="glass-card">
+                <h1>Welcome to K-Beauty</h1>
+                <p>Experience the premium Korean beauty shopping platform. This application is now installed as a Progressive Web App (PWA), allowing you to browse offline and enjoy a native-app-like experience.</p>
+                <div id="sw-status" class="status-badge">Checking Service Worker...</div>
+            </section>
+
+            <section class="glass-card">
+                <h2>Featured Products</h2>
+                <p>Browse our latest collection of skincare essentials.</p>
+                <!-- Product grid would go here -->
+            </section>
+        </main>
+
+        <footer>
+            &copy; 2023 K-Beauty Order System. All rights reserved.
+        </footer>
+    </div>
+
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('[SW] Service Worker registered:', registration.scope);
+                        document.getElementById('sw-status').textContent = 'Service Worker Active';
+                        document.getElementById('sw-status').style.background = 'rgba(46, 204, 113, 0.2)';
+                        document.getElementById('sw-status').style.color = '#2ecc71';
+                    })
+                    .catch(error => {
+                        console.error('[SW] Registration failed:', error);
+                        document.getElementById('sw-status').textContent = 'Service Worker Failed';
+                        document.getElementById('sw-status').style.background = 'rgba(231, 76, 60, 0.2)';
+                        document.getElementById('sw-status').style.color = '#e74c3c';
+                    });
+            });
+
+            // Handle Install Prompt
+            let deferredPrompt;
+            const installBtn = document.getElementById('installBtn');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installBtn.style.display = 'block';
+            });
+
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`[PWA] User response to install prompt: ${outcome}`);
+                    deferredPrompt = null;
+                    installBtn.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

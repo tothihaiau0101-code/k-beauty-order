@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RAM Monitor</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <main class="container">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
+            </svg>
+          </div>
+          <h1>RAM Monitor</h1>
+          <span class="live-badge"><span class="pulse"></span> Live</span>
+        </div>
+        <div class="header-right">
+          <select id="refresh-rate">
+            <option value="1000">1s</option>
+            <option value="2000" selected>2s</option>
+            <option value="5000">5s</option>
+          </select>
+          <button id="pause-btn" class="pause-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16" rx="1" />
+              <rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- System Overview -->
+      <section class="overview">
+        <div class="card stat-card">
+          <div class="stat-icon">💾</div>
+          <div class="stat-info">
+            <span class="stat-label">Total RAM</span>
+            <span class="stat-value" id="total-ram">--</span>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-info">
+            <span class="stat-label">Used</span>
+            <span class="stat-value" id="used-ram">--</span>
+          </div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <span class="stat-label">Free</span>
+            <span class="stat-value" id="free-ram">--</span>
+          </div>
+        </div>
+        <div class="card gauge-card">
+          <div class="gauge">
+            <svg viewBox="0 0 120 120">
+              <circle class="gauge-bg" cx="60" cy="60" r="52" />
+              <circle class="gauge-fill" cx="60" cy="60" r="52" id="gauge-circle" />
+              <text class="gauge-text" x="60" y="60" text-anchor="middle" dominant-baseline="middle" id="gauge-percent">0%</text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- RAM Bar -->
+      <section class="ram-bar-section">
+        <div class="ram-bar">
+          <div class="ram-bar-fill" id="ram-bar">
+            <span class="ram-bar-label" id="ram-bar-label">0%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Process Table -->
+      <section class="process-section">
+        <div class="process-header">
+          <h2>Processes <span class="process-count" id="process-count">0</span></h2>
+          <input type="text" id="search-input" placeholder="Search processes..." class="search-input" />
+        </div>
+        <div class="table-container card">
+          <table class="process-table">
+            <thead>
+              <tr>
+                <th>Application</th>
+                <th>PID</th>
+                <th>RAM</th>
+                <th>CPU %</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="process-tbody">
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Kill Confirm Modal -->
+    <div class="modal-overlay" id="kill-modal">
+      <div class="modal">
+        <h3>Confirm Kill Process</h3>
+        <p>You are about to terminate <strong id="kill-process-name"></strong> (PID: <span id="kill-process-pid"></span>)</p>
+        <p class="warning">⚠️ This action cannot be undone.</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" id="kill-cancel">Cancel</button>
+          <button class="btn-kill" id="kill-confirm">Kill Process</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+  </body>
+</html>

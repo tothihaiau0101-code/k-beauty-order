@@ -1,5 +1,4 @@
 [phases.build]
-cmds = []
 
 [phases.start]
 cmd = "python tools/telegram_bot.py"

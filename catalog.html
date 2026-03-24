@@ -23,7 +23,6 @@
         <a href="#k-pop">Pop</a>
         <a href="#combos">Combo</a>
         <a href="order-form.html">Đặt Hàng</a>
-        <a href="tester.html">🎁 Tester</a>
         <div class="nav-cart-wrap">
           <button onclick="toggleCartDropdown(event)" class="nav-cart" id="navCart" style="display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:6px 10px;border-radius:8px;">
             🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
@@ -600,7 +599,8 @@
       'roundlab': 'KB007', 'romand': 'KB008'
     };
     const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000' : 'https://web-production-46a5.up.railway.app';
+      ? 'http://localhost:5000'
+      : (document.querySelector('meta[name="api-url"]')?.content || 'https://web-production-46a5.up.railway.app');
     fetch(_API + '/api/inventory').then(r => r.json()).then(stock => {
       const stockById = {};
       stock.forEach(s => stockById[s.id] = s.stock);

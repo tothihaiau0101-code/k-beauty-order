@@ -1,11 +1,11 @@
 // Utils - Common utilities for admin panel
 
 /**
- * API base URL - determined by environment
+ * API base URL - read from meta tag (set in each HTML), fallback to Railway URL
  */
 export const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000'
-  : '';
+  : (document.querySelector('meta[name="api-url"]')?.content || 'https://web-production-46a5.up.railway.app');
 
 /**
  * Status mapping for order statuses

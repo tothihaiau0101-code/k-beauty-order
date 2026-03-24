@@ -10,10 +10,12 @@ let chartLoaded = false;
  * @param {Function} getOrders - Function to get all orders from orders module
  * @returns {Object} Analytics functions
  */
+let _getOrders = () => [];
+
 export function initAnalytics(getOrders) {
   customerData = [];
   chartLoaded = false;
-  this._getOrders = getOrders;
+  _getOrders = getOrders || (() => []);
 
   return {
     loadAnalytics,
@@ -30,7 +32,7 @@ export function initAnalytics(getOrders) {
  * Load analytics data
  */
 function loadAnalytics() {
-  const orders = this._getOrders ? this._getOrders() : [];
+  const orders = _getOrders();
   const total = orders.length || 1;
   const completed = orders.filter(o => o.status === 'completed').length;
 
@@ -85,7 +87,7 @@ function loadAnalytics() {
     const d = new Date(); d.setDate(d.getDate() - i);
     const key = d.toISOString().slice(0, 10);
     const label = d.toLocaleDateString('vi', {weekday:'short'});
-    const count = orders.filter(o => (o.date || '').startsWith(key)).length;
+    const count = orders.filter(o => (o.created_at || '').startsWith(key)).length;
     days.push({label, count});
   }
   const maxD = Math.max(...days.map(d => d.count), 1);
@@ -107,7 +109,7 @@ function loadAnalytics() {
  * Load loyalty data
  */
 function loadLoyalty() {
-  const orders = this._getOrders ? this._getOrders() : [];
+  const orders = _getOrders();
   const cust = {};
 
   orders.forEach(o => {

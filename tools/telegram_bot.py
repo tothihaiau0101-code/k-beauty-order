@@ -20,6 +20,7 @@ import threading
 import signal
 import sys
 import time
+import secrets
 import hmac
 import hashlib
 from datetime import datetime
@@ -232,305 +233,10 @@ class GHNClient:
         return None
 
 
-class DataStore:
-    """Handles JSON file storage for orders, stock, and chats."""
-
-    def __init__(self, orders_file: str, stock_file: str, chats_file: Optional[str] = None):
-        """
-        Initialize Data Store.
-
-        Args:
-            orders_file: Path to orders JSON file.
-            stock_file: Path to stock JSON file.
-            chats_file: Path to chats JSON file (default: data/chats.json).
-        """
-        self.orders_file = orders_file
-        self.stock_file = stock_file
-        self.inventory_history_file = os.path.join(os.path.dirname(orders_file), "inventory_history.json")
-        self.customers_file = os.path.join(os.path.dirname(orders_file), "customers.json")
-        self.chats_file = chats_file or os.path.join(os.path.dirname(orders_file), "chats.json")
-        self._lock = threading.Lock()
-        self._ensure_files()
-
-    def _ensure_files(self) -> None:
-        """Create data files if they don't exist."""
-        if not os.path.exists(self.orders_file):
-            self._write_json(self.orders_file, [])
-        if not os.path.exists(self.stock_file):
-            self._write_json(self.stock_file, [])
-        if not os.path.exists(self.inventory_history_file):
-            self._write_json(self.inventory_history_file, [])
-        if not os.path.exists(self.customers_file):
-            self._write_json(self.customers_file, {})
-        if not os.path.exists(self.chats_file):
-            self._write_json(self.chats_file, {})
-
-    def _read_json(self, path: str) -> Any:
-        """Read JSON file with locking."""
-        with self._lock:
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, FileNotFoundError):
-                return [] if "orders" in path else {}
-
-    def _write_json(self, path: str, data: Any) -> None:
-        """Write JSON file with locking."""
-        with self._lock:
-            os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-
-    def get_customer(self, chat_id: str) -> Optional[Dict[str, Any]]:
-        customers = self._read_json(self.customers_file)
-        if isinstance(customers, dict):
-            return customers.get(str(chat_id))
-        return None
-
-    def save_customer(self, chat_id: str, data: Dict[str, Any]) -> None:
-        customers = self._read_json(self.customers_file)
-        if not isinstance(customers, dict):
-            customers = {}
-        customers[str(chat_id)] = data
-        self._write_json(self.customers_file, customers)
-
-    def increment_referral(self, referrer_id: str) -> bool:
-        customers = self._read_json(self.customers_file)
-        if isinstance(customers, dict) and str(referrer_id) in customers:
-            c = customers[str(referrer_id)]
-            c["invited_count"] = c.get("invited_count", 0) + 1
-            self._write_json(self.customers_file, customers)
-            return True
-        return False
-
-    def add_order(self, order: Dict[str, Any]) -> None:
-        """
-        Save a new order.
-
-        Args:
-            order: Order dictionary.
-        """
-        orders = self._read_json(self.orders_file)
-        if not isinstance(orders, list):
-            orders = []
-        order["created_at"] = datetime.now().isoformat()
-        order["status"] = order.get("status", "pending")  # pending → confirmed → shipping → completed
-        orders.append(order)
-        self._write_json(self.orders_file, orders)
-        logger.info(f"Order saved: {order.get('orderId', order.get('id', 'N/A'))}")
-
-    def update_order_status(self, order_id: str, new_status: str) -> bool:
-        """
-        Update order status by orderId.
-
-        Args:
-            order_id: Order ID (e.g. 'KB-A1B2CD').
-            new_status: New status string.
-
-        Returns:
-            True if found and updated.
-        """
-        valid_statuses = ["pending", "confirmed", "shipping", "completed", "cancelled"]
-        if new_status not in valid_statuses:
-            return False
-        orders = self._read_json(self.orders_file)
-        if not isinstance(orders, list):
-            return False
-        for order in orders:
-            oid = order.get("orderId", order.get("id", ""))
-            if oid == order_id:
-                order["status"] = new_status
-                order["updated_at"] = datetime.now().isoformat()
-                self._write_json(self.orders_file, orders)
-                logger.info(f"Order {order_id} status → {new_status}")
-                return True
-        return False
-
-    def get_order_by_id(self, order_id: str) -> Optional[Dict[str, Any]]:
-        """Find an order by its ID."""
-        orders = self._read_json(self.orders_file)
-        if not isinstance(orders, list):
-            return None
-        for order in orders:
-            oid = order.get("orderId", order.get("id", ""))
-            if oid == order_id:
-                return order
-        return None
-
-    def get_recent_orders(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """
-        Get recent orders.
-
-        Args:
-            limit: Number of orders to retrieve.
-
-        Returns:
-            List of order dictionaries.
-        """
-        orders = self._read_json(self.orders_file)
-        if not isinstance(orders, list):
-            return []
-        return sorted(orders, key=lambda x: x.get("created_at", ""), reverse=True)[:limit]
-
-    def get_stock(self) -> List[Dict[str, Any]]:
-        """
-        Get current stock data.
-
-        Returns:
-            List of stock items.
-        """
-        stock = self._read_json(self.stock_file)
-        return stock if isinstance(stock, list) else []
-
-    def calculate_monthly_revenue(self) -> float:
-        """
-        Calculate total revenue for the current month.
-
-        Returns:
-            Total revenue amount.
-        """
-        orders = self._read_json(self.orders_file)
-        if not isinstance(orders, list):
-            return 0.0
-        
-        current_month = datetime.now().strftime("%Y-%m")
-        total = 0.0
-        
-        for order in orders:
-            created_at = order.get("created_at", "")
-            if created_at.startswith(current_month):
-                # Handle both field names: 'total' (new form) and 'total_amount' (legacy)
-                amount = order.get("total", order.get("total_amount", 0))
-                if isinstance(amount, (int, float)):
-                    total += float(amount)
-                elif isinstance(amount, str):
-                    try:
-                        total += float(amount.replace(",", ""))
-                    except ValueError:
-                        pass
-        return total
-
-    def update_stock(self, product_id: str, action: str, quantity: int, note: str = "") -> Dict[str, Any]:
-        """Update stock for a product (in/out)."""
-        stock = self._read_json(self.stock_file)
-        if not isinstance(stock, list):
-            return {"error": "stock data invalid"}
-        
-        product = None
-        for item in stock:
-            if item.get("id") == product_id:
-                product = item
-                break
-        
-        if not product:
-            return {"error": f"product {product_id} not found"}
-        
-        current = product.get("stock", 0)
-        if action == "in":
-            product["stock"] = current + quantity
-        elif action == "out":
-            if quantity > current:
-                return {"error": f"insufficient stock: have {current}, need {quantity}"}
-            product["stock"] = current - quantity
-        else:
-            return {"error": "action must be 'in' or 'out'"}
-        
-        self._write_json(self.stock_file, stock)
-        
-        # Log history
-        history = self._read_json(self.inventory_history_file)
-        if not isinstance(history, list):
-            history = []
-        history.append({
-            "id": product_id,
-            "name": product.get("name", ""),
-            "action": action,
-            "qty": quantity,
-            "note": note,
-            "timestamp": datetime.now().isoformat(),
-            "stock_before": current,
-            "stock_after": product["stock"]
-        })
-        self._write_json(self.inventory_history_file, history)
-        logger.info(f"Inventory {action}: {product_id} x{quantity} ({current} → {product['stock']})")
-        
-        return {"ok": True, "new_stock": product["stock"], "product": product.get("name", "")}
-
-    def get_inventory_history(self, limit: int = 50) -> List[Dict[str, Any]]:
-        """Get recent inventory history."""
-        history = self._read_json(self.inventory_history_file)
-        if not isinstance(history, list):
-            return []
-        return sorted(history, key=lambda x: x.get("timestamp", ""), reverse=True)[:limit]
-
-    def add_chat_message(self, session_id: str, name: str, phone: str, message: str, is_customer: bool = True) -> Dict[str, Any]:
-        """Add a customer message to chat session."""
-        chats = self._read_json(self.chats_file)
-        if not isinstance(chats, dict):
-            chats = {}
-
-        if session_id not in chats:
-            chats[session_id] = {
-                "session_id": session_id,
-                "name": name,
-                "phone": phone,
-                "messages": [],
-                "created_at": datetime.now().isoformat(),
-                "last_activity": datetime.now().isoformat()
-            }
-
-        chat = chats[session_id]
-        chat["name"] = name  # Update name if changed
-        chat["phone"] = phone
-        chat["last_activity"] = datetime.now().isoformat()
-
-        chat["messages"].append({
-            "role": "customer",
-            "message": message,
-            "timestamp": datetime.now().isoformat()
-        })
-
-        self._write_json(self.chats_file, chats)
-        logger.info(f"Chat message added to session {session_id}")
-        return {"ok": True, "session_id": session_id}
-
-    def add_chat_reply(self, session_id: str, text: str) -> Dict[str, Any]:
-        """Add a support reply to chat session."""
-        chats = self._read_json(self.chats_file)
-        if not isinstance(chats, dict) or session_id not in chats:
-            return {"error": "session not found"}
-
-        chat = chats[session_id]
-        chat["last_activity"] = datetime.now().isoformat()
-        chat["messages"].append({
-            "role": "support",
-            "message": text,
-            "timestamp": datetime.now().isoformat()
-        })
-
-        self._write_json(self.chats_file, chats)
-        logger.info(f"Chat reply added to session {session_id}")
-        return {"ok": True}
-
-    def get_chat_messages(self, session_id: str) -> List[Dict[str, Any]]:
-        """Get all messages for a chat session."""
-        chats = self._read_json(self.chats_file)
-        if not isinstance(chats, dict) or session_id not in chats:
-            return []
-        return chats[session_id].get("messages", [])
-
-    def get_chat_info(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """Get chat session info."""
-        chats = self._read_json(self.chats_file)
-        if not isinstance(chats, dict) or session_id not in chats:
-            return None
-        return chats[session_id]
-
-
 class WebhookHandler(BaseHTTPRequestHandler):
     """HTTP Handler for incoming order webhooks."""
 
-    store: Optional[DataStore] = None
+    store: Optional[Any] = None
     bot: Optional[TelegramClient] = None
     payos: Optional[PayOS] = None
     ghn: Optional[Any] = None       # GHNClient instance
@@ -538,6 +244,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
     secret: str = ""
     allow_no_secret: bool = True  # Allow requests without secret in dev mode
     base_url: str = "https://web-production-46a5.up.railway.app"
+    admin_tokens: set = set()     # Active admin session tokens
 
     def log_message(self, format: str, *args: Any) -> None:
         """Override to use logger."""
@@ -547,7 +254,15 @@ class WebhookHandler(BaseHTTPRequestHandler):
         """Add CORS headers to response."""
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Webhook-Secret")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Webhook-Secret, Authorization")
+
+    def _check_admin_auth(self) -> bool:
+        """Check if request has valid admin Bearer token. Returns True if authorized."""
+        auth = self.headers.get("Authorization", "")
+        if auth.startswith("Bearer ") and auth[7:] in WebhookHandler.admin_tokens:
+            return True
+        self._send_json({"error": "Unauthorized"}, 401)
+        return False
 
     def _send_json(self, data: Any, status: int = 200) -> None:
         """Send JSON response with CORS."""
@@ -569,6 +284,12 @@ class WebhookHandler(BaseHTTPRequestHandler):
             self.send_response(500)
             self.end_headers()
             return
+
+        # Admin API endpoints require auth
+        admin_paths = ["/api/orders", "/api/stats", "/api/inventory", "/api/revenue", "/api/chat"]
+        if any(self.path.startswith(p) for p in admin_paths):
+            if not self._check_admin_auth():
+                return
 
         if self.path == "/api/orders":
             orders = WebhookHandler.store._read_json(WebhookHandler.store.orders_file)
@@ -702,6 +423,10 @@ class WebhookHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
+        # All PUT endpoints require admin auth
+        if not self._check_admin_auth():
+            return
+
         if self.path.startswith("/api/orders/"):
             oid = self.path.split("/api/orders/")[1]
             content_length = int(self.headers.get("Content-Length", 0))
@@ -734,6 +459,25 @@ class WebhookHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Handle POST requests from order form and PayOS webhook."""
+
+        # --- Admin Login ---
+        if self.path == "/api/admin/login":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                data = json.loads(self.rfile.read(content_length).decode("utf-8"))
+                password = data.get("password", "")
+                expected = os.environ.get("ADMIN_PASSWORD", "beapop2026")
+                if password == expected:
+                    token = secrets.token_hex(32)
+                    WebhookHandler.admin_tokens.add(token)
+                    logger.info("Admin login successful")
+                    self._send_json({"token": token})
+                else:
+                    logger.warning("Admin login failed: wrong password")
+                    self._send_json({"error": "Sai mật khẩu"}, 401)
+            except Exception as e:
+                self._send_json({"error": str(e)}, 500)
+            return
 
         # --- Chat: Send Message ---
         if self.path == "/api/chat":
@@ -1137,7 +881,12 @@ class KBeautyBot:
         self.chats_file = os.path.join(self.data_dir, "chats.json")
 
         self.bot_client = TelegramClient(self.token, self.chat_id)
-        self.store = DataStore(self.orders_file, self.stock_file, self.chats_file)
+        from db import SqliteStore
+        db_path = os.environ.get("DB_PATH", os.path.join(self.data_dir, "shop.db"))
+        self.store = SqliteStore(db_path)
+        customers_file = os.path.join(self.data_dir, "customers.json")
+        history_file = os.path.join(self.data_dir, "inventory_history.json")
+        self.store.migrate_from_json(self.orders_file, self.stock_file, self.chats_file, customers_file, history_file)
         self.running = True
 
         # Initialize PayOS client — read from os.environ first (Railway), then config file

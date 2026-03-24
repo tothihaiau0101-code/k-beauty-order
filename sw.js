@@ -3,18 +3,17 @@
  * Implements Cache First strategy for assets and Network First for API calls.
  */
 
-const CACHE_NAME = 'k-beauty-cache-v2';
-const OFFLINE_PAGE = './offline.html';
+const CACHE_NAME = 'k-beauty-cache-v1';
+const OFFLINE_PAGE = '/offline.html';
 
 // Assets to cache immediately upon installation
 const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './offline.html',
-  './styles.css',
-  './auth.js',
-  './chat-widget.js',
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/offline.html',
+  '/css/style.css',
+  '/js/app.js',
   // Add font URLs if self-hosted
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap'
 ];

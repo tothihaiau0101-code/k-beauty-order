@@ -1151,7 +1151,321 @@ railway variables set GHN_TOKEN=xxx GHN_SHOP_ID=xxx GHN_PROVINCE_ID=201 GHN_DIST
 
 ---
 
-## 🚀 LỆNH DISPATCH
+## 🛡️ SPRINT 13 — Security & Refactoring
+ 
+ ### MISSION 64: Admin Authentication (Token-based)
+ **File**: `login.html` [NEW], `admin.html`, `tools/telegram_bot.py` · **Effort**: 2h
+ 
+ **Yêu cầu:** Gắn luồng đăng nhập vào Admin Dashboard để chặn người ngoài.
+ - Tạo `login.html` với form password.
+ - Code Endpoint `POST /api/admin/login` trong `WebhookHandler` trả JWT hoặc Token.
+ - `admin.html` tự check `sessionStorage.getItem('admin_token')` và gửi via Header `Authorization`.
+ - Thêm middleware chặn API PUT/POST nếu thiếu `Authorization`.
+ 
+ **Commit**: `feat(M64): admin dashboard password authentication system`
+ 
+ ### MISSION 65: Tách module cho Admin Dashboard
+ **File**: `admin.html`, `src/admin/` [NEW] · **Effort**: 3h
+ 
+ **Yêu cầu:** Tách `admin.html` (>1000 dòng):
+ - Đưa Logic Tab Orders vào `admin-orders.js`.
+ - Đưa Logic Tab Analytics/Loyalty vào `admin-analytics.js`.
+ - Đưa Logic Tab Stock vào `admin-stock.js`.
+ - Import qua `admin.js`.
+ 
+ **Commit**: `refactor(M65): split monolithic admin.html into separate js modules`
+ 
+ ### MISSION 66: Testing
+ **File**: `tests/` [NEW] · **Effort**: 3h
+ 
+ **Yêu cầu:**
+ - **Pytest:** `tests/test_api.py` kiểm tra API backend.
+ - **Playwright:** `tests/e2e/order.spec.js` kiểm tra End-to-End luồng đặt hàng.
+ 
+ **Commit**: `test(M66): implement pytest for backend and playwright e2e for order flow`
+ 
+ ---
+ 
+ ## Sprint 14 — Cleanup & Stabilize
+ 
+ ### MISSION 67 — Xóa class DataStore cũ (Code Dead)
+ 
+ **File:** `tools/telegram_bot.py`
+ 
+ **Yêu cầu:**
+ - Xóa toàn bộ class `DataStore` (dòng ~236 đến ~529) — class này đã được thay thế bởi `SqliteStore` trong `tools/db.py`
+ - Kiểm tra không còn chỗ nào import hoặc gọi `DataStore` — nếu còn thì sửa sang `SqliteStore`
+ - Chạy `python3 -c "import py_compile; py_compile.compile('telegram_bot.py', doraise=True)"` để verify syntax
+ 
+ **Commit**: `refactor(M67): remove deprecated DataStore class, fully using SqliteStore`
+ 
+ ---
+ 
+ ### MISSION 68 — Thêm Test Step vào GitHub Actions CI
+ 
+ **File:** `.github/workflows/deploy.yml`
+ 
+ **Yêu cầu:**
+ - Thêm job `test` chạy trước job `deploy`
+ - Job test: checkout code → setup Python 3.11 → `pip install pytest` → `cd tools && python3 -m pytest ../tests/ -v`
+ - Job deploy phụ thuộc (`needs: test`) để chỉ deploy khi test pass
+ 
+ **Commit**: `ci(M68): add pytest step to github actions before deploy`
+ 
+ ---
+ 
+ ### MISSION 69 — Tạo DEPLOY.md hướng dẫn Railway Volume
+ 
+ **File:** `DEPLOY.md` (mới)
+ 
+ **Yêu cầu:**
+ - Hướng dẫn mount Persistent Volume trên Railway:
+   1. Railway Dashboard → Project → Add Volume
+   2. Mount path: `/data`
+   3. Set env var: `DB_PATH=/data/shop.db`
+ - Hướng dẫn set `ADMIN_PASSWORD` trên Railway env vars
+ - Hướng dẫn deploy Cloudflare Pages (frontend)
+ 
+ **Commit**: `docs(M69): add DEPLOY.md with Railway volume and env setup guide`
+ 
+ ---
+ 
+ ### MISSION 70 — Dọn dẹp stock.json root
+ 
+ **File:** `stock.json` (root)
+ 
+ **Yêu cầu:**
+ - File `stock.json` ở root hiện là `[]` rỗng — đã chuyển sang SQLite
+ - Thêm comment vào `README.md` hoặc xóa file nếu không còn chỗ nào reference
+ - Kiểm tra `telegram_bot.py` và `db.py` không còn đọc trực tiếp file này
+ 
+ **Commit**: `chore(M70): cleanup legacy stock.json, data now in SQLite`
+ 
+ ---
+ 
+ ## 🟤 SPRINT 15 — System Tools
+ 
+ ### MISSION 71: RAM Monitor Dashboard (Tauri Desktop App)
+ **Thư mục**: `apps/ram-monitor/` (đã có Tauri template) · **Effort**: 3h
+ 
+ **Bối cảnh:** Thư mục `apps/ram-monitor/` đã được khởi tạo bằng `create-tauri-app` (Rust + Vanilla JS). Hiện tại vẫn là template mặc định "Welcome to Tauri" với hàm `greet()`. Crate `sysinfo = "0.38.4"` đã có trong `Cargo.toml`. Cần biến nó thành app giám sát RAM thời gian thực.
+ 
+ **Yêu cầu Worker thực hiện:**
+ 
+ #### Bước 1 — Rust Backend: Thêm Tauri Commands (`src-tauri/src/lib.rs`)
+ 
+ Xoá hàm `greet()`, thay bằng 3 commands dùng crate `sysinfo`:
+ 
+ ```rust
+ use sysinfo::System;
+ use serde::Serialize;
+ 
+ #[derive(Serialize)]
+ struct SystemInfo {
+     total_memory: u64,      // bytes
+     used_memory: u64,
+     free_memory: u64,
+     percent: f64,
+ }
+ 
+ #[derive(Serialize)]
+ struct ProcessInfo {
+     pid: u32,
+     name: String,
+     ram_mb: f64,
+     ram_bytes: u64,
+     cpu_percent: f32,
+     status: String,
+ }
+ 
+ #[derive(Serialize)]
+ struct ProcessList {
+     processes: Vec<ProcessInfo>,
+     count: usize,
+ }
+ 
+ #[tauri::command]
+ fn get_system_info() -> SystemInfo {
+     let mut sys = System::new_all();
+     sys.refresh_memory();
+     let total = sys.total_memory();
+     let used = sys.used_memory();
+     SystemInfo {
+         total_memory: total,
+         used_memory: used,
+         free_memory: total - used,
+         percent: (used as f64 / total as f64) * 100.0,
+     }
+ }
+ 
+ #[tauri::command]
+ fn get_processes() -> ProcessList {
+     let mut sys = System::new_all();
+     sys.refresh_all();
+     let mut processes: Vec<ProcessInfo> = sys.processes().values()
+         .filter_map(|p| {
+             let ram = p.memory();
+             let ram_mb = ram as f64 / (1024.0 * 1024.0);
+             if ram_mb < 1.0 { return None; }
+             Some(ProcessInfo {
+                 pid: p.pid().as_u32(),
+                 name: p.name().to_string_lossy().to_string(),
+                 ram_mb: (ram_mb * 10.0).round() / 10.0,
+                 ram_bytes: ram,
+                 cpu_percent: p.cpu_usage(),
+                 status: format!("{:?}", p.status()),
+             })
+         })
+         .collect();
+     processes.sort_by(|a, b| b.ram_bytes.cmp(&a.ram_bytes));
+     let count = processes.len();
+     ProcessList { processes, count }
+ }
+ 
+ #[tauri::command]
+ fn kill_process(pid: u32) -> Result<String, String> {
+     let sys = System::new_all();
+     let pid = sysinfo::Pid::from_u32(pid);
+     if let Some(process) = sys.process(pid) {
+         let name = process.name().to_string_lossy().to_string();
+         // Protect critical processes
+         let protected = ["kernel_task", "launchd", "WindowServer", "loginwindow"];
+         if protected.contains(&name.as_str()) {
+             return Err(format!("Cannot kill protected process: {}", name));
+         }
+         if process.kill() {
+             Ok(format!("Killed {} (PID: {})", name, pid))
+         } else {
+             Err(format!("Failed to kill {} (PID: {})", name, pid))
+         }
+     } else {
+         Err(format!("Process {} not found", pid))
+     }
+ }
+ ```
+ 
+ Cập nhật `invoke_handler`:
+ ```rust
+ .invoke_handler(tauri::generate_handler![get_system_info, get_processes, kill_process])
+ ```
+ 
+ #### Bước 2 — Frontend: Dashboard HTML (`src/index.html`)
+ 
+ Xoá toàn bộ nội dung Welcome to Tauri, thay bằng:
+ - **Header**: Logo + "RAM Monitor" + badge "● Live" + dropdown chọn refresh rate (1s/2s/5s) + nút Pause
+ - **System Overview** (4 cards): Tổng RAM 💾 | Đang dùng 🔥 | Còn trống ✅ | Gauge tròn (SVG circle) hiển thị %
+ - **RAM Bar**: Thanh progress bar ngang phân bổ bộ nhớ (used vs free)
+ - **Process Table**: Bảng tiến trình với cột: Tên ứng dụng | PID | RAM (MB) | CPU % | Trạng thái | Nút Kill ❌
+   - Search box tìm tiến trình theo tên
+   - Sort theo RAM giảm dần (ngốn nhiều nhất lên đầu)
+ - **Kill Confirm Modal**: Popup xác nhận trước khi kill ("Bạn có chắc muốn tắt X?")
+ - **Toast notifications**: Thông báo sau khi kill thành công/thất bại
+ 
+ #### Bước 3 — Frontend: Dark Glassmorphism CSS (`src/styles.css`)
+ 
+ Xoá CSS cũ, tạo theme mới:
+ - **Nền tối**: `#0a0a1a`, font `Inter` từ Google Fonts
+ - **Glass cards**: `background: rgba(255,255,255,0.04)`, `backdrop-filter: blur(20px)`, `border: 1px solid rgba(255,255,255,0.06)`
+ - **Gradient accent**: tím-xanh (`#6366f1` → `#8b5cf6`)
+ - **Gauge SVG**: Circle với `stroke-dasharray` animation
+ - **RAM Bar**: gradient xanh→vàng→đỏ theo mức sử dụng
+ - **Table**: hover rows highlight, zebra striping subtle
+ - **Animations**: smooth transition trên progress bars, fade-in cho table rows
+ - **Responsive**: hoạt động tốt ở kích thước cửa sổ nhỏ
+ 
+ #### Bước 4 — Frontend: JavaScript Logic (`src/main.js`)
+ 
+ Xoá code `greet()`, thay bằng:
+ ```javascript
+ const { invoke } = window.__TAURI__.core;
+ 
+ let refreshInterval = null;
+ let isPaused = false;
+ let sortField = 'ram_bytes';
+ let searchQuery = '';
+ 
+ async function fetchSystemInfo() {
+     const info = await invoke('get_system_info');
+     // Update cards: totalRam, usedRam, freeRam
+     // Update gauge SVG (stroke-dashoffset theo percent)
+     // Update RAM bar width
+ }
+ 
+ async function fetchProcesses() {
+     const data = await invoke('get_processes');
+     // Filter theo searchQuery
+     // Render table rows với nút Kill
+     // Update process count badge
+ }
+ 
+ async function killProcess(pid, name) {
+     // Hiện modal xác nhận
+     // Nếu confirm → invoke('kill_process', { pid })
+     // Hiện toast kết quả
+ }
+ 
+ function startRefresh(ms) {
+     if (refreshInterval) clearInterval(refreshInterval);
+     refreshInterval = setInterval(() => {
+         if (!isPaused) { fetchSystemInfo(); fetchProcesses(); }
+     }, ms);
+ }
+ 
+ // Init: fetch lần đầu + start auto-refresh 2s
+ window.addEventListener('DOMContentLoaded', () => {
+     fetchSystemInfo();
+     fetchProcesses();
+     startRefresh(2000);
+ });
+ ```
+ 
+ #### Bước 5 — Cấu hình Tauri (`src-tauri/tauri.conf.json`)
+ - Đổi `title` thành `"RAM Monitor"`
+ - Set `width: 900`, `height: 650`
+ - Set `alwaysOnTop: true` (luôn hiện ngoài màn hình)
+ - Set `decorations: true`, `resizable: true`
+ - Set `transparent: false`
+ 
+#### Bước 6 — Auto-Optimize: Tự động tắt phần mềm khi quá tải RAM
+
+**Rust Backend** — Thêm command `auto_optimize` vào `lib.rs`:
+- Struct `OptimizeResult { killed, freed_mb, message }`
+- Const `SAFE_TO_KILL`: TextEdit, Preview, Notes, Calculator, QuickTime Player, Music, Podcasts, Books, Maps, FaceTime, Messages, Mail
+- Const `NEVER_KILL`: kernel_task, launchd, WindowServer, loginwindow, Finder, Dock, SystemUIServer, Terminal, claude
+- Command `auto_optimize(threshold: f64) -> OptimizeResult`:
+  1. Kiểm tra RAM % vs threshold → nếu dưới ngưỡng thì return "không cần tối ưu"
+  2. Lọc process trong SAFE_TO_KILL, sort theo RAM giảm dần
+  3. Kill từng app cho đến khi RAM giảm xuống threshold - 10%
+  4. Return danh sách app đã tắt + MB giải phóng
+- Cập nhật `invoke_handler` thêm `auto_optimize`
+
+**Frontend HTML** — Thêm vào dashboard:
+- Toggle switch "🤖 Auto-Optimize" (bật/tắt) + slider chọn ngưỡng RAM (60%-95%, mặc định 85%)
+- Nút "⚡ Tối ưu ngay" chạy optimize thủ công
+- Hiện danh sách app đã tắt trong toast notification
+
+**Frontend JS** — Thêm vào `main.js`:
+- `autoOptimize = false`, `ramThreshold = 85`
+- `runOptimize()`: gọi `invoke("auto_optimize", { threshold })`, hiện toast
+- `checkAutoOptimize()`: trong auto-refresh loop, nếu bật + RAM >= threshold → gọi runOptimize()
+
+#### Bước 7 — Build & Test
+ ```bash
+ cd apps/ram-monitor
+ pnpm install
+ pnpm tauri dev
+ ```
+ - Xác nhận dashboard hiển thị đúng process list
+ - Xác nhận RAM usage khớp Activity Monitor
+ - Thử kill 1 process test (mở TextEdit rồi kill)
+ - Xác nhận auto-refresh hoạt động
+ 
+- Bật Auto-Optimize → mở nhiều app → kiểm tra tự động tắt khi vượt ngưỡng 85%
+**Commit**: `feat(M71): RAM Monitor desktop app — real-time monitoring + auto-optimize RAM`
+ 
+ ---
+ 
+ ## 🚀 LỆNH DISPATCH
 
 ```bash
 # Sprint 4A (ưu tiên):
@@ -1180,4 +1494,131 @@ mekong run -p "Đóng vai Backend+Frontend Engineer. Đọc file cto_dispatch_mi
 
 # Sprint 12 (COD GHN + Tracking):
 mekong run -p "Đóng vai Backend+Frontend Engineer. Đọc file cto_dispatch_missions.md. Thực hiện Sprint 12: M62 (COD GHN Auto-Shipping + Tracking Page). Làm theo đúng 6 bước: (1) thêm class GHNClient vào telegram_bot.py, (2) wire vào KBeautyBot.__init__, (3) auto-tạo GHN khi /update shipping với COD, (4) tạo tracking.html với timeline 4 bước + GHN link, (5) filter /api/orders?phone=xxx, (6) cập nhật .env + Railway env vars GHN_TOKEN GHN_SHOP_ID. Commit riêng. Xong deploy Railway + push GitHub."
+
+# Sprint 14 (Cleanup & Stabilize):
+claude -p "Đóng vai Engineer. Đọc file cto_dispatch_missions.md. Thực hiện Sprint 14: M67 (Xóa class DataStore cũ trong telegram_bot.py), M68 (Thêm test step vào GitHub Actions), M69 (Tạo DEPLOY.md hướng dẫn Railway Volume), M70 (Dọn stock.json). Làm theo thứ tự. Mỗi mission commit riêng theo format trong file." --allowedTools "Edit,Write,Bash"
+
+# Sprint 15 (System Tools — RAM Monitor):
+claude -p "Đóng vai Desktop Engineer. Đọc file cto_dispatch_missions.md. Thực hiện Sprint 15: M71 (RAM Monitor Tauri App). Thư mục apps/ram-monitor/ đã có Tauri template + sysinfo crate. Xoá Welcome to Tauri, thay bằng RAM Dashboard: (1) Rust commands get_system_info + get_processes + kill_process + auto_optimize dùng sysinfo, (2) HTML dashboard dark theme với bảng tiến trình + gauge + kill button + toggle auto-optimize, (3) CSS glassmorphism dark, (4) JS auto-refresh 2s + auto-optimize khi RAM vượt ngưỡng 85%. Set alwaysOnTop:true. Build test bằng pnpm tauri dev. Commit riêng." --allowedTools "Edit,Write,Bash"
 ```
+
+
+---
+
+## 🔴 SPRINT 16 — Cải tiến từ k-beauty-order-context.md
+
+### MISSION 72: Fix Analytics + API URL Centralization (Sprint 1 Context)
+**Files**: `src/admin/analytics.js`, `src/admin/utils.js`, `catalog.html`, `order-form.html`, `tracking.html`, `chat-widget.js` · **Effort**: 1h
+
+**Vấn đề 1 — analytics.js dùng `this._getOrders` sai:**
+Hàm `initAnalytics(getOrders)` gán `this._getOrders = getOrders` nhưng `this` là `undefined` trong non-class context. Kết quả: `loadAnalytics()` và `loadLoyalty()` luôn nhận mảng rỗng → metric hiển thị 0%.
+
+**Bước 1 — Sửa `src/admin/analytics.js`:**
+- Thêm biến closure `let _getOrders = () => [];` trên scope module
+- Trong `initAnalytics`: đổi `this._getOrders = getOrders` → `_getOrders = getOrders || (() => [])`
+- Trong `loadAnalytics()`: đổi `this._getOrders ? this._getOrders() : []` → `_getOrders()`
+- Trong `loadLoyalty()`: tương tự
+- Trong weekly chart (dòng ~88): đổi `(o.date || '')` → `(o.created_at || '')` (field đúng từ API)
+
+**Vấn đề 2 — API URL hardcode rải rác:**
+Railway URL `https://web-production-46a5.up.railway.app` nằm trong 5+ file riêng biệt.
+
+**Bước 2 — Sửa `src/admin/utils.js`:**
+```javascript
+export const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000'
+  : (document.querySelector('meta[name="api-url"]')?.content || 'https://web-production-46a5.up.railway.app');
+```
+
+**Bước 3 — Sửa `tracking.html`, `catalog.html`, `order-form.html`, `chat-widget.js`:**
+Thay tất cả `'https://web-production-46a5.up.railway.app'` hardcode bằng pattern:
+```javascript
+document.querySelector('meta[name="api-url"]')?.content || 'https://web-production-46a5.up.railway.app'
+```
+
+**Commit**: `fix(M72): analytics closure binding, weekly chart field, centralize API URL`
+**Deploy**: `wrangler pages deploy . --project-name k-beauty-order`
+
+---
+
+### MISSION 73: SQLite Migration + Railway Persistent Volume (Sprint 2 Context)
+**Files**: `tools/telegram_bot.py`, Railway dashboard settings · **Effort**: 3h
+
+**Vấn đề:** Railway dùng ephemeral filesystem — mọi file JSON lưu trên đĩa bị xóa khi restart/redeploy. Data đơn hàng hiện tại lưu trong `data/orders.json` nên bị mất sau mỗi lần deploy.
+
+**Bước 1 — Trong Railway dashboard:**
+Vào project → service → Add Volume → Mount path: `/data`
+
+**Bước 2 — Sửa `tools/telegram_bot.py`:**
+Update `DB_PATH` để đọc từ env var:
+```python
+DB_PATH = os.environ.get('DB_PATH', '/data/shop.db')
+```
+
+**Bước 3 — Kiểm tra `init_db()`** đã có schema đủ các bảng: `orders`, `inventory`, `inventory_history`. Nếu thiếu, thêm vào.
+
+**Bước 4 — Thêm Railway env var:**
+```
+DB_PATH=/data/shop.db
+```
+Dùng `railway variables --set DB_PATH=/data/shop.db`
+
+**Bước 5 — Verify:** Deploy và check log xem SQLite file tạo thành công tại `/data/shop.db`
+
+**Commit**: `fix(M73): sqlite db path from env var for railway persistent volume`
+**Deploy**: `railway up --detach` từ project root
+
+---
+
+### MISSION 74: Verify Admin Authentication Backend (Sprint 3 Context)
+**Files**: `tools/telegram_bot.py`, `login.html` · **Effort**: 1h
+
+**Vấn đề:** `admin.html` chuyển hướng về `login.html` nếu không có token, nhưng cần kiểm tra endpoint `POST /api/admin/login` trên backend có hoạt động không và token có được verify đúng không.
+
+**Bước 1 — Kiểm tra `tools/telegram_bot.py`:**
+Tìm route xử lý `/api/admin/login`. Nếu chưa có, thêm vào:
+```python
+# POST /api/admin/login
+if path == '/api/admin/login' and method == 'POST':
+    body = json.loads(self.rfile.read(int(self.headers.get('Content-Length', 0))))
+    password = body.get('password', '')
+    admin_password = os.environ.get('ADMIN_PASSWORD', 'admin')
+    if password == admin_password:
+        import hashlib, time
+        token = hashlib.sha256(f"{admin_password}{int(time.time()//3600)}".encode()).hexdigest()
+        self._send_json({'token': token})
+    else:
+        self._send_json({'error': 'Sai mật khẩu'}, 401)
+    return
+```
+
+**Bước 2 — Set Railway env var:**
+```
+railway variables --set ADMIN_PASSWORD=<mật khẩu mong muốn>
+```
+
+**Bước 3 — Test thủ công:**
+```bash
+curl -X POST https://web-production-46a5.up.railway.app/api/admin/login \
+  -H "Content-Type: application/json" \
+  -d '{"password":"admin"}'
+```
+Nếu trả về `{"token":"..."}` là OK.
+
+**Bước 4 — Kiểm tra `login.html`:** Đảm bảo khi login thành công, token được lưu vào `sessionStorage` với key `admin_token` và chuyển về `admin.html`.
+
+**Commit**: `feat(M74): verify and fix admin login endpoint with env-based password`
+**Deploy**: `railway up --detach` từ project root
+
+---
+
+## 🚀 Dispatch Commands Sprint 16
+
+# Sprint 16 Fix 1 (Analytics + API URL):
+claude -p "Đóng vai Frontend Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 72: Fix Analytics closure binding, weekly chart field, centralize API URL. Làm theo đúng 3 bước. Commit riêng. Xong deploy Cloudflare Pages bằng lệnh wrangler pages deploy . --project-name k-beauty-order." --allowedTools "Edit,Write,Bash"
+
+# Sprint 16 Fix 2 (SQLite Volume):
+claude -p "Đóng vai Backend Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 73: SQLite Migration + Railway Persistent Volume. Làm theo 5 bước. Commit riêng. Xong deploy Railway từ project root." --allowedTools "Edit,Write,Bash"
+
+# Sprint 16 Fix 3 (Admin Auth):
+claude -p "Đóng vai Security Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 74: Verify Admin Authentication Backend. Làm theo 4 bước. Commit riêng. Xong deploy Railway từ project root." --allowedTools "Edit,Write,Bash"

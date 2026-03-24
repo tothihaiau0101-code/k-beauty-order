@@ -1,4 +1,10 @@
+providers = ["python"]
+
+[phases.setup]
+nixPkgs = ["python311"]
+
 [phases.build]
+cmds = ["python -m venv /opt/venv", ". /opt/venv/bin/activate", "pip install -r requirements.txt"]
 
 [phases.start]
-cmd = "python tools/telegram_bot.py"
+cmd = ". /opt/venv/bin/activate && python tools/telegram_bot.py"

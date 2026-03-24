@@ -31,12 +31,11 @@ from urllib.parse import urlencode
 
 # PayOS SDK import (official package)
 try:
-    from payos import PayOS, PaymentData
+    from payos import PayOS
 except Exception as e:
     import logging
     logging.getLogger("KBeautyBot.Init").error(f"Failed to import PayOS: {e}")
     PayOS = None
-    PaymentData = None
 
 # Configure Logging
 logging.basicConfig(
@@ -539,14 +538,14 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 order_code = abs(hash(order_id_str)) % (10 ** 9) or int(time.time())
 
                 FRONTEND = "https://k-beauty-order.pages.dev"
-                payment_data = PaymentData(
-                    orderCode=order_code,
-                    amount=amount,
-                    description=description,
-                    returnUrl=f"{FRONTEND}/order-form?payment=success&orderId={order_id_str}",
-                    cancelUrl=f"{FRONTEND}/order-form?payment=cancel&orderId={order_id_str}"
-                )
-                result = WebhookHandler.payos.create_payment_link(payment_data)
+                payment_data = {
+                    "orderCode": order_code,
+                    "amount": amount,
+                    "description": description,
+                    "returnUrl": f"{FRONTEND}/order-form?payment=success&orderId={order_id_str}",
+                    "cancelUrl": f"{FRONTEND}/order-form?payment=cancel&orderId={order_id_str}"
+                }
+                result = WebhookHandler.payos.createPaymentLink(paymentData=payment_data)
                 if result:
                     # Save orderCode to order record
                     if WebhookHandler.store:

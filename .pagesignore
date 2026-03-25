@@ -1,0 +1,13 @@
+apps/**
+tools/**
+*.md
+.github/**
+tests/**
+data/**
+docs/**
+recipes/**
+workers/**
+node_modules/**
+*.a
+*.o
+target/**

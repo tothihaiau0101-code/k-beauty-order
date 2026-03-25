@@ -50,13 +50,13 @@ export default {
         return await handleGetCustomers(env, url, corsHeaders);
       }
       if (path.startsWith('/api/customers/') && request.method === 'GET') {
-        return await handleGetCustomer(env, path, corsHeaders);
+        return await handleGetCustomerByPhone(env, path, corsHeaders);
       }
       if (path === '/api/customers' && request.method === 'POST') {
-        return await handleCreateCustomer(env, request, corsHeaders);
+        return await handleUpsertCustomer(env, request, corsHeaders);
       }
       if (path.includes('/api/customers/') && path.endsWith('/tier') && request.method === 'PUT') {
-        return await handleUpdateCustomerTier(env, path, request, corsHeaders);
+        return await handleUpdateTier(env, path, request, corsHeaders);
       }
       // Seed customers (dev-only)
       if (path === '/api/seed/customers' && request.method === 'POST') {
@@ -97,7 +97,7 @@ async function handleGetOrders(env, corsHeaders) {
   });
 }
 
-// POST /api/orders - Create new order
+// POST /api/orders - Create new order + auto-upsert customer
 async function handleCreateOrder(env, request, corsHeaders) {
   const data = await request.json();
   const id = data.id || crypto.randomUUID();
@@ -115,6 +115,28 @@ async function handleCreateOrder(env, request, corsHeaders) {
     data.status || 'pending',
     data.note
   ).run();
+
+  // ── Auto-upsert customer ──────────────────────────────────
+  try {
+    const existing = await env.DB.prepare(
+      'SELECT customerId, total_spent FROM customers WHERE phone = ?'
+    ).bind(data.phone).first();
+
+    if (existing) {
+      const newSpent = (existing.total_spent || 0) + (data.total || 0);
+      await env.DB.prepare(
+        'UPDATE customers SET name=?, address=?, total_orders=total_orders+1, total_spent=?, loyalty_tier=? WHERE phone=?'
+      ).bind(data.name, data.address||'', newSpent, calcTier(newSpent), data.phone).run();
+    } else {
+      const newId = 'CUS' + Date.now().toString().slice(-6);
+      await env.DB.prepare(
+        'INSERT INTO customers (customerId,name,phone,address,loyalty_tier,total_orders,total_spent) VALUES (?,?,?,?,?,1,?)'
+      ).bind(newId, data.name, data.phone, data.address||'', 'Bronze', data.total||0).run();
+    }
+  } catch (e) {
+    // Non-blocking: order still succeeds if customer upsert fails
+    console.error('Customer upsert failed:', e.message);
+  }
 
   return new Response(JSON.stringify({ id, message: 'Order created' }), {
     status: 201,
@@ -200,27 +222,31 @@ async function handleGetStats(env, corsHeaders) {
   });
 }
 
-// ── CUSTOMERS ──────────────────────────────────────────────
-// GET /api/customers - List all customers
-async function handleGetCustomers(env, url, corsHeaders) {
-  const limit = url.searchParams.get('limit') || 100;
-  const tier = url.searchParams.get('tier') || null;
-  let query = 'SELECT * FROM customers';
-  const params = [];
-  if (tier) {
-    query += ' WHERE loyalty_tier = ?';
-    params.push(tier);
-  }
-  query += ` ORDER BY total_spent DESC LIMIT ${parseInt(limit)}`;
-  const { results } = await env.DB.prepare(query).bind(...params).all();
+// ── CUSTOMER HANDLERS ────────────────────────────────────────
 
+// GET /api/customers - List customers (filter by tier, limit, search)
+async function handleGetCustomers(env, url, corsHeaders) {
+  const limit  = parseInt(url.searchParams.get('limit') || '100');
+  const tier   = url.searchParams.get('tier') || null;
+  const search = url.searchParams.get('q')    || null;
+
+  let query  = 'SELECT * FROM customers';
+  const conditions = [];
+  const params = [];
+
+  if (tier)   { conditions.push('loyalty_tier = ?');                  params.push(tier); }
+  if (search) { conditions.push('(name LIKE ? OR phone LIKE ?)');     params.push(`%${search}%`, `%${search}%`); }
+  if (conditions.length) query += ' WHERE ' + conditions.join(' AND ');
+  query += ` ORDER BY total_spent DESC LIMIT ${limit}`;
+
+  const { results } = await env.DB.prepare(query).bind(...params).all();
   return new Response(JSON.stringify(results), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });
 }
 
-// GET /api/customers/:phone - Get customer by phone with orders
-async function handleGetCustomer(env, path, corsHeaders) {
+// GET /api/customers/:phone - Customer detail + their orders
+async function handleGetCustomerByPhone(env, path, corsHeaders) {
   const phone = decodeURIComponent(path.split('/api/customers/')[1]);
   const customer = await env.DB.prepare(
     'SELECT * FROM customers WHERE phone = ?'
@@ -242,26 +268,21 @@ async function handleGetCustomer(env, path, corsHeaders) {
   });
 }
 
-// POST /api/customers - Create or update customer
-async function handleCreateCustomer(env, request, corsHeaders) {
-  const body = await request.json();
+// POST /api/customers - Create or upsert a customer
+async function handleUpsertCustomer(env, request, corsHeaders) {
+  const c = await request.json();
   await env.DB.prepare(`
-    INSERT INTO customers (customerId, name, phone, email, address, loyalty_tier, total_orders, total_spent, joined_at, note)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO customers (customerId,name,phone,email,address,loyalty_tier,total_orders,total_spent,joined_at,note)
+    VALUES (?,?,?,?,?,?,?,?,?,?)
     ON CONFLICT(phone) DO UPDATE SET
-      name = excluded.name, email = excluded.email,
-      address = excluded.address, note = excluded.note
+      name=excluded.name, email=excluded.email,
+      address=excluded.address, note=excluded.note
   `).bind(
-    body.customerId,
-    body.name,
-    body.phone,
-    body.email || '',
-    body.address || '',
-    body.loyalty_tier || 'Bronze',
-    body.total_orders || 0,
-    body.total_spent || 0,
-    body.joined_at || new Date().toISOString().slice(0, 19),
-    body.note || ''
+    c.customerId || ('CUS' + Date.now().toString().slice(-6)),
+    c.name, c.phone, c.email||'', c.address||'',
+    c.loyalty_tier||'Bronze', c.total_orders||0, c.total_spent||0,
+    (c.joined_at||'').slice(0,19) || new Date().toISOString().slice(0,19),
+    c.note||''
   ).run();
 
   return new Response(JSON.stringify({ ok: true }), {
@@ -269,8 +290,8 @@ async function handleCreateCustomer(env, request, corsHeaders) {
   });
 }
 
-// PUT /api/customers/:phone/tier - Update customer loyalty tier
-async function handleUpdateCustomerTier(env, path, request, corsHeaders) {
+// PUT /api/customers/:phone/tier - Update loyalty tier
+async function handleUpdateTier(env, path, request, corsHeaders) {
   const phone = decodeURIComponent(path.split('/api/customers/')[1].replace('/tier', ''));
   const { tier } = await request.json();
 
@@ -283,26 +304,30 @@ async function handleUpdateCustomerTier(env, path, request, corsHeaders) {
   });
 }
 
-// POST /api/seed/customers - Seed demo customers (dev-only)
+// POST /api/seed/customers - Dev-only: bulk insert demo data
 async function handleSeedCustomers(env, request, corsHeaders) {
   const customers = await request.json();
+  if (!Array.isArray(customers)) {
+    return new Response(JSON.stringify({ error: 'Expected array' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   const stmt = env.DB.prepare(`
     INSERT OR REPLACE INTO customers
-      (customerId, name, phone, email, address, loyalty_tier, total_orders, total_spent, joined_at, note)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (customerId,name,phone,email,address,loyalty_tier,total_orders,total_spent,joined_at,note)
+    VALUES (?,?,?,?,?,?,?,?,?,?)
   `);
+
   const batch = customers.map(c => stmt.bind(
-    c.customerId,
-    c.name,
-    c.phone,
-    c.email || '',
-    c.address || '',
-    c.loyalty_tier || 'Bronze',
-    c.total_orders || 0,
-    c.total_spent || 0,
-    (c.joined_at || '').slice(0, 19) || new Date().toISOString().slice(0, 19),
-    c.note || ''
+    c.customerId, c.name, c.phone, c.email||'',
+    c.address||'', c.loyalty_tier||'Bronze',
+    c.total_orders||0, c.total_spent||0,
+    (c.joined_at||'').slice(0,19)||new Date().toISOString().slice(0,19),
+    c.note||''
   ));
+
   await env.DB.batch(batch);
 
   return new Response(JSON.stringify({ ok: true, inserted: customers.length }), {
@@ -313,7 +338,7 @@ async function handleSeedCustomers(env, request, corsHeaders) {
 // Helper: calculate loyalty tier based on total spent
 function calcTier(spent) {
   if (spent >= 10000000) return 'Platinum';
-  if (spent >= 5000000) return 'Gold';
-  if (spent >= 1000000) return 'Silver';
+  if (spent >= 5000000)  return 'Gold';
+  if (spent >= 1000000)  return 'Silver';
   return 'Bronze';
 }

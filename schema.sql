@@ -1,3 +1,4 @@
+-- BeaPop D1 Schema
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   name TEXT,

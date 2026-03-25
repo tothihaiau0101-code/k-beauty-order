@@ -609,7 +609,7 @@
       if (paymentMethod === 'bank') {
         try {
           const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://web-production-46a5.up.railway.app');
+            ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
           const desc = `BeaPop ${orderId}`.slice(0, 25);
           const resp = await fetch(_API + '/api/payos/create', {
             method: 'POST',
@@ -643,7 +643,7 @@
       // Send order webhook
       try {
         const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://web-production-46a5.up.railway.app');
+          ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
         await fetch(_API + '/webhook/order', {
@@ -762,7 +762,7 @@
       'ALB004': 'kissoflife', 'ALB005': 'nctwish'
     };
     const _API2 = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://web-production-46a5.up.railway.app');
+      ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
     fetch(_API2 + '/api/inventory').then(r => r.json()).then(stock => {
       stock.forEach(item => {
         const pickerId = STOCK_TO_PICKER[item.id];

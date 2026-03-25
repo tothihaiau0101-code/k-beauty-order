@@ -5,7 +5,7 @@
  */
 export const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000'
-  : (document.querySelector('meta[name="api-url"]')?.content || 'https://web-production-46a5.up.railway.app');
+  : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.kbeautyorder.workers.dev');
 
 /**
  * Status mapping for order statuses

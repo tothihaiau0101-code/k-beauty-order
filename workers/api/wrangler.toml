@@ -1,0 +1,10 @@
+name = "beapop-api"
+main = "index.js"
+compatibility_date = "2026-03-25"
+account_id = "7c29a6413a21be92b0b6066dd529193b"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "beapop-db"
+database_id = "14faa8ad-f761-4828-bfae-df769007bd07"

@@ -21,3 +21,20 @@ venv/
 # IDE
 .vscode/
 .idea/
+
+# External apps (not part of this project)
+apps/
+
+# Tools (not needed for Pages deploy)
+tools/
+
+# Documentation
+*.md
+docs/
+recipes/
+
+# Tests
+tests/
+
+# Wrangler logs
+.wrangler/

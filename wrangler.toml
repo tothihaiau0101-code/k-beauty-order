@@ -1,2 +1,11 @@
-name = "beapop"
-pages_build_output_dir = "."
+name = "k-beauty-order"
+compatibility_date = "2026-03-25"
+
+[pages_build]
+output_dir = "."
+exclude = ["apps/**", "tools/**", "*.md", ".github/**", "tests/**", "data/**", "docs/**", "recipes/**"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "beapop-db"
+database_id = "14faa8ad-f761-4828-bfae-df769007bd07"

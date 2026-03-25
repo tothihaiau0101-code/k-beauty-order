@@ -1622,3 +1622,108 @@ claude -p "Đóng vai Backend Engineer. Đọc file cto_dispatch_missions.md. Th
 
 # Sprint 16 Fix 3 (Admin Auth):
 claude -p "Đóng vai Security Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 74: Verify Admin Authentication Backend. Làm theo 4 bước. Commit riêng. Xong deploy Railway từ project root." --allowedTools "Edit,Write,Bash"
+
+---
+
+### MISSION 75: Migrate Data sang Cloudflare D1 + Workers
+**Files**: `tools/telegram_bot.py`, Cloudflare dashboard, `wrangler.toml` · **Effort**: 4-6h
+
+**Mục tiêu:** Tách database ra khỏi Railway (ephemeral filesystem) → chuyển sang Cloudflare D1 (SQLite persistent edge DB). Railway chỉ còn chạy Telegram Bot. Frontend gọi API qua Cloudflare Worker thay vì Railway.
+
+**Kiến trúc đích:**
+```
+Cloudflare Pages (frontend) → Cloudflare Worker (API) → Cloudflare D1 (database)
+Railway → chỉ chạy Telegram Bot + webhook nhận đơn
+```
+
+---
+
+**Bước 1 — Tạo D1 Database trên Cloudflare:**
+```bash
+wrangler d1 create beapop-db
+```
+Copy `database_id` từ output, ghi vào `wrangler.toml`:
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "beapop-db"
+database_id = "<id từ output>"
+```
+
+**Bước 2 — Tạo schema SQL:**
+Tạo file `schema.sql`:
+```sql
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  phone TEXT,
+  address TEXT,
+  items TEXT,
+  total REAL DEFAULT 0,
+  status TEXT DEFAULT 'pending',
+  note TEXT,
+  created_at TEXT DEFAULT (datetime('now', 'localtime'))
+);
+CREATE TABLE IF NOT EXISTS inventory (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  category TEXT,
+  stock INTEGER DEFAULT 0,
+  price REAL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS inventory_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_id TEXT,
+  action TEXT,
+  qty INTEGER,
+  note TEXT,
+  stock_after INTEGER,
+  timestamp TEXT DEFAULT (datetime('now', 'localtime'))
+);
+```
+Chạy: `wrangler d1 execute beapop-db --file schema.sql`
+
+**Bước 3 — Tạo Cloudflare Worker làm API layer:**
+Tạo thư mục `workers/api/` với file `index.js`:
+- `GET /api/orders` → query D1 `SELECT * FROM orders ORDER BY created_at DESC`
+- `POST /api/orders` → INSERT vào D1
+- `PUT /api/orders/:id` → UPDATE status
+- `GET /api/inventory` → query D1
+- `PUT /api/inventory/:id` → UPDATE stock
+- `GET /api/stats` → COUNT + SUM từ D1
+
+Worker cần CORS header: `Access-Control-Allow-Origin: *`
+
+**Bước 4 — Deploy Worker:**
+```bash
+wrangler deploy workers/api/index.js --name beapop-api
+```
+Ghi lại URL worker: `https://beapop-api.<account>.workers.dev`
+
+**Bước 5 — Cập nhật `wrangler.toml` (frontend Pages):**
+Thêm meta tag vào tất cả HTML file:
+```html
+<meta name="api-url" content="https://beapop-api.<account>.workers.dev">
+```
+
+**Bước 6 — Sửa Railway (chỉ giữ Telegram Bot):**
+Trong `telegram_bot.py`, endpoint `/webhook/order` (nhận đơn từ frontend) vẫn giữ nguyên — nhưng thay vì ghi vào SQLite local, gọi qua HTTP lên Cloudflare Worker:
+```python
+import httpx
+CF_WORKER = os.environ.get('CF_WORKER_URL', '')
+# Khi nhận đơn mới: POST lên CF_WORKER/api/orders
+```
+Set Railway env var: `CF_WORKER_URL=https://beapop-api.<account>.workers.dev`
+
+**Commit**: `feat(M75): migrate database to cloudflare d1 + workers api layer`
+**Deploy**: 
+- `wrangler deploy workers/api/index.js --name beapop-api`
+- `wrangler pages deploy . --project-name k-beauty-order`
+- `railway up --detach`
+
+---
+
+## 🚀 Dispatch Command Sprint 17
+
+# Sprint 17 (Cloudflare D1 Migration):
+claude -p "Đóng vai Backend/Cloud Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 75: Migrate Data sang Cloudflare D1 + Workers. Làm theo đúng 6 bước. Mỗi bước commit riêng. Xong deploy cả 3: Worker, Pages, Railway." --allowedTools "Edit,Write,Bash"

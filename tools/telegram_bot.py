@@ -37,6 +37,9 @@ except Exception as e:
     logging.getLogger("KBeautyBot.Init").error(f"Failed to import PayOS: {e}")
     PayOS = None
 
+# Cloudflare Worker API URL (set via Railway env var: CF_WORKER_URL)
+CF_WORKER_URL = os.environ.get('CF_WORKER_URL', '')
+
 # Configure Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -230,6 +233,39 @@ class GHNClient:
         except Exception as e:
             logger.error(f"GHN create_order error: {e}")
         return None
+
+
+def call_worker_api(endpoint: str, data: Optional[Dict] = None, method: str = "POST") -> Optional[Dict]:
+    """
+    Call Cloudflare Worker API.
+
+    Args:
+        endpoint: API endpoint (e.g., "/api/orders")
+        data: Request body dictionary
+        method: HTTP method
+
+    Returns:
+        JSON response or None if failed.
+    """
+    if not CF_WORKER_URL:
+        logger.warning("CF_WORKER_URL not set - cannot call Worker API")
+        return None
+
+    url = f"{CF_WORKER_URL.rstrip('/')}{endpoint}"
+    headers = {"Content-Type": "application/json"}
+    body = json.dumps(data).encode("utf-8") if data else None
+
+    try:
+        req = request.Request(url, data=body, headers=headers, method=method)
+        with request.urlopen(req, timeout=10) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib_error.HTTPError as e:
+        logger.error(f"Worker API HTTP Error: {e.code} - {e.reason}")
+    except urllib_error.URLError as e:
+        logger.error(f"Worker API URL Error: {e.reason}")
+    except Exception as e:
+        logger.error(f"Worker API General Error: {e}")
+    return None
 
 
 class WebhookHandler(BaseHTTPRequestHandler):
@@ -639,11 +675,21 @@ class WebhookHandler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get("Content-Length", 0))
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode("utf-8"))
-            if WebhookHandler.store and WebhookHandler.bot:
-                # Save Order
-                WebhookHandler.store.add_order(data)
+            if WebhookHandler.bot:
+                # Save Order to Cloudflare D1 via Worker API
+                order_saved = False
+                if CF_WORKER_URL:
+                    result = call_worker_api("/api/orders", data)
+                    if result:
+                        order_saved = True
+                        logger.info(f"Order {data.get('orderId', 'unknown')} saved to D1 via Worker API")
 
-                # Auto-deduct stock
+                # Fallback: Save to local SQLite if Worker API failed or not configured
+                if not order_saved and WebhookHandler.store:
+                    WebhookHandler.store.add_order(data)
+                    logger.info(f"Order {data.get('orderId', 'unknown')} saved to local SQLite")
+
+                # Auto-deduct stock (local tracking, optional)
                 PICKER_TO_STOCK = {
                     'cosrx-snail': 'KB001', 'boj-sun': 'KB002', 'anua-toner': 'KB003',
                     'torriden-serum': 'KB004', 'skin1004': 'KB005', 'mediheal': 'KB006',
@@ -653,7 +699,7 @@ class WebhookHandler(BaseHTTPRequestHandler):
                 }
                 for item in data.get('items', []):
                     stock_id = PICKER_TO_STOCK.get(item.get('id', ''))
-                    if stock_id:
+                    if stock_id and WebhookHandler.store:
                         WebhookHandler.store.update_stock(
                             stock_id,
                             'out',
@@ -661,17 +707,17 @@ class WebhookHandler(BaseHTTPRequestHandler):
                             note=f"Đơn {data.get('orderId', '')}"
                         )
 
-                # Notify Owner
+                # Notify Owner via Telegram
                 msg = self._format_order_message(data)
                 WebhookHandler.bot.send_message(msg)
-                
+
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self._send_cors_headers()
                 self.end_headers()
                 self.wfile.write(json.dumps({"status": "success"}).encode("utf-8"))
             else:
-                logger.error("Store or Bot not initialized")
+                logger.error("Bot not initialized")
                 self.send_response(500)
                 self.end_headers()
         except json.JSONDecodeError:

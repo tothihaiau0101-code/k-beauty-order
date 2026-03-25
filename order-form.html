@@ -11,6 +11,7 @@
   <meta name="api-url" content="https://beapop-api.beapop.workers.dev">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <script src="ui-kit.js"></script>
   <script src="auth.js" defer></script>
   <style>
     .form-section { max-width: 640px; margin: 0 auto; padding: 30px 16px 60px; }
@@ -669,10 +670,16 @@
           signal: controller.signal
         });
         clearTimeout(timeout);
-        if (res.ok) console.log('✅ Order saved to D1');
-        else console.warn('⚠️ Order API error:', res.status);
+        if (res.ok) {
+          console.log('✅ Order saved to D1');
+          if (window.BeaUI) BeaUI.ErrorBoundary.show('Đơn hàng đã được ghi nhận!', 'success', 3000);
+        } else {
+          console.warn('⚠️ Order API error:', res.status);
+          if (window.BeaUI) BeaUI.ErrorBoundary.show('Lưu đơn hàng thất bại — vui lòng liên hệ hỗ trợ', 'warning', 6000);
+        }
       } catch (err) {
         console.warn('⚠️ Order API skip:', err.message);
+        if (window.BeaUI) BeaUI.ErrorBoundary.show('Không thể kết nối server — đơn hàng vẫn được xử lý qua hotline', 'warning', 6000);
       }
 
       // Show payment modal

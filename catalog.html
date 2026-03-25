@@ -11,6 +11,7 @@
   <meta name="api-url" content="https://beapop-api.beapop.workers.dev">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <script src="ui-kit.js"></script>
   <script src="auth.js" defer></script>
 </head>
 <body>
@@ -602,31 +603,46 @@
     const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:5000'
       : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
-    fetch(_API + '/api/inventory').then(r => r.json()).then(stock => {
-      const stockById = {};
-      stock.forEach(s => stockById[s.id] = s.stock);
-      document.querySelectorAll('.btn-order').forEach(btn => {
-        const href = btn.getAttribute('href') || '';
-        const m = href.match(/select=([^&]+)/);
-        if (!m) return;
-        const stockId = STOCK_MAP[m[1]];
-        if (!stockId) return;
-        const qty = stockById[stockId];
-        const card = btn.closest('.product-card');
-        if (qty === 0) {
-          btn.textContent = 'Hết hàng';
-          btn.style.cssText = 'pointer-events:none;opacity:0.4;background:#555;';
-          if (card) {
-            const badge = card.querySelector('.card-badge');
-            if (badge) { badge.textContent = 'Hết hàng'; badge.style.background = '#ef4444'; }
-            else { const b = document.createElement('span'); b.className = 'card-badge'; b.textContent = 'Hết hàng'; b.style.background = '#ef4444'; card.prepend(b); }
+    // Show loading pulse on all order buttons while fetching stock
+    const _orderBtns = document.querySelectorAll('.btn-order');
+    _orderBtns.forEach(b => b.setAttribute('data-orig', b.textContent));
+
+    fetch(_API + '/api/inventory')
+      .then(r => { if (!r.ok) throw new Error('inventory_err'); return r.json(); })
+      .then(data => {
+        const stockById = {};
+        const items = data.inventory || data;
+        items.forEach(s => stockById[s.id] = s.stock);
+        document.querySelectorAll('.btn-order').forEach(btn => {
+          btn.textContent = btn.getAttribute('data-orig') || btn.textContent;
+          const href = btn.getAttribute('href') || '';
+          const m = href.match(/select=([^&]+)/);
+          if (!m) return;
+          const stockId = STOCK_MAP[m[1]];
+          if (stockId == null) return;
+          const qty = stockById[stockId];
+          const card = btn.closest('.product-card');
+          if (qty === 0) {
+            btn.textContent = 'Hết hàng';
+            btn.style.cssText = 'pointer-events:none;opacity:0.4;background:#555;';
+            if (card) {
+              const badge = card.querySelector('.card-badge');
+              if (badge) { badge.textContent = 'Hết hàng'; badge.style.background = '#ef4444'; }
+              else { const b = document.createElement('span'); b.className = 'card-badge'; b.textContent = 'Hết hàng'; b.style.background = '#ef4444'; card.prepend(b); }
+            }
+          } else if (qty != null && qty <= 2 && card) {
+            const existing = card.querySelector('.card-badge');
+            if (!existing) { const b = document.createElement('span'); b.className = 'card-badge'; b.textContent = `Còn ${qty} sp`; b.style.background = '#eab308'; card.prepend(b); }
           }
-        } else if (qty <= 2 && card) {
-          const existing = card.querySelector('.card-badge');
-          if (!existing) { const b = document.createElement('span'); b.className = 'card-badge'; b.textContent = `Còn ${qty} sp`; b.style.background = '#eab308'; card.prepend(b); }
-        }
+        });
+      })
+      .catch(() => {
+        // Silently restore buttons — don't block shopping
+        document.querySelectorAll('.btn-order').forEach(b => {
+          b.textContent = b.getAttribute('data-orig') || b.textContent;
+        });
+        if (window.BeaUI) BeaUI.ErrorBoundary.show('Không thể tải thông tin tồn kho', 'info', 3000);
       });
-    }).catch(() => {});
 
     // ─── PRODUCT DETAIL DATA ───
     const PRODUCT_DATA = {

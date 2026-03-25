@@ -25,17 +25,31 @@ export function initStock() {
  * Load stock data and history from API
  */
 async function loadStock() {
+  // Show skeleton while loading
+  const tbody = document.getElementById('stockBody');
+  if (tbody && window.BeaUI) {
+    tbody.innerHTML = `<tr class="bea-sk-dark">${
+      Array(5).fill('<td style="padding:10px 14px"><div class="bea-sk" style="height:12px;border-radius:6px"></div></td>').join('')
+    }</tr>`.repeat(6);
+  }
+
   try {
     const [stockRes, histRes] = await Promise.all([
       apiFetch(`${API}/api/inventory`),
-      apiFetch(`${API}/api/inventory/history`)
+      apiFetch(`${API}/api/inventory/history`).catch(() => ({ ok: false }))
     ]);
-    stockData = await stockRes.json();
-    const history = await histRes.json();
+    if (!stockRes.ok) throw new Error('stock_' + stockRes.status);
+    const data = await stockRes.json();
+    stockData = data.inventory || data;
     renderStockTable(stockData);
-    renderHistory(history);
+    if (histRes.ok) {
+      const history = await histRes.json();
+      renderHistory(history.history || history);
+    }
   } catch(e) {
     console.error('Load stock error', e);
+    if (window.BeaUI) BeaUI.ErrorBoundary.show('Không thể tải dữ liệu kho hàng', 'error', 5000);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:rgba(255,255,255,0.4)">⚠️ Không thể tải dữ liệu</td></tr>';
   }
 }
 

@@ -45,6 +45,24 @@ export default {
         return await handleGetStats(env, corsHeaders);
       }
 
+      // Customers API
+      if (path === '/api/customers' && request.method === 'GET') {
+        return await handleGetCustomers(env, url, corsHeaders);
+      }
+      if (path.startsWith('/api/customers/') && request.method === 'GET') {
+        return await handleGetCustomer(env, path, corsHeaders);
+      }
+      if (path === '/api/customers' && request.method === 'POST') {
+        return await handleCreateCustomer(env, request, corsHeaders);
+      }
+      if (path.includes('/api/customers/') && path.endsWith('/tier') && request.method === 'PUT') {
+        return await handleUpdateCustomerTier(env, path, request, corsHeaders);
+      }
+      // Seed customers (dev-only)
+      if (path === '/api/seed/customers' && request.method === 'POST') {
+        return await handleSeedCustomers(env, request, corsHeaders);
+      }
+
       // Health check
       if (path === '/api/health') {
         return new Response(JSON.stringify({ status: 'ok' }), {
@@ -180,4 +198,122 @@ async function handleGetStats(env, corsHeaders) {
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });
+}
+
+// ── CUSTOMERS ──────────────────────────────────────────────
+// GET /api/customers - List all customers
+async function handleGetCustomers(env, url, corsHeaders) {
+  const limit = url.searchParams.get('limit') || 100;
+  const tier = url.searchParams.get('tier') || null;
+  let query = 'SELECT * FROM customers';
+  const params = [];
+  if (tier) {
+    query += ' WHERE loyalty_tier = ?';
+    params.push(tier);
+  }
+  query += ` ORDER BY total_spent DESC LIMIT ${parseInt(limit)}`;
+  const { results } = await env.DB.prepare(query).bind(...params).all();
+
+  return new Response(JSON.stringify(results), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// GET /api/customers/:phone - Get customer by phone with orders
+async function handleGetCustomer(env, path, corsHeaders) {
+  const phone = decodeURIComponent(path.split('/api/customers/')[1]);
+  const customer = await env.DB.prepare(
+    'SELECT * FROM customers WHERE phone = ?'
+  ).bind(phone).first();
+
+  if (!customer) {
+    return new Response(JSON.stringify({ error: 'Not found' }), {
+      status: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  const { results: orders } = await env.DB.prepare(
+    'SELECT * FROM orders WHERE phone = ? ORDER BY created_at DESC'
+  ).bind(phone).all();
+
+  return new Response(JSON.stringify({ ...customer, orders }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// POST /api/customers - Create or update customer
+async function handleCreateCustomer(env, request, corsHeaders) {
+  const body = await request.json();
+  await env.DB.prepare(`
+    INSERT INTO customers (customerId, name, phone, email, address, loyalty_tier, total_orders, total_spent, joined_at, note)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(phone) DO UPDATE SET
+      name = excluded.name, email = excluded.email,
+      address = excluded.address, note = excluded.note
+  `).bind(
+    body.customerId,
+    body.name,
+    body.phone,
+    body.email || '',
+    body.address || '',
+    body.loyalty_tier || 'Bronze',
+    body.total_orders || 0,
+    body.total_spent || 0,
+    body.joined_at || new Date().toISOString().slice(0, 19),
+    body.note || ''
+  ).run();
+
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// PUT /api/customers/:phone/tier - Update customer loyalty tier
+async function handleUpdateCustomerTier(env, path, request, corsHeaders) {
+  const phone = decodeURIComponent(path.split('/api/customers/')[1].replace('/tier', ''));
+  const { tier } = await request.json();
+
+  await env.DB.prepare(
+    'UPDATE customers SET loyalty_tier = ? WHERE phone = ?'
+  ).bind(tier, phone).run();
+
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// POST /api/seed/customers - Seed demo customers (dev-only)
+async function handleSeedCustomers(env, request, corsHeaders) {
+  const customers = await request.json();
+  const stmt = env.DB.prepare(`
+    INSERT OR REPLACE INTO customers
+      (customerId, name, phone, email, address, loyalty_tier, total_orders, total_spent, joined_at, note)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const batch = customers.map(c => stmt.bind(
+    c.customerId,
+    c.name,
+    c.phone,
+    c.email || '',
+    c.address || '',
+    c.loyalty_tier || 'Bronze',
+    c.total_orders || 0,
+    c.total_spent || 0,
+    (c.joined_at || '').slice(0, 19) || new Date().toISOString().slice(0, 19),
+    c.note || ''
+  ));
+  await env.DB.batch(batch);
+
+  return new Response(JSON.stringify({ ok: true, inserted: customers.length }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// Helper: calculate loyalty tier based on total spent
+function calcTier(spent) {
+  if (spent >= 10000000) return 'Platinum';
+  if (spent >= 5000000) return 'Gold';
+  if (spent >= 1000000) return 'Silver';
+  return 'Bronze';
 }

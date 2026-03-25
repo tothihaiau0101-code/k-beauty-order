@@ -53,3 +53,10 @@ CREATE TABLE IF NOT EXISTS admins (
   role          TEXT DEFAULT 'admin',
   created_at    TEXT DEFAULT (datetime('now', 'localtime'))
 );
+
+-- Customer carts for offline sync (MISSION 79)
+CREATE TABLE IF NOT EXISTS carts (
+  customerId  TEXT PRIMARY KEY,
+  items       TEXT DEFAULT '{}',
+  updated_at  TEXT DEFAULT (datetime('now', 'localtime'))
+);

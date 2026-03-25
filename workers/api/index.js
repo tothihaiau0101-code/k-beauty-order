@@ -1,6 +1,83 @@
 // Cloudflare Worker API for K-Beauty Order
 // Connects to Cloudflare D1 database
 
+// JWT Secret (in production, use env.JWT_SECRET)
+const JWT_SECRET = 'beapop_secret_123';
+
+// Helper: SHA256 hash using WebCrypto API
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Helper: Hash password with salt
+async function hashPassword(password) {
+  const salt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  const hash = await sha256(password + salt);
+  return salt + ':' + hash;
+}
+
+// Helper: Verify password against stored hash
+async function verifyPassword(password, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const [salt, hash] = stored.split(':');
+  const newHash = await sha256(password + salt);
+  return newHash === hash;
+}
+
+// Helper: Base64URL encode
+function base64UrlEncode(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Helper: Sign JWT token
+async function signJWT(payload) {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
+  const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
+  const signatureInput = `${encodedHeader}.${encodedPayload}`;
+  const signature = await sha256(signatureInput + JWT_SECRET);
+  return `${signatureInput}.${base64UrlEncode(new Uint8Array(signature.match(/.{2}/g).map(b => parseInt(b, 16))))}`;
+}
+
+// Helper: Verify JWT token
+async function verifyJWT(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const [encodedHeader, encodedPayload, signature] = parts;
+
+    const header = JSON.parse(atob(encodedHeader.replace(/-/g, '+').replace(/_/g, '/')));
+    const payload = JSON.parse(atob(encodedPayload.replace(/-/g, '+').replace(/_/g, '/')));
+
+    // Verify signature
+    const signatureInput = `${encodedHeader}.${encodedPayload}`;
+    const expectedSignature = await sha256(signatureInput + JWT_SECRET);
+    const actualSignature = Array.from(atob(signature.replace(/-/g, '+').replace(/_/g, '/'))
+      .split('').map(c => c.charCodeAt(0))).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    if (actualSignature !== expectedSignature) return null;
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Helper: Extract bearer token from request
+function getBearerToken(request) {
+  const auth = request.headers.get('Authorization');
+  if (!auth || !auth.startsWith('Bearer ')) return null;
+  return auth.slice(7);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -19,43 +96,161 @@ export default {
     }
 
     try {
-      // Orders API
+      // Auth API (Public routes)
+      if (path === '/api/auth/register' && request.method === 'POST') {
+        return await handleRegister(env, request, corsHeaders);
+      }
+      if (path === '/api/auth/login' && request.method === 'POST') {
+        return await handleLogin(env, request, corsHeaders);
+      }
+      if (path === '/api/admin/login' && request.method === 'POST') {
+        return await handleAdminLogin(env, request, corsHeaders);
+      }
+
+      // Orders API - Admin protected routes
       if (path === '/api/orders' && request.method === 'GET') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         return await handleGetOrders(env, corsHeaders);
       }
       if (path === '/api/orders' && request.method === 'POST') {
         return await handleCreateOrder(env, request, corsHeaders);
       }
       if (path.startsWith('/api/orders/') && request.method === 'PUT') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         const id = path.split('/').pop();
         return await handleUpdateOrder(env, id, request, corsHeaders);
       }
+      if (path.startsWith('/api/orders/') && request.method === 'DELETE') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        const id = path.split('/').pop();
+        return await handleDeleteOrder(env, id, corsHeaders);
+      }
 
-      // Inventory API
+      // Inventory API - Admin protected routes
       if (path === '/api/inventory' && request.method === 'GET') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         return await handleGetInventory(env, corsHeaders);
       }
+      if (path === '/api/inventory' && request.method === 'POST') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        return await handleCreateInventory(env, request, corsHeaders);
+      }
       if (path.startsWith('/api/inventory/') && request.method === 'PUT') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         const id = path.split('/').pop();
         return await handleUpdateInventory(env, id, request, corsHeaders);
       }
+      if (path.startsWith('/api/inventory/') && request.method === 'DELETE') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        const id = path.split('/').pop();
+        return await handleDeleteInventory(env, id, corsHeaders);
+      }
 
-      // Stats API
+      // Stats API - Admin protected
       if (path === '/api/stats' && request.method === 'GET') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         return await handleGetStats(env, corsHeaders);
       }
 
-      // Customers API
+      // Customers API - Admin protected routes
       if (path === '/api/customers' && request.method === 'GET') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         return await handleGetCustomers(env, url, corsHeaders);
       }
       if (path.startsWith('/api/customers/') && request.method === 'GET') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         return await handleGetCustomerByPhone(env, path, corsHeaders);
       }
       if (path === '/api/customers' && request.method === 'POST') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         return await handleUpsertCustomer(env, request, corsHeaders);
       }
       if (path.includes('/api/customers/') && path.endsWith('/tier') && request.method === 'PUT') {
+        // Admin only - verify admin token
+        const admin = await verifyAdmin(request);
+        if (!admin) {
+          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         return await handleUpdateTier(env, path, request, corsHeaders);
       }
       // Seed customers (dev-only)
@@ -341,4 +536,202 @@ function calcTier(spent) {
   if (spent >= 5000000)  return 'Gold';
   if (spent >= 1000000)  return 'Silver';
   return 'Bronze';
+}
+
+// ── AUTH HANDLERS ───────────────────────────────────────────
+
+// POST /api/auth/register - Register new customer
+async function handleRegister(env, request, corsHeaders) {
+  try {
+    const { phone, name, password } = await request.json();
+
+    if (!phone || !name || !password) {
+      return new Response(JSON.stringify({ error: 'Missing phone, name, or password' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check if phone already exists
+    const existing = await env.DB.prepare(
+      'SELECT customerId FROM customers WHERE phone = ?'
+    ).bind(phone).first();
+
+    if (existing) {
+      return new Response(JSON.stringify({ error: 'Phone already registered' }), {
+        status: 409,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const passwordHash = await hashPassword(password);
+    const customerId = 'CUS' + Date.now().toString().slice(-6);
+
+    await env.DB.prepare(`
+      INSERT INTO customers (customerId, name, phone, password_hash, loyalty_tier, total_orders, total_spent)
+      VALUES (?, ?, ?, ?, 'Bronze', 0, 0)
+    `).bind(customerId, name, phone, passwordHash).run();
+
+    const token = await signJWT({ phone, name, role: 'customer', customerId });
+
+    return new Response(JSON.stringify({ token, customer: { customerId, name, phone } }), {
+      status: 201,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    return new Response(JSON.stringify({ error: 'Registration failed' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// POST /api/auth/login - Login customer
+async function handleLogin(env, request, corsHeaders) {
+  try {
+    const { phone, password } = await request.json();
+
+    if (!phone || !password) {
+      return new Response(JSON.stringify({ error: 'Missing phone or password' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const customer = await env.DB.prepare(
+      'SELECT customerId, name, phone, password_hash, loyalty_tier FROM customers WHERE phone = ?'
+    ).bind(phone).first();
+
+    if (!customer || !customer.password_hash) {
+      return new Response(JSON.stringify({ error: 'Invalid phone or password' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const valid = await verifyPassword(password, customer.password_hash);
+    if (!valid) {
+      return new Response(JSON.stringify({ error: 'Invalid phone or password' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const token = await signJWT({
+      phone: customer.phone,
+      name: customer.name,
+      role: 'customer',
+      customerId: customer.customerId
+    });
+
+    return new Response(JSON.stringify({
+      token,
+      customer: {
+        customerId: customer.customerId,
+        name: customer.name,
+        phone: customer.phone,
+        loyalty_tier: customer.loyalty_tier
+      }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    return new Response(JSON.stringify({ error: 'Login failed' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// POST /api/admin/login - Admin login
+async function handleAdminLogin(env, request, corsHeaders) {
+  try {
+    const { username, password } = await request.json();
+
+    if (!username || !password) {
+      return new Response(JSON.stringify({ error: 'Missing username or password' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const admin = await env.DB.prepare(
+      'SELECT username, password_hash, role FROM admins WHERE username = ?'
+    ).bind(username).first();
+
+    if (!admin || !admin.password_hash) {
+      return new Response(JSON.stringify({ error: 'Invalid username or password' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const valid = await verifyPassword(password, admin.password_hash);
+    if (!valid) {
+      return new Response(JSON.stringify({ error: 'Invalid username or password' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const token = await signJWT({ username, role: admin.role || 'admin' });
+
+    return new Response(JSON.stringify({
+      token,
+      admin: { username, role: admin.role || 'admin' }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Admin login error:', error);
+    return new Response(JSON.stringify({ error: 'Login failed' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// Middleware: Verify admin JWT token
+async function verifyAdmin(request) {
+  const token = getBearerToken(request);
+  if (!token) return null;
+
+  const payload = await verifyJWT(token);
+  if (!payload || payload.role !== 'admin') return null;
+
+  return payload;
+}
+
+// DELETE /api/orders/:id - Delete an order (admin only)
+async function handleDeleteOrder(env, id, corsHeaders) {
+  await env.DB.prepare('DELETE FROM orders WHERE id = ?').bind(id).run();
+  return new Response(JSON.stringify({ ok: true, id }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// POST /api/inventory - Create new inventory item (admin only)
+async function handleCreateInventory(env, request, corsHeaders) {
+  const data = await request.json();
+  const id = data.id || crypto.randomUUID();
+
+  await env.DB.prepare(`
+    INSERT INTO inventory (id, name, category, stock, price)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(id, data.name, data.category || '', data.stock || 0, data.price || 0).run();
+
+  return new Response(JSON.stringify({ id, message: 'Inventory created' }), {
+    status: 201,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// DELETE /api/inventory/:id - Delete inventory item (admin only)
+async function handleDeleteInventory(env, id, corsHeaders) {
+  await env.DB.prepare('DELETE FROM inventory WHERE id = ?').bind(id).run();
+  return new Response(JSON.stringify({ ok: true, id }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
 }

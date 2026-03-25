@@ -101,29 +101,33 @@
   <div class="login-container">
     <h1>🇰🇷 BeaPop Admin</h1>
     <p>Vui lòng đăng nhập để truy cập quản trị</p>
-    
+
     <div class="input-group">
-      <label for="password">Mật khẩu hệ thống</label>
+      <label for="username">Tên đăng nhập</label>
+      <input type="text" id="username" placeholder="Nhập tên đăng nhập..." required onkeydown="if(event.key === 'Enter') doLogin()">
+    </div>
+
+    <div class="input-group">
+      <label for="password">Mật khẩu</label>
       <input type="password" id="password" placeholder="Nhập mật khẩu..." required onkeydown="if(event.key === 'Enter') doLogin()">
     </div>
-    
+
     <button class="btn-login" id="loginBtn" onclick="doLogin()">Đăng Nhập</button>
-    <div class="error-msg" id="errorMsg">Sai mật khẩu, vui lòng thử lại!</div>
+    <div class="error-msg" id="errorMsg">Sai tên đăng nhập hoặc mật khẩu, vui lòng thử lại!</div>
   </div>
 
   <script>
-    const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000'
-      : '';
-      
+    const API_BASE = 'https://beapop-api.beapop.workers.dev';
+
     async function doLogin() {
+      const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
       const btn = document.getElementById('loginBtn');
       const err = document.getElementById('errorMsg');
-      
-      if (!password) {
+
+      if (!username || !password) {
         err.style.display = 'block';
-        err.textContent = 'Vui lòng nhập mật khẩu';
+        err.textContent = 'Vui lòng nhập đầy đủ thông tin';
         return;
       }
 
@@ -132,23 +136,23 @@
       err.style.display = 'none';
 
       try {
-        const res = await fetch(`${API}/api/admin/login`, {
+        const res = await fetch(`${API_BASE}/api/admin/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
+          body: JSON.stringify({ username, password })
         });
-        
+
         const data = await res.json();
         if (res.ok && data.token) {
-          sessionStorage.setItem('admin_token', data.token);
+          localStorage.setItem('adminToken', data.token);
           window.location.href = 'admin.html';
         } else {
           err.style.display = 'block';
-          err.textContent = data.error || 'Sai mật khẩu!';
+          err.textContent = data.error || 'Sai tên đăng nhập hoặc mật khẩu!';
         }
       } catch (e) {
         err.style.display = 'block';
-        err.textContent = 'Không thế kết nối đến server';
+        err.textContent = 'Không thể kết nối đến server';
       } finally {
         btn.disabled = false;
         btn.textContent = 'Đăng Nhập';

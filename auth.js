@@ -1,14 +1,18 @@
 /* ========================================================
    BeaPop Auth & Loyalty Points System
-   LocalStorage MVP — No backend required
-   v3: Security hardened — PBKDF2, rate-limit, PIN reset
+   v4: JWT Auth with D1 Backend (MISSION 77)
    ======================================================== */
 (function() {
   'use strict';
-  const STORAGE_KEY = 'beapop_user';
+
+  // API Base URL
+  const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000'
+    : 'https://beapop-api.beapop.workers.dev';
+
+  const TOKEN_KEY = 'customerToken';
+  const USER_KEY = 'customerUser';
   const POINTS_LOG_KEY = 'beapop_points_log';
-  const USERS_DB_KEY = 'beapop_users_db';
-  const RATE_LIMIT_KEY = 'beapop_rate_limit';
   const VOUCHER_KEY = 'beapop_vouchers';
 
   /* ---- LOYALTY REWARD MILESTONES ---- */
@@ -20,102 +24,69 @@
     { target: 10000000, voucher: { code: 'LOYAL10M',   label: 'Giảm 20%', type: 'percent', value: 20, max: 300000 } },
   ];
 
-  /* ---- PASSWORD HASHING (PBKDF2-SHA256, 100k iterations) ---- */
-  async function hashPassword(password, saltHex) {
-    const enc = new TextEncoder();
-    let salt;
-    if (saltHex) { salt = new Uint8Array(saltHex.match(/.{2}/g).map(b => parseInt(b, 16))); }
-    else { salt = crypto.getRandomValues(new Uint8Array(16)); }
-    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256);
-    const h = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
-    const s = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
-    return s + ':' + h;
-  }
-  async function verifyPassword(password, stored) {
-    if (!stored || !stored.includes(':')) return false;
-    return (await hashPassword(password, stored.split(':')[0])) === stored;
-  }
-
-  /* ---- RATE LIMITING ---- */
-  const MAX_ATTEMPTS = 5, LOCKOUT_MS = 30000;
-  function getRateLimit(key) { try { return (JSON.parse(sessionStorage.getItem(RATE_LIMIT_KEY))||{})[key]||{attempts:0,lockedUntil:0}; } catch(e) { return {attempts:0,lockedUntil:0}; } }
-  function setRateLimit(key, info) { try { const d=JSON.parse(sessionStorage.getItem(RATE_LIMIT_KEY))||{}; d[key]=info; sessionStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(d)); } catch(e){} }
-  function checkRateLimit(key) { const i=getRateLimit(key), n=Date.now(); if(i.lockedUntil>n) return {locked:true,remaining:Math.ceil((i.lockedUntil-n)/1000)}; if(i.lockedUntil>0&&i.lockedUntil<=n) setRateLimit(key,{attempts:0,lockedUntil:0}); return {locked:false}; }
-  function recordFail(key) { const i=getRateLimit(key); i.attempts+=1; if(i.attempts>=MAX_ATTEMPTS){i.lockedUntil=Date.now()+LOCKOUT_MS;i.attempts=0;} setRateLimit(key,i); return i; }
-  function resetRL(key) { setRateLimit(key,{attempts:0,lockedUntil:0}); }
-
   /* ---- DATA LAYER ---- */
   const Auth = {
-    getUser() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e) { return null; } },
-    isLoggedIn() { return !!this.getUser(); },
+    getUser() {
+      try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch(e) { return null; }
+    },
+    getToken() {
+      return localStorage.getItem(TOKEN_KEY);
+    },
+    isLoggedIn() {
+      return !!this.getToken() && !!this.getUser();
+    },
 
     async login(phone, password) {
       phone = phone.replace(/\D/g, '');
       if (!/^0\d{9}$/.test(phone)) return { success:false, error:'INVALID_PHONE' };
-      const rl = checkRateLimit('login_'+phone);
-      if (rl.locked) return { success:false, error:'RATE_LIMITED', remaining:rl.remaining };
-      const db = this.getAllUsers(), user = db[phone];
-      if (!user) { recordFail('login_'+phone); return { success:false, error:'INVALID_CREDENTIALS' }; }
-      if (!user.passwordHash) { user.lastLogin=new Date().toISOString(); localStorage.setItem(STORAGE_KEY,JSON.stringify(user)); db[phone]=user; localStorage.setItem(USERS_DB_KEY,JSON.stringify(db)); resetRL('login_'+phone); return { success:true, user, needsPassword:true }; }
-      const valid = await verifyPassword(password, user.passwordHash);
-      if (!valid) { const info=recordFail('login_'+phone); return { success:false, error:'INVALID_CREDENTIALS', attemptsLeft:info.lockedUntil>0?0:MAX_ATTEMPTS-(info.attempts||0) }; }
-      user.lastLogin=new Date().toISOString(); localStorage.setItem(STORAGE_KEY,JSON.stringify(user)); db[phone]=user; localStorage.setItem(USERS_DB_KEY,JSON.stringify(db)); resetRL('login_'+phone);
-      return { success:true, user };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem(TOKEN_KEY, data.token);
+          localStorage.setItem(USER_KEY, JSON.stringify(data.customer));
+          return { success: true, user: data.customer };
+        } else {
+          return { success: false, error: data.error || 'LOGIN_FAILED', needsPassword: data.needsPassword };
+        }
+      } catch (e) {
+        console.error('Login error:', e);
+        return { success: false, error: 'NETWORK_ERROR' };
+      }
     },
 
-    async register(phone, name, password, pin) {
+    async register(phone, name, password) {
       phone = phone.replace(/\D/g, '');
       if (!/^0\d{9}$/.test(phone)) return { success:false, error:'INVALID_PHONE' };
-      if (!password||password.length<4) return { success:false, error:'WEAK_PASSWORD' };
-      if (!pin||!/^\d{4,6}$/.test(pin)) return { success:false, error:'INVALID_PIN' };
-      const db = this.getAllUsers();
-      if (db[phone]) return { success:false, error:'PHONE_EXISTS' };
-      const user = { phone, name:name||'', passwordHash:await hashPassword(password), pinHash:await hashPassword(pin), points:0, tier:'bronze', totalSpent:0, orderCount:0, createdAt:new Date().toISOString(), lastLogin:new Date().toISOString() };
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(user)); db[phone]=user; localStorage.setItem(USERS_DB_KEY,JSON.stringify(db));
-      return { success:true, user };
-    },
+      if (!name || name.trim().length < 2) return { success:false, error:'INVALID_NAME' };
+      if (!password || password.length < 4) return { success:false, error:'WEAK_PASSWORD' };
 
-    async resetPassword(phone, pin, newPassword) {
-      phone = phone.replace(/\D/g, '');
-      if (!/^0\d{9}$/.test(phone)) return { success:false, error:'INVALID_PHONE' };
-      if (!newPassword||newPassword.length<4) return { success:false, error:'WEAK_PASSWORD' };
-      if (!pin||!/^\d{4,6}$/.test(pin)) return { success:false, error:'INVALID_PIN' };
-      const rl = checkRateLimit('reset_'+phone);
-      if (rl.locked) return { success:false, error:'RATE_LIMITED', remaining:rl.remaining };
-      const db = this.getAllUsers(), user = db[phone];
-      if (!user||!user.pinHash) { recordFail('reset_'+phone); return { success:false, error:'INVALID_CREDENTIALS' }; }
-      if (!(await verifyPassword(pin, user.pinHash))) { const info=recordFail('reset_'+phone); return { success:false, error:'INVALID_CREDENTIALS', attemptsLeft:info.lockedUntil>0?0:MAX_ATTEMPTS-(info.attempts||0) }; }
-      user.passwordHash = await hashPassword(newPassword); db[phone]=user; localStorage.setItem(USERS_DB_KEY,JSON.stringify(db)); resetRL('reset_'+phone);
-      const cur=this.getUser(); if(cur&&cur.phone===phone){cur.passwordHash=user.passwordHash;localStorage.setItem(STORAGE_KEY,JSON.stringify(cur));}
-      return { success:true };
-    },
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, name, password })
+        });
 
-    async changePassword(oldPassword, newPassword) {
-      const user=this.getUser(); if(!user) return {success:false,error:'NOT_LOGGED_IN'};
-      if(!newPassword||newPassword.length<4) return {success:false,error:'WEAK_PASSWORD'};
-      if(user.passwordHash){if(!(await verifyPassword(oldPassword,user.passwordHash))) return {success:false,error:'WRONG_PASSWORD'};}
-      user.passwordHash=await hashPassword(newPassword); this.updateProfile(user); return {success:true};
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem(TOKEN_KEY, data.token);
+          localStorage.setItem(USER_KEY, JSON.stringify(data.customer));
+          return { success: true, user: data.customer };
+        } else {
+          return { success: false, error: data.error || 'REGISTER_FAILED' };
+        }
+      } catch (e) {
+        console.error('Register error:', e);
+        return { success: false, error: 'NETWORK_ERROR' };
+      }
     },
-
-    async changePin(password, newPin) {
-      const user=this.getUser(); if(!user) return {success:false,error:'NOT_LOGGED_IN'};
-      if(!newPin||!/^\d{4,6}$/.test(newPin)) return {success:false,error:'INVALID_PIN'};
-      if(user.passwordHash){if(!(await verifyPassword(password,user.passwordHash))) return {success:false,error:'WRONG_PASSWORD'};}
-      user.pinHash=await hashPassword(newPin); this.updateProfile(user); return {success:true};
-    },
-
-    saveAddress(address) { const user=this.getUser(); if(!user||!address) return; user.address=address.trim(); this.updateProfile(user); },
-    logout() { localStorage.removeItem(STORAGE_KEY); },
-
-    updateProfile(data) {
-      const user=this.getUser(); if(!user) return null;
-      Object.assign(user, data); user.tier=this.calcTier(user.points);
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(user));
-      const db=this.getAllUsers(); db[user.phone]=user; localStorage.setItem(USERS_DB_KEY,JSON.stringify(db));
-      return user;
-    },
-    getAllUsers() { try { return JSON.parse(localStorage.getItem(USERS_DB_KEY))||{}; } catch(e) { return {}; } },
 
     calcTier(p) { return p>=500?'gold':p>=100?'silver':'bronze'; },
     tierMultiplier(t) { return t==='gold'?2:t==='silver'?1.5:1; },
@@ -165,11 +136,18 @@
       if (newVouchers.length > 0) this.saveVouchers([...vouchers, ...newVouchers]);
       return newVouchers;
     },
-    getMilestones() { return REWARD_MILESTONES; }
-  };
+    getMilestones() { return REWARD_MILESTONES; },
 
-  const ERROR_MESSAGES = { INVALID_PHONE:'SĐT phải có 10 số (bắt đầu bằng 0)', INVALID_CREDENTIALS:'Thông tin đăng nhập không đúng', PHONE_EXISTS:'SĐT này đã được đăng ký', WEAK_PASSWORD:'Mật khẩu phải có ít nhất 4 ký tự', INVALID_PIN:'Mã PIN phải là 4-6 chữ số', PASSWORD_MISMATCH:'Mật khẩu xác nhận không khớp', NOT_LOGGED_IN:'Chưa đăng nhập', WRONG_PASSWORD:'Sai mật khẩu' };
-  function rateLimitMsg(r) { return 'Quá nhiều lần thử. Vui lòng đợi '+r+'s'; }
+    logout() {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    },
+
+    // Stub methods for backward compatibility - points system now server-side
+    updateProfile(user) {
+      if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+    }
+  };
 
   let currentMode = 'login';
   function createLoginModal() {
@@ -190,17 +168,7 @@
           <div class="login-field" id="nameField" style="display:none;"><label>Tên của bạn *</label><input type="text" id="loginName" placeholder="Tên hiển thị" autocomplete="name"></div>
           <div class="login-field" id="passwordField"><label>Mật khẩu *</label><div style="position:relative;"><input type="password" id="loginPassword" placeholder="Nhập mật khẩu" autocomplete="current-password"><button type="button" class="pwd-toggle" onclick="window.BeaPop.togglePassword('loginPassword',this)">👁</button></div></div>
           <div class="login-field" id="confirmPasswordField" style="display:none;"><label>Xác nhận mật khẩu *</label><div style="position:relative;"><input type="password" id="loginConfirmPassword" placeholder="Nhập lại mật khẩu"><button type="button" class="pwd-toggle" onclick="window.BeaPop.togglePassword('loginConfirmPassword',this)">👁</button></div></div>
-          <div class="login-field" id="pinField" style="display:none;"><label>Mã PIN bảo mật * <small style="color:#9a9aaa;">(4-6 số, dùng khi quên mật khẩu)</small></label><input type="password" id="loginPin" placeholder="VD: 1234" inputmode="numeric" maxlength="6" pattern="[0-9]{4,6}"></div>
           <button type="submit" class="login-btn" id="loginSubmitBtn">Đăng nhập</button>
-        </form>
-        <div class="login-forgot" id="forgotLink"><a href="#" onclick="window.BeaPop.switchMode('forgot'); return false;">Quên mật khẩu?</a></div>
-        <form id="forgotForm" style="display:none;" onsubmit="return window.BeaPop.handleForgotPassword(event)">
-          <div class="login-field"><label>Số điện thoại *</label><input type="tel" id="forgotPhone" placeholder="0912 345 678" required autocomplete="tel"></div>
-          <div class="login-field"><label>Mã PIN bảo mật *</label><input type="password" id="forgotPin" placeholder="Nhập mã PIN khi đăng ký" required inputmode="numeric" maxlength="6"></div>
-          <div class="login-field"><label>Mật khẩu mới *</label><div style="position:relative;"><input type="password" id="forgotNewPassword" placeholder="Ít nhất 4 ký tự" required><button type="button" class="pwd-toggle" onclick="window.BeaPop.togglePassword('forgotNewPassword',this)">👁</button></div></div>
-          <div class="login-field"><label>Xác nhận mật khẩu mới *</label><div style="position:relative;"><input type="password" id="forgotConfirmPassword" placeholder="Nhập lại mật khẩu" required><button type="button" class="pwd-toggle" onclick="window.BeaPop.togglePassword('forgotConfirmPassword',this)">👁</button></div></div>
-          <button type="submit" class="login-btn">Đặt lại mật khẩu</button>
-          <div style="text-align:center;margin-top:10px;"><a href="#" onclick="window.BeaPop.switchMode('login'); return false;" style="font-size:0.8rem;color:#6b6b7b;text-decoration:none;">← Quay lại đăng nhập</a></div>
         </form>
         <div class="login-perks" id="loginPerks"><div class="perk-item"><span>🎁</span> Tích điểm mỗi đơn</div><div class="perk-item"><span>💰</span> 100 điểm = giảm 50k</div><div class="perk-item"><span>🚀</span> Thăng hạng VIP</div></div>
       </div>`;
@@ -236,13 +204,12 @@
 
     switchMode(mode) {
       currentMode = mode;
-      const lf=document.getElementById('loginForm'),ff=document.getElementById('forgotForm'),tabs=document.getElementById('loginTabs'),fl=document.getElementById('forgotLink');
+      const lf=document.getElementById('loginForm'),tabs=document.getElementById('loginTabs');
       const title=document.getElementById('loginTitle'),sub=document.getElementById('loginSubtitle');
-      const nf=document.getElementById('nameField'),pf=document.getElementById('passwordField'),cf=document.getElementById('confirmPasswordField'),pinf=document.getElementById('pinField'),btn=document.getElementById('loginSubmitBtn');
+      const nf=document.getElementById('nameField'),pf=document.getElementById('passwordField'),cf=document.getElementById('confirmPasswordField'),btn=document.getElementById('loginSubmitBtn');
       this.clearError();
-      if(mode==='login'){lf.style.display='';ff.style.display='none';tabs.style.display='flex';fl.style.display='';title.textContent='Đăng nhập';sub.textContent='Tích điểm & nhận ưu đãi mỗi đơn hàng';nf.style.display='none';pf.style.display='';cf.style.display='none';pinf.style.display='none';btn.textContent='Đăng nhập';document.querySelectorAll('.login-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode==='login'));}
-      else if(mode==='register'){lf.style.display='';ff.style.display='none';tabs.style.display='flex';fl.style.display='none';title.textContent='Tạo tài khoản';sub.textContent='Đăng ký để tích điểm & nhận ưu đãi';nf.style.display='';pf.style.display='';cf.style.display='';pinf.style.display='';btn.textContent='Đăng ký';document.querySelectorAll('.login-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode==='register'));}
-      else if(mode==='forgot'){lf.style.display='none';ff.style.display='';tabs.style.display='none';fl.style.display='none';title.textContent='Quên mật khẩu';sub.textContent='Nhập mã PIN bảo mật để đặt lại';}
+      if(mode==='login'){lf.style.display='';tabs.style.display='flex';title.textContent='Đăng nhập';sub.textContent='Tích điểm & nhận ưu đãi mỗi đơn hàng';nf.style.display='none';pf.style.display='';cf.style.display='none';btn.textContent='Đăng nhập';document.querySelectorAll('.login-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode==='login'));}
+      else if(mode==='register'){lf.style.display='';tabs.style.display='flex';title.textContent='Tạo tài khoản';sub.textContent='Đăng ký để tích điểm & nhận ưu đãi';nf.style.display='';pf.style.display='';cf.style.display='';btn.textContent='Đăng ký';document.querySelectorAll('.login-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode==='register'));}
     },
 
     showError(msg,ok){const el=document.getElementById('loginError');if(!el)return;el.textContent=(ok?'✅ ':'❌ ')+msg;el.className='login-error'+(ok?' success':'');el.style.display='flex';},
@@ -253,27 +220,17 @@
       e.preventDefault(); this.clearError();
       const phone=document.getElementById('loginPhone').value.trim(), password=document.getElementById('loginPassword').value;
       if(currentMode==='register'){
-        const name=document.getElementById('loginName').value.trim(),confirmPw=document.getElementById('loginConfirmPassword').value,pin=document.getElementById('loginPin').value;
+        const name=document.getElementById('loginName').value.trim(),confirmPw=document.getElementById('loginConfirmPassword').value;
         if(!name){document.getElementById('loginName').classList.add('has-error');this.showError('Vui lòng nhập tên');return false;}
-        if(password!==confirmPw){document.getElementById('loginConfirmPassword').classList.add('has-error');this.showError(ERROR_MESSAGES.PASSWORD_MISMATCH);return false;}
-        const r=await Auth.register(phone,name,password,pin);
+        if(password!==confirmPw){document.getElementById('loginConfirmPassword').classList.add('has-error');this.showError('Mật khẩu xác nhận không khớp');return false;}
+        const r=await Auth.register(phone,name,password);
         if(r.success){this.closeLogin();const old=document.getElementById('navUserWrap');if(old)old.remove();createNavUser();this.toast('🎉 Đăng ký thành công! Chào mừng '+(r.user.name||r.user.phone));}
-        else{if(r.error==='INVALID_PHONE')document.getElementById('loginPhone').classList.add('has-error');if(r.error==='WEAK_PASSWORD')document.getElementById('loginPassword').classList.add('has-error');if(r.error==='INVALID_PIN')document.getElementById('loginPin').classList.add('has-error');this.showError(ERROR_MESSAGES[r.error]||'Có lỗi xảy ra');}
+        else{if(r.error==='INVALID_PHONE')document.getElementById('loginPhone').classList.add('has-error');if(r.error==='WEAK_PASSWORD')document.getElementById('loginPassword').classList.add('has-error');this.showError(r.error||'Có lỗi xảy ra');}
       } else {
         const r=await Auth.login(phone,password);
-        if(r.success){this.closeLogin();const old=document.getElementById('navUserWrap');if(old)old.remove();createNavUser();this.toast('Xin chào '+(r.user.name||r.user.phone)+'! '+Auth.tierLabel(r.user.tier));if(r.needsPassword)setTimeout(()=>this.toast('💡 Hãy vào Tài khoản để đặt mật khẩu bảo mật'),2000);}
-        else{if(r.error==='RATE_LIMITED'){this.showError(rateLimitMsg(r.remaining));}else{let msg=ERROR_MESSAGES[r.error]||'Có lỗi xảy ra';if(r.attemptsLeft!==undefined&&r.attemptsLeft>0)msg+=' (còn '+r.attemptsLeft+' lần thử)';this.showError(msg);}}
+        if(r.success){this.closeLogin();const old=document.getElementById('navUserWrap');if(old)old.remove();createNavUser();this.toast('Xin chào '+(r.user.name||r.user.phone)+'! '+Auth.tierLabel(r.user.tier));}
+        else{this.showError(r.error||'Có lỗi xảy ra');}
       }
-      return false;
-    },
-
-    async handleForgotPassword(e) {
-      e.preventDefault(); this.clearError();
-      const phone=document.getElementById('forgotPhone').value.trim(),pin=document.getElementById('forgotPin').value,newPw=document.getElementById('forgotNewPassword').value,cfPw=document.getElementById('forgotConfirmPassword').value;
-      if(newPw!==cfPw){document.getElementById('forgotConfirmPassword').classList.add('has-error');this.showError(ERROR_MESSAGES.PASSWORD_MISMATCH);return false;}
-      const r=await Auth.resetPassword(phone,pin,newPw);
-      if(r.success){this.showError('Đổi mật khẩu thành công! Đang chuyển...',true);setTimeout(()=>this.switchMode('login'),1500);}
-      else{if(r.error==='RATE_LIMITED'){this.showError(rateLimitMsg(r.remaining));}else{let msg=ERROR_MESSAGES[r.error]||'Có lỗi xảy ra';if(r.attemptsLeft!==undefined&&r.attemptsLeft>0)msg+=' (còn '+r.attemptsLeft+' lần thử)';this.showError(msg);}}
       return false;
     },
 

@@ -13,7 +13,7 @@
 
   const _API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:5000'
-    : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.kbeautyorder.workers.dev');
+    : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
   const CHAT_API = _API_BASE + '/api/chat';
   const STORAGE_KEY = 'beapop_chat_session';
   const USER_KEY = 'beapop_user';

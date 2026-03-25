@@ -194,6 +194,11 @@
       localStorage.removeItem(USER_KEY);
     },
 
+    saveAddress(address) {
+      const user = this.getUser();
+      if (user) { user.address = address; this.updateProfile(user); }
+    },
+
     // Stub methods for backward compatibility - points system now server-side
     updateProfile(user) {
       if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));

@@ -160,16 +160,8 @@ export default {
         return await handleDeleteOrder(env, id, corsHeaders);
       }
 
-      // Inventory API - Admin protected routes
+      // Inventory API - GET is public (stock display); write routes are admin-only
       if (path === '/api/inventory' && request.method === 'GET') {
-        // Admin only - verify admin token
-        const admin = await verifyAdmin(request, env);
-        if (!admin) {
-          return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
         return await handleGetInventory(env, corsHeaders);
       }
       if (path === '/api/inventory' && request.method === 'POST') {
@@ -269,6 +261,35 @@ export default {
       // Seed customers (dev-only)
       if (path === '/api/seed/customers' && request.method === 'POST') {
         return await handleSeedCustomers(env, request, corsHeaders);
+      }
+
+      // Cart API - Customer routes (M79)
+      if (path === '/api/cart' && request.method === 'GET') {
+        const customer = await verifyCustomer(request, env);
+        if (!customer) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        return await handleGetCart(env, customer.customerId, corsHeaders);
+      }
+      if (path === '/api/cart' && request.method === 'PUT') {
+        const customer = await verifyCustomer(request, env);
+        if (!customer) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        return await handlePutCart(env, customer.customerId, request, corsHeaders);
+      }
+      if (path === '/api/cart' && request.method === 'DELETE') {
+        const customer = await verifyCustomer(request, env);
+        if (!customer) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        return await handleClearCart(env, customer.customerId, corsHeaders);
       }
 
       // Health check
@@ -833,4 +854,64 @@ async function handleChangePassword(env, request, corsHeaders) {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
+}
+
+// Middleware: Verify customer JWT token (MISSION 79)
+async function verifyCustomer(request, env) {
+  const token = getBearerToken(request);
+  if (!token) return null;
+  const payload = await verifyJWT(token, env);
+  if (!payload || payload.role !== 'customer') return null;
+  return payload;
+}
+
+// GET /api/cart - Get cart for logged-in customer (MISSION 79)
+async function handleGetCart(env, customerId, corsHeaders) {
+  const row = await env.DB.prepare(
+    'SELECT items FROM carts WHERE customerId = ?'
+  ).bind(customerId).first();
+
+  const items = row ? JSON.parse(row.items || '{}') : {};
+  return new Response(JSON.stringify({ items }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// PUT /api/cart - Upsert cart for logged-in customer (MISSION 79)
+async function handlePutCart(env, customerId, request, corsHeaders) {
+  const { items } = await request.json();
+  if (typeof items !== 'object' || items === null) {
+    return new Response(JSON.stringify({ error: 'items must be an object' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Remove zero or negative quantities before saving
+  const cleaned = {};
+  for (const [id, qty] of Object.entries(items)) {
+    if (typeof qty === 'number' && qty > 0) cleaned[id] = qty;
+  }
+
+  await env.DB.prepare(`
+    INSERT INTO carts (customerId, items, updated_at)
+    VALUES (?, ?, datetime('now', 'localtime'))
+    ON CONFLICT(customerId) DO UPDATE SET
+      items = excluded.items,
+      updated_at = excluded.updated_at
+  `).bind(customerId, JSON.stringify(cleaned)).run();
+
+  return new Response(JSON.stringify({ ok: true, items: cleaned }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// DELETE /api/cart - Clear cart for logged-in customer (MISSION 79)
+async function handleClearCart(env, customerId, corsHeaders) {
+  await env.DB.prepare(
+    'DELETE FROM carts WHERE customerId = ?'
+  ).bind(customerId).run();
+
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
 }

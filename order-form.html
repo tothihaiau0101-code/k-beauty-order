@@ -527,18 +527,25 @@
     function applyVoucher() {
       const code = document.getElementById('voucherCode').value.trim().toUpperCase();
       const el = document.getElementById('voucherResult');
-      if (!code) { el.style.display = 'none'; return; }
-      const v = VOUCHERS[code];
+      if (!code) { el.style.display = 'none'; activeVoucher = null; updateUI(); return; }
+
+      // Check static vouchers first
+      let v = VOUCHERS[code];
+      if (!v && window.BeaPop && window.BeaPop.Auth.isLoggedIn()) {
+        // Check user loyalty vouchers
+        const lv = window.BeaPop.Auth.findVoucher(code);
+        if (lv) v = { ...lv, _loyalty: true, _code: lv.code };
+      }
+
+      el.style.display = 'block';
       if (v) {
         activeVoucher = v;
-        el.style.display = 'block';
         el.style.background = 'rgba(16,185,129,0.15)';
         el.style.color = '#10b981';
         el.textContent = '✅ ' + v.label + ' — Mã: ' + code;
         updateUI();
       } else {
         activeVoucher = null;
-        el.style.display = 'block';
         el.style.background = 'rgba(239,68,68,0.15)';
         el.style.color = '#ef4444';
         el.textContent = '❌ Mã không hợp lệ';
@@ -640,22 +647,32 @@
         timestamp: new Date().toISOString()
       };
 
-      // Send order webhook
+      // Submit order to D1 via Worker API
+      const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
       try {
-        const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-        await fetch(_API + '/webhook/order', {
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(_API + '/api/orders', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Webhook-Secret': '' },
-          body: JSON.stringify(data),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: orderId,
+            name: data.name,
+            phone: data.phone,
+            address: data.address,
+            items: data.items,
+            total: finalTotal,
+            status: 'pending',
+            note: data.note ? `[${paymentMethod.toUpperCase()}] ${data.note}` : `[${paymentMethod.toUpperCase()}]`
+          }),
           signal: controller.signal
         });
         clearTimeout(timeout);
-        console.log('✅ Order webhook sent');
+        if (res.ok) console.log('✅ Order saved to D1');
+        else console.warn('⚠️ Order API error:', res.status);
       } catch (err) {
-        console.warn('⚠️ Webhook skip:', err.message);
+        console.warn('⚠️ Order API skip:', err.message);
       }
 
       // Show payment modal
@@ -666,9 +683,17 @@
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('cartBar').style.display = 'none';
 
-      // Save address for logged-in user
+      // Post-order: save address + earn loyalty points for logged-in user
       if (window.BeaPop && window.BeaPop.Auth.isLoggedIn()) {
         window.BeaPop.Auth.saveAddress(data.address);
+        const newVouchers = window.BeaPop.Auth.earnPoints(finalTotal);
+        // Mark loyalty voucher as used if applied
+        if (activeVoucher && activeVoucher._loyalty) {
+          window.BeaPop.Auth.useVoucher(activeVoucher._code);
+        }
+        if (newVouchers && newVouchers.length > 0) {
+          setTimeout(() => window.BeaPop.toast('🎁 Bạn nhận được voucher mới: ' + newVouchers.map(v => v.label).join(', ')), 2000);
+        }
       }
 
       // Clear Cart
@@ -914,5 +939,26 @@
     <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
   </footer>
 
+  <script>
+    // M79 — Offline order sync listener
+    navigator.serviceWorker?.addEventListener('message', (e) => {
+      if (e.data?.type === 'ORDER_QUEUED') {
+        _swToast('📦 ' + (e.data.message || 'Đơn hàng đã lưu offline. Sẽ gửi khi có mạng.'));
+      }
+      if (e.data?.type === 'ORDERS_SYNCED') {
+        _swToast('✅ ' + (e.data.message || `${e.data.synced} đơn hàng đã gửi!`), '#059669');
+      }
+    });
+    function _swToast(msg, bg = '#1a1a1a') {
+      const old = document.getElementById('_swToast');
+      if (old) old.remove();
+      const t = document.createElement('div');
+      t.id = '_swToast';
+      t.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:${bg};color:#fff;padding:12px 22px;border-radius:10px;font-size:0.85rem;font-weight:600;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.3);max-width:90%;text-align:center;`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 350); }, 4000);
+    }
+  </script>
 </body>
 </html>

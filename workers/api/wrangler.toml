@@ -6,3 +6,14 @@ compatibility_date = "2026-03-25"
 binding = "DB"
 database_name = "beapop-db"
 database_id = "14faa8ad-f761-4828-bfae-df769007bd07"
+
+# KV namespace for rate limiting (M80)
+# Create with: wrangler kv:namespace create "RATE_LIMIT"
+# Then replace the id below with the output ID
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Allowed origins for CORS (M80) — override via env var ALLOWED_ORIGINS (comma-separated)
+# Set in Cloudflare dashboard: Workers > beapop-api > Settings > Variables
+# Example: https://beapop.pages.dev,https://k-beauty-order.pages.dev

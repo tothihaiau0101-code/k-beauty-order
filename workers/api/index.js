@@ -5,6 +5,108 @@
 const JWT_EXPIRY_CUSTOMER = 7 * 24 * 3600;
 const JWT_EXPIRY_ADMIN = 8 * 3600;
 
+// ── CORS ALLOWLIST ───────────────────────────────────────────────────────────
+// Add your Pages domains here. Override at runtime via env.ALLOWED_ORIGINS
+// (comma-separated, set in Cloudflare Workers dashboard → Variables).
+const CORS_ALLOWED_ORIGINS = [
+  'https://k-beauty-order.pages.dev',
+  'https://beapop.pages.dev',
+  'https://036b49c2.k-beauty-order.pages.dev',
+  'http://localhost:5000',
+  'http://localhost:3000',
+  'http://127.0.0.1:5000',
+  'http://127.0.0.1:3000',
+];
+
+/**
+ * Return the request's Origin if it's in the allowlist, otherwise null.
+ * Reads env.ALLOWED_ORIGINS (comma-separated) for runtime additions.
+ * @param {Request} request
+ * @param {object} env
+ * @returns {string|null}
+ */
+function resolveAllowedOrigin(request, env) {
+  const origin = request.headers.get('Origin');
+  if (!origin) return null;
+
+  const extra = env.ALLOWED_ORIGINS
+    ? env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const allowed = [...CORS_ALLOWED_ORIGINS, ...extra];
+  return allowed.includes(origin) ? origin : null;
+}
+
+// ── RATE LIMITING ────────────────────────────────────────────────────────────
+// Uses Cloudflare KV (RATE_LIMIT_KV binding) as a sliding fixed-window counter.
+// If KV is not configured, rate limiting is silently skipped (fail-open).
+//
+// Window key format:  rl:{category}:{ip}:{window_bucket}
+// Each key is stored with TTL = windowSecs + 5s to auto-expire.
+
+const RATE_LIMIT_RULES = {
+  auth_strict: { max: 5,   windowSecs: 60  }, // login / register / admin-login
+  auth_normal: { max: 15,  windowSecs: 60  }, // change-password, auth/me
+  order_write: { max: 10,  windowSecs: 60  }, // POST /api/orders
+  write:       { max: 30,  windowSecs: 60  }, // other write endpoints
+  global:      { max: 200, windowSecs: 60  }, // per-IP across all routes
+};
+
+/**
+ * Check and increment rate-limit counter.
+ * @param {object} env
+ * @param {string} ip
+ * @param {string} category - key in RATE_LIMIT_RULES
+ * @returns {Promise<{limited: boolean, remaining: number, resetIn: number}>}
+ */
+async function checkRateLimit(env, ip, category) {
+  if (!env.RATE_LIMIT_KV) return { limited: false, remaining: 999, resetIn: 60 };
+
+  const rule = RATE_LIMIT_RULES[category] || RATE_LIMIT_RULES.write;
+  const { max, windowSecs } = rule;
+  const bucket = Math.floor(Date.now() / 1000 / windowSecs);
+  const key = `rl:${category}:${ip}:${bucket}`;
+
+  try {
+    const current = parseInt(await env.RATE_LIMIT_KV.get(key) || '0', 10);
+    const remaining = Math.max(0, max - current - 1);
+    const resetIn = (bucket + 1) * windowSecs - Math.floor(Date.now() / 1000);
+
+    if (current >= max) {
+      return { limited: true, remaining: 0, resetIn };
+    }
+
+    await env.RATE_LIMIT_KV.put(key, String(current + 1), {
+      expirationTtl: windowSecs + 5,
+    });
+    return { limited: false, remaining, resetIn };
+  } catch (e) {
+    // KV error — fail open, do not block legitimate traffic
+    console.error('Rate limit KV error:', e.message);
+    return { limited: false, remaining: 999, resetIn: 60 };
+  }
+}
+
+/**
+ * Build a 429 Too Many Requests response.
+ */
+function rateLimitedResponse(corsHeaders, resetIn) {
+  return new Response(
+    JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }),
+    {
+      status: 429,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'Retry-After': String(resetIn),
+        'X-RateLimit-Limit': '5',
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': String(Math.floor(Date.now() / 1000) + resetIn),
+      },
+    }
+  );
+}
+
 // Helper: SHA256 hash (for password hashing only — NOT for JWT signatures)
 async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message);
@@ -115,11 +217,15 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // CORS + security headers (S6 fix: add X-Content-Type-Options, X-Frame-Options)
+    // ── CORS LOCKDOWN (M80) ─────────────────────────────────────────────────
+    // Replace wildcard '*' with exact-match origin from allowlist.
+    // Server-to-server (no Origin header) → omit ACAO header entirely.
+    const allowedOrigin = resolveAllowedOrigin(request, env);
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      ...(allowedOrigin ? { 'Access-Control-Allow-Origin': allowedOrigin } : {}),
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-Webhook-Secret, Authorization, X-Seed-Secret',
+      'Vary': 'Origin',                             // required when origin varies
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -130,24 +236,50 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // ── GLOBAL RATE LIMIT (M80) ─────────────────────────────────────────────
+    // 200 req/min per IP across all routes — DoS baseline guard
+    const clientIP = request.headers.get('CF-Connecting-IP')
+      || request.headers.get('X-Forwarded-For')?.split(',')[0].trim()
+      || 'unknown';
+
+    const globalCheck = await checkRateLimit(env, clientIP, 'global');
+    if (globalCheck.limited) {
+      return rateLimitedResponse(corsHeaders, globalCheck.resetIn);
+    }
+
     try {
-      // Auth API (Public routes)
+      // ── AUTH ROUTES — rate limited (M80) ────────────────────────────────
       if (path === '/api/auth/register' && request.method === 'POST') {
+        const rl = await checkRateLimit(env, clientIP, 'auth_strict');
+        if (rl.limited) return rateLimitedResponse(corsHeaders, rl.resetIn);
         return await handleRegister(env, request, corsHeaders);
       }
       if (path === '/api/auth/login' && request.method === 'POST') {
+        const rl = await checkRateLimit(env, clientIP, 'auth_strict');
+        if (rl.limited) return rateLimitedResponse(corsHeaders, rl.resetIn);
         return await handleLogin(env, request, corsHeaders);
       }
       if (path === '/api/admin/login' && request.method === 'POST') {
+        // Admin login gets tighter limit: keyed by IP+username to prevent
+        // distributed credential stuffing across different IPs
+        const body = await request.clone().json().catch(() => ({}));
+        const usernameKey = `${clientIP}:${(body.username || '').slice(0, 32)}`;
+        const rl = await checkRateLimit(env, usernameKey, 'auth_strict');
+        if (rl.limited) return rateLimitedResponse(corsHeaders, rl.resetIn);
         return await handleAdminLogin(env, request, corsHeaders);
       }
       if (path === '/api/auth/me' && request.method === 'GET') {
+        const rl = await checkRateLimit(env, clientIP, 'auth_normal');
+        if (rl.limited) return rateLimitedResponse(corsHeaders, rl.resetIn);
         return await handleAuthMe(env, request, corsHeaders);
       }
       if (path === '/api/auth/change-password' && request.method === 'POST') {
+        const rl = await checkRateLimit(env, clientIP, 'auth_strict');
+        if (rl.limited) return rateLimitedResponse(corsHeaders, rl.resetIn);
         return await handleChangePassword(env, request, corsHeaders);
       }
 
+      // ── ORDERS API ───────────────────────────────────────────────────────
       // Orders API - Admin protected routes
       if (path === '/api/orders' && request.method === 'GET') {
         // Admin only - verify admin token
@@ -161,6 +293,9 @@ export default {
         return await handleGetOrders(env, corsHeaders);
       }
       if (path === '/api/orders' && request.method === 'POST') {
+        // Rate limit order creation: 10/min per IP (anti-spam)
+        const rl = await checkRateLimit(env, clientIP, 'order_write');
+        if (rl.limited) return rateLimitedResponse(corsHeaders, rl.resetIn);
         return await handleCreateOrder(env, request, corsHeaders);
       }
       if (path.startsWith('/api/orders/') && request.method === 'PUT') {

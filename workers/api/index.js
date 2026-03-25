@@ -1,8 +1,9 @@
 // Cloudflare Worker API for K-Beauty Order
 // Connects to Cloudflare D1 database
 
-// JWT Secret (in production, use env.JWT_SECRET)
-const JWT_SECRET = 'beapop_secret_123';
+// JWT token expiry: 7 days for customers, 8 hours for admins (in seconds)
+const JWT_EXPIRY_CUSTOMER = 7 * 24 * 3600;
+const JWT_EXPIRY_ADMIN = 8 * 3600;
 
 // Helper: SHA256 hash using WebCrypto API
 async function sha256(message) {
@@ -38,29 +39,35 @@ function base64UrlEncode(buffer) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Helper: Sign JWT token
-async function signJWT(payload) {
+// Helper: Sign JWT token with expiry
+async function signJWT(payload, env, expirySeconds = JWT_EXPIRY_CUSTOMER) {
+  const secret = (env && env.JWT_SECRET) || 'beapop_secret_123';
+  const now = Math.floor(Date.now() / 1000);
+  const fullPayload = { ...payload, iat: now, exp: now + expirySeconds };
   const header = { alg: 'HS256', typ: 'JWT' };
   const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
-  const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
+  const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(fullPayload)));
   const signatureInput = `${encodedHeader}.${encodedPayload}`;
-  const signature = await sha256(signatureInput + JWT_SECRET);
+  const signature = await sha256(signatureInput + secret);
   return `${signatureInput}.${base64UrlEncode(new Uint8Array(signature.match(/.{2}/g).map(b => parseInt(b, 16))))}`;
 }
 
-// Helper: Verify JWT token
-async function verifyJWT(token) {
+// Helper: Verify JWT token (checks signature + expiry)
+async function verifyJWT(token, env) {
   try {
+    const secret = (env && env.JWT_SECRET) || 'beapop_secret_123';
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     const [encodedHeader, encodedPayload, signature] = parts;
 
-    const header = JSON.parse(atob(encodedHeader.replace(/-/g, '+').replace(/_/g, '/')));
     const payload = JSON.parse(atob(encodedPayload.replace(/-/g, '+').replace(/_/g, '/')));
+
+    // Check expiry
+    if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
 
     // Verify signature
     const signatureInput = `${encodedHeader}.${encodedPayload}`;
-    const expectedSignature = await sha256(signatureInput + JWT_SECRET);
+    const expectedSignature = await sha256(signatureInput + secret);
     const actualSignature = Array.from(atob(signature.replace(/-/g, '+').replace(/_/g, '/'))
       .split('').map(c => c.charCodeAt(0))).map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -87,7 +94,7 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-Webhook-Secret',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Webhook-Secret, Authorization',
     };
 
     // Handle CORS preflight
@@ -110,7 +117,7 @@ export default {
       // Orders API - Admin protected routes
       if (path === '/api/orders' && request.method === 'GET') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -124,7 +131,7 @@ export default {
       }
       if (path.startsWith('/api/orders/') && request.method === 'PUT') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -136,7 +143,7 @@ export default {
       }
       if (path.startsWith('/api/orders/') && request.method === 'DELETE') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -150,7 +157,7 @@ export default {
       // Inventory API - Admin protected routes
       if (path === '/api/inventory' && request.method === 'GET') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -161,7 +168,7 @@ export default {
       }
       if (path === '/api/inventory' && request.method === 'POST') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -172,7 +179,7 @@ export default {
       }
       if (path.startsWith('/api/inventory/') && request.method === 'PUT') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -184,7 +191,7 @@ export default {
       }
       if (path.startsWith('/api/inventory/') && request.method === 'DELETE') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -198,7 +205,7 @@ export default {
       // Stats API - Admin protected
       if (path === '/api/stats' && request.method === 'GET') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -211,7 +218,7 @@ export default {
       // Customers API - Admin protected routes
       if (path === '/api/customers' && request.method === 'GET') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -222,7 +229,7 @@ export default {
       }
       if (path.startsWith('/api/customers/') && request.method === 'GET') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -233,7 +240,7 @@ export default {
       }
       if (path === '/api/customers' && request.method === 'POST') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -244,7 +251,7 @@ export default {
       }
       if (path.includes('/api/customers/') && path.endsWith('/tier') && request.method === 'PUT') {
         // Admin only - verify admin token
-        const admin = await verifyAdmin(request);
+        const admin = await verifyAdmin(request, env);
         if (!admin) {
           return new Response(JSON.stringify({ error: 'Unauthorized - Admin access required' }), {
             status: 401,
@@ -572,7 +579,7 @@ async function handleRegister(env, request, corsHeaders) {
       VALUES (?, ?, ?, ?, 'Bronze', 0, 0)
     `).bind(customerId, name, phone, passwordHash).run();
 
-    const token = await signJWT({ phone, name, role: 'customer', customerId });
+    const token = await signJWT({ phone, name, role: 'customer', customerId }, env, JWT_EXPIRY_CUSTOMER);
 
     return new Response(JSON.stringify({ token, customer: { customerId, name, phone } }), {
       status: 201,
@@ -623,7 +630,7 @@ async function handleLogin(env, request, corsHeaders) {
       name: customer.name,
       role: 'customer',
       customerId: customer.customerId
-    });
+    }, env, JWT_EXPIRY_CUSTOMER);
 
     return new Response(JSON.stringify({
       token,
@@ -676,7 +683,7 @@ async function handleAdminLogin(env, request, corsHeaders) {
       });
     }
 
-    const token = await signJWT({ username, role: admin.role || 'admin' });
+    const token = await signJWT({ username, role: admin.role || 'admin' }, env, JWT_EXPIRY_ADMIN);
 
     return new Response(JSON.stringify({
       token,
@@ -694,11 +701,11 @@ async function handleAdminLogin(env, request, corsHeaders) {
 }
 
 // Middleware: Verify admin JWT token
-async function verifyAdmin(request) {
+async function verifyAdmin(request, env) {
   const token = getBearerToken(request);
   if (!token) return null;
 
-  const payload = await verifyJWT(token);
+  const payload = await verifyJWT(token, env);
   if (!payload || payload.role !== 'admin') return null;
 
   return payload;

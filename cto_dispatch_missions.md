@@ -2023,3 +2023,41 @@ CF_WORKER_URL=https://beapop-api.<account>.workers.dev ./tools/seed_d1_customers
 
 # Sprint 18 (Customer D1):
 claude -p "Đóng vai Backend/Cloud Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 76: Customers Table on Cloudflare D1 + Worker API + Seed. Làm theo đúng 5 bước, mỗi bước commit riêng. Xong deploy Worker và Pages, sau đó chạy seed script." --allowedTools "Edit,Write,Bash"
+
+---
+
+## MISSION 77: Customer Auth (Login / Register / JWT)
+
+**Mục tiêu:** Chuyển đổi Khách hàng sang đăng nhập bằng SĐT + Mật khẩu qua D1, xoá bỏ logic lưu plaintext trên localStorage.
+
+1. **`schema.sql`**: Thêm cột `password_hash TEXT` vào bảng `customers` (không thay thế schema cũ, chỉ bổ sung). Update D1 remote/local: `wrangler d1 execute beapop-db --file schema.sql --remote`.
+2. **`workers/api/index.js` (Auth Routes)**: Thêm helper hash mật khẩu (WebCrypto API) và helper tạo JWT token (HS256 signature cơ bản). Thêm `POST /api/auth/register` (nhận `phone`, `name`, `password`, hash pass, lưu vào D1) và `POST /api/auth/login` (check `phone` + `password_hash`, trả về `token` JWT chứa `{ phone, role: 'customer' }`).
+3. **`auth.js`**: Cập nhật logic `handleLogin()`. Gọi `POST /api/auth/login` (hoặc `/register` tuỳ tab đang chọn). Nhận JWT lưu vào `localStorage.setItem('customerToken', token)`. Loại bỏ logic lưu user db cũ.
+4. Xử lý middleware cho worker ở file `workers/api/index.js` — Không yêu cầu authorization jwt khi gọi các public data như `/api/auth/login`.
+
+**Commit:** `feat(M77): add JWT auth for customers logic (D1, API, frontend)`
+
+---
+
+## MISSION 78: Admin Auth (D1 + JWT)
+
+**Mục tiêu:** Nâng cấp Admin Auth, không dùng mật khẩu cứng, đưa vào D1 và dùng JWT Token bảo vệ các Endpoint Admin.
+
+1. **`schema.sql`**: Tạo bảng `admins` `(username TEXT PRIMARY KEY, password_hash TEXT, role TEXT, created_at TEXT)`.
+2. **`workers/api/index.js`**: Thêm điểm cuối `POST /api/admin/login` (kiểm tra bảng `admins`, trả JWT `{ username, role: 'admin' }`). Thêm middleware `verifyAdmin(request)` buộc phải có Bearer token hợp lệ cho tất cả routes khác: `PUT /api/orders/*`, `POST /api/inventory/*`, v.v. Các route `GET` và `POST /api/orders` (tạo đơn hàng của khách) vẫn public/hoặc check customer JWT. Cẩn thận không chặn luồng khách hàng tạo đơn hàng.
+3. **`tools/seed_admin.sh`**: Tạo 1 script bash để push 1 account admin demo `admin` / `123456` vào D1 thông qua Cloudflare D1 HTTP API hoặc dùng `wrangler`. Mặc định chạy để tạo tài khoản admin đầu tiên.
+4. **`login.html`**: Form đăng nhập admin sửa lại với ô Nhập tên đăng nhập thay vì số điện thoại, Submit gọi `POST /api/admin/login`, lưu `localStorage.setItem('adminToken', token)`.
+5. **`src/admin/utils.js`**: `getAuthToken()` đọc từ `adminToken`. `apiFetch()` tự động header `Authorization: Bearer <token>`.
+
+**Commit:** `feat(M78): add JWT auth for admin, db admins table, protected routes, UI login`
+
+**Deploy:**
+`wrangler deploy workers/api/index.js --name beapop-api`
+`wrangler pages deploy . --project-name k-beauty-order`
+
+---
+
+## 🚀 Dispatch Command Sprint 19
+
+# Sprint 19 (Auth D1 JWT - Mission 77 & 78):
+claude -p "Đóng vai Backend/Cloud Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 77 và MISSION 78. Vui lòng code chính xác như thiết kế: Tạo bảng admins, update customers, tạo worker JWT auth login/register. Sửa auth.js và login.html để dùng API chuẩn. Sau cùng deploy worker beapop-api và pages deploy." --allowedTools "Edit,Write,Bash"

@@ -36,6 +36,21 @@
       return !!this.getToken() && !!this.getUser();
     },
 
+    _mapCustomer(c) {
+      const tier = (c.loyalty_tier || 'Bronze').toLowerCase().replace('platinum', 'gold');
+      const totalSpent = c.total_spent || 0;
+      return {
+        customerId: c.customerId,
+        name: c.name,
+        phone: c.phone,
+        loyalty_tier: c.loyalty_tier || 'Bronze',
+        tier,
+        orderCount: c.total_orders || 0,
+        totalSpent,
+        points: Math.floor(totalSpent / 10000)
+      };
+    },
+
     async login(phone, password) {
       phone = phone.replace(/\D/g, '');
       if (!/^0\d{9}$/.test(phone)) return { success:false, error:'INVALID_PHONE' };
@@ -49,9 +64,10 @@
 
         const data = await res.json();
         if (res.ok && data.token) {
+          const user = this._mapCustomer(data.customer);
           localStorage.setItem(TOKEN_KEY, data.token);
-          localStorage.setItem(USER_KEY, JSON.stringify(data.customer));
-          return { success: true, user: data.customer };
+          localStorage.setItem(USER_KEY, JSON.stringify(user));
+          return { success: true, user };
         } else {
           return { success: false, error: data.error || 'LOGIN_FAILED', needsPassword: data.needsPassword };
         }
@@ -76,14 +92,49 @@
 
         const data = await res.json();
         if (res.ok && data.token) {
+          const user = this._mapCustomer(data.customer);
           localStorage.setItem(TOKEN_KEY, data.token);
-          localStorage.setItem(USER_KEY, JSON.stringify(data.customer));
-          return { success: true, user: data.customer };
+          localStorage.setItem(USER_KEY, JSON.stringify(user));
+          return { success: true, user };
         } else {
           return { success: false, error: data.error || 'REGISTER_FAILED' };
         }
       } catch (e) {
         console.error('Register error:', e);
+        return { success: false, error: 'NETWORK_ERROR' };
+      }
+    },
+
+    async changePassword(oldPassword, newPassword) {
+      const token = this.getToken();
+      if (!token) return { success: false, error: 'NOT_LOGGED_IN' };
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ oldPassword, newPassword })
+        });
+        const data = await res.json();
+        return res.ok ? { success: true } : { success: false, error: data.error || 'CHANGE_FAILED' };
+      } catch (e) {
+        return { success: false, error: 'NETWORK_ERROR' };
+      }
+    },
+
+    async changePin(password, newPin) {
+      // Verify password via login, then store PIN locally
+      const user = this.getUser();
+      if (!user) return { success: false, error: 'NOT_LOGGED_IN' };
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: user.phone, password })
+        });
+        if (!res.ok) return { success: false, error: 'WRONG_PASSWORD' };
+        localStorage.setItem('beapop_pin', newPin);
+        return { success: true };
+      } catch (e) {
         return { success: false, error: 'NETWORK_ERROR' };
       }
     },

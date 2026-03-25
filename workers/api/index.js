@@ -113,6 +113,12 @@ export default {
       if (path === '/api/admin/login' && request.method === 'POST') {
         return await handleAdminLogin(env, request, corsHeaders);
       }
+      if (path === '/api/auth/me' && request.method === 'GET') {
+        return await handleAuthMe(env, request, corsHeaders);
+      }
+      if (path === '/api/auth/change-password' && request.method === 'POST') {
+        return await handleChangePassword(env, request, corsHeaders);
+      }
 
       // Orders API - Admin protected routes
       if (path === '/api/orders' && request.method === 'GET') {
@@ -581,7 +587,10 @@ async function handleRegister(env, request, corsHeaders) {
 
     const token = await signJWT({ phone, name, role: 'customer', customerId }, env, JWT_EXPIRY_CUSTOMER);
 
-    return new Response(JSON.stringify({ token, customer: { customerId, name, phone } }), {
+    return new Response(JSON.stringify({
+      token,
+      customer: { customerId, name, phone, loyalty_tier: 'Bronze', total_orders: 0, total_spent: 0 }
+    }), {
       status: 201,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -607,7 +616,7 @@ async function handleLogin(env, request, corsHeaders) {
     }
 
     const customer = await env.DB.prepare(
-      'SELECT customerId, name, phone, password_hash, loyalty_tier FROM customers WHERE phone = ?'
+      'SELECT customerId, name, phone, password_hash, loyalty_tier, total_orders, total_spent FROM customers WHERE phone = ?'
     ).bind(phone).first();
 
     if (!customer || !customer.password_hash) {
@@ -638,7 +647,9 @@ async function handleLogin(env, request, corsHeaders) {
         customerId: customer.customerId,
         name: customer.name,
         phone: customer.phone,
-        loyalty_tier: customer.loyalty_tier
+        loyalty_tier: customer.loyalty_tier,
+        total_orders: customer.total_orders || 0,
+        total_spent: customer.total_spent || 0
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -741,4 +752,85 @@ async function handleDeleteInventory(env, id, corsHeaders) {
   return new Response(JSON.stringify({ ok: true, id }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });
+}
+
+// GET /api/auth/me - Get current customer profile (requires customer JWT)
+async function handleAuthMe(env, request, corsHeaders) {
+  const token = getBearerToken(request);
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  const payload = await verifyJWT(token, env);
+  if (!payload || payload.role !== 'customer') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  const customer = await env.DB.prepare(
+    'SELECT customerId, name, phone, loyalty_tier, total_orders, total_spent FROM customers WHERE phone = ?'
+  ).bind(payload.phone).first();
+  if (!customer) {
+    return new Response(JSON.stringify({ error: 'Customer not found' }), {
+      status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  return new Response(JSON.stringify(customer), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// POST /api/auth/change-password - Change customer password (requires customer JWT)
+async function handleChangePassword(env, request, corsHeaders) {
+  const token = getBearerToken(request);
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  const payload = await verifyJWT(token, env);
+  if (!payload || payload.role !== 'customer') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  try {
+    const { oldPassword, newPassword } = await request.json();
+    if (!oldPassword || !newPassword) {
+      return new Response(JSON.stringify({ error: 'Missing oldPassword or newPassword' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    if (newPassword.length < 4) {
+      return new Response(JSON.stringify({ error: 'WEAK_PASSWORD' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const customer = await env.DB.prepare(
+      'SELECT password_hash FROM customers WHERE phone = ?'
+    ).bind(payload.phone).first();
+    if (!customer) {
+      return new Response(JSON.stringify({ error: 'Customer not found' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const valid = await verifyPassword(oldPassword, customer.password_hash);
+    if (!valid) {
+      return new Response(JSON.stringify({ error: 'WRONG_PASSWORD' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const newHash = await hashPassword(newPassword);
+    await env.DB.prepare('UPDATE customers SET password_hash = ? WHERE phone = ?')
+      .bind(newHash, payload.phone).run();
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return new Response(JSON.stringify({ error: 'Change password failed' }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
 }

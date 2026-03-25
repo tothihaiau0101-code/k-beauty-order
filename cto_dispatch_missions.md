@@ -1727,3 +1727,299 @@ Set Railway env var: `CF_WORKER_URL=https://beapop-api.<account>.workers.dev`
 
 # Sprint 17 (Cloudflare D1 Migration):
 claude -p "Đóng vai Backend/Cloud Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 75: Migrate Data sang Cloudflare D1 + Workers. Làm theo đúng 6 bước. Mỗi bước commit riêng. Xong deploy cả 3: Worker, Pages, Railway." --allowedTools "Edit,Write,Bash"
+
+---
+
+## 🟣 SPRINT 18 — Customer Database on Cloudflare D1
+
+### LUỒNG KIẾN TRÚC — Customers trên Cloudflare D1
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   LUỒNG DỮ LIỆU KHÁCH HÀNG                 │
+└─────────────────────────────────────────────────────────────┘
+
+  [Frontend Pages]          [Cloudflare Worker]        [D1 Database]
+  catalog / order-form      beapop-api.workers.dev     beapop-db (SQLite)
+  ─────────────────         ──────────────────────     ──────────────────
+
+  1. Khách đặt hàng   ──POST /api/orders──►  Ghi orders vào D1
+                                              Upsert customers vào D1
+                                              ◄── trả về { orderId }
+
+  2. Admin dashboard  ──GET /api/customers──► SELECT * FROM customers
+                                              ◄── trả về JSON list
+
+  3. Telegram bot     ──webhook /api/orders──►  Ghi D1 (thay SQLite)
+  (Railway)                                     Gửi noti admin
+
+  4. Seed demo data   ──POST /api/seed──────►  INSERT 100 customers
+                                              (chỉ dùng khi dev)
+```
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    SCHEMA D1 — customers                     │
+└──────────────────────────────────────────────────────────────┘
+
+  customers
+  ├── customerId  TEXT PRIMARY KEY   (CUS0001…)
+  ├── name        TEXT NOT NULL
+  ├── phone       TEXT UNIQUE NOT NULL
+  ├── email       TEXT
+  ├── address     TEXT
+  ├── loyalty_tier TEXT DEFAULT 'Bronze'
+  ├── total_orders INTEGER DEFAULT 0
+  ├── total_spent  REAL DEFAULT 0
+  ├── joined_at    TEXT DEFAULT datetime('now','localtime')
+  └── note         TEXT DEFAULT ''
+
+  orders  (đã có từ M75, thêm FK)
+  └── customer_phone TEXT  → link về customers.phone
+```
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│              API ENDPOINTS — Worker beapop-api               │
+└──────────────────────────────────────────────────────────────┘
+
+  GET  /api/customers              → Danh sách 100 khách gần nhất
+  GET  /api/customers/:phone       → Chi tiết 1 khách + orders
+  POST /api/customers              → Tạo/upsert khách hàng mới
+  PUT  /api/customers/:phone/tier  → Cập nhật loyalty tier
+  POST /api/seed/customers         → Seed 100 demo (dev only)
+```
+
+---
+
+### MISSION 76: Customers Table on Cloudflare D1 + Worker API + Seed
+**File**: `schema.sql`, `workers/api/index.js`, `admin.html` · **Effort**: 3h
+
+**Bối cảnh:** D1 database `beapop-db` đã tồn tại (database_id: `14faa8ad-f761-4828-bfae-df769007bd07`, khai báo trong `wrangler.toml`). Mission 75 đã tạo bảng `orders`, `inventory`. Mission này thêm bảng `customers` và API endpoints để admin quản lý.
+
+Data demo nằm tại `tools/data/customers.json` (100 bản ghi, format chuẩn).
+
+#### Bước 1 — Thêm bảng `customers` vào `schema.sql`
+
+Append vào cuối file `schema.sql`:
+```sql
+CREATE TABLE IF NOT EXISTS customers (
+  customerId   TEXT PRIMARY KEY,
+  name         TEXT NOT NULL,
+  phone        TEXT UNIQUE NOT NULL,
+  email        TEXT DEFAULT '',
+  address      TEXT DEFAULT '',
+  loyalty_tier TEXT DEFAULT 'Bronze',
+  total_orders INTEGER DEFAULT 0,
+  total_spent  REAL DEFAULT 0,
+  joined_at    TEXT DEFAULT (datetime('now', 'localtime')),
+  note         TEXT DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+CREATE INDEX IF NOT EXISTS idx_customers_tier  ON customers(loyalty_tier);
+```
+
+Chạy migrate:
+```bash
+wrangler d1 execute beapop-db --file schema.sql
+```
+
+#### Bước 2 — Thêm Customer API vào Worker (`workers/api/index.js`)
+
+Trong router của Worker (sau các route orders), thêm:
+
+```javascript
+// ── CUSTOMERS ──────────────────────────────────────────────
+if (method === 'GET' && path === '/api/customers') {
+  const limit = url.searchParams.get('limit') || 100;
+  const tier  = url.searchParams.get('tier')  || null;
+  let query = 'SELECT * FROM customers';
+  const params = [];
+  if (tier) { query += ' WHERE loyalty_tier = ?'; params.push(tier); }
+  query += ` ORDER BY total_spent DESC LIMIT ${parseInt(limit)}`;
+  const { results } = await env.DB.prepare(query).bind(...params).all();
+  return jsonResponse(results);
+}
+
+if (method === 'GET' && path.startsWith('/api/customers/')) {
+  const phone = decodeURIComponent(path.split('/api/customers/')[1]);
+  const customer = await env.DB.prepare(
+    'SELECT * FROM customers WHERE phone = ?'
+  ).bind(phone).first();
+  if (!customer) return jsonResponse({ error: 'Not found' }, 404);
+  const { results: orders } = await env.DB.prepare(
+    'SELECT * FROM orders WHERE phone = ? ORDER BY created_at DESC'
+  ).bind(phone).all();
+  return jsonResponse({ ...customer, orders });
+}
+
+if (method === 'POST' && path === '/api/customers') {
+  const body = await request.json();
+  await env.DB.prepare(`
+    INSERT INTO customers (customerId, name, phone, email, address, loyalty_tier, total_orders, total_spent, joined_at, note)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(phone) DO UPDATE SET
+      name=excluded.name, email=excluded.email,
+      address=excluded.address, note=excluded.note
+  `).bind(
+    body.customerId, body.name, body.phone,
+    body.email || '', body.address || '',
+    body.loyalty_tier || 'Bronze',
+    body.total_orders || 0, body.total_spent || 0,
+    body.joined_at || new Date().toISOString().slice(0,19),
+    body.note || ''
+  ).run();
+  return jsonResponse({ ok: true });
+}
+
+if (method === 'PUT' && path.includes('/api/customers/') && path.endsWith('/tier')) {
+  const phone = decodeURIComponent(path.split('/api/customers/')[1].replace('/tier',''));
+  const { tier } = await request.json();
+  await env.DB.prepare(
+    'UPDATE customers SET loyalty_tier = ? WHERE phone = ?'
+  ).bind(tier, phone).run();
+  return jsonResponse({ ok: true });
+}
+
+// Dev-only: Seed 100 demo customers
+if (method === 'POST' && path === '/api/seed/customers') {
+  const customers = await request.json(); // Nhận array từ client POST
+  const stmt = env.DB.prepare(`
+    INSERT OR REPLACE INTO customers
+      (customerId, name, phone, email, address, loyalty_tier, total_orders, total_spent, joined_at, note)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const batch = customers.map(c => stmt.bind(
+    c.customerId, c.name, c.phone, c.email||'',
+    c.address||'', c.loyalty_tier||'Bronze',
+    c.total_orders||0, c.total_spent||0,
+    (c.joined_at||'').slice(0,19)||new Date().toISOString().slice(0,19),
+    c.note||''
+  ));
+  await env.DB.batch(batch);
+  return jsonResponse({ ok: true, inserted: customers.length });
+}
+```
+
+#### Bước 3 — Seed 100 khách demo lên D1
+
+Tạo script `tools/seed_d1_customers.sh`:
+```bash
+#!/bin/bash
+# Đọc customers.json, POST lên Worker seed endpoint
+CF_WORKER="${CF_WORKER_URL:-https://beapop-api.<account>.workers.dev}"
+DATA=$(cat "$(dirname "$0")/data/customers.json")
+curl -s -X POST "$CF_WORKER/api/seed/customers" \
+  -H "Content-Type: application/json" \
+  -d "$DATA"
+echo "✅ Seeded 100 customers to D1"
+```
+
+Cấp quyền và chạy:
+```bash
+chmod +x tools/seed_d1_customers.sh
+CF_WORKER_URL=https://beapop-api.<account>.workers.dev ./tools/seed_d1_customers.sh
+```
+
+#### Bước 4 — Thêm tab "Khách Hàng" vào `admin.html`
+
+Trong `admin.html`, thêm tab button:
+```html
+<button class="tab-btn" onclick="showTab('customers')">👥 Khách Hàng</button>
+```
+
+Thêm tab content (sau tab orders):
+```html
+<div id="tab-customers" class="tab-content" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h3>Khách Hàng (D1)</h3>
+    <select id="tierFilter" onchange="loadCustomers()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border)">
+      <option value="">Tất cả Tier</option>
+      <option value="Platinum">💎 Platinum</option>
+      <option value="Gold">🥇 Gold</option>
+      <option value="Silver">🥈 Silver</option>
+      <option value="Bronze">🥉 Bronze</option>
+    </select>
+  </div>
+  <div id="customersList">Đang tải...</div>
+</div>
+```
+
+Thêm JS function `loadCustomers()`:
+```javascript
+async function loadCustomers() {
+  const tier = document.getElementById('tierFilter')?.value || '';
+  const url = `${API_URL}/api/customers${tier ? '?tier='+tier : ''}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const el = document.getElementById('customersList');
+  if (!data.length) { el.innerHTML = '<p>Chưa có khách hàng</p>'; return; }
+  el.innerHTML = `<table class="orders-table">
+    <thead><tr><th>ID</th><th>Tên</th><th>SĐT</th><th>Tier</th><th>Đơn</th><th>Chi tiêu</th></tr></thead>
+    <tbody>${data.map(c => `
+      <tr>
+        <td style="font-family:monospace;font-size:12px">${c.customerId}</td>
+        <td>${c.name}</td>
+        <td>${c.phone}</td>
+        <td><span class="badge">${c.loyalty_tier}</span></td>
+        <td>${c.total_orders}</td>
+        <td style="font-weight:700;color:var(--green)">${Number(c.total_spent).toLocaleString('vi')}₫</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+```
+
+Gọi `loadCustomers()` khi switch tab customers.
+
+#### Bước 5 — Auto-upsert customer khi đặt hàng
+
+Trong Worker, route `POST /api/orders` (đã có từ M75), thêm logic sau khi INSERT order:
+```javascript
+// Upsert customer
+const phone = body.phone;
+const existing = await env.DB.prepare(
+  'SELECT customerId, total_orders, total_spent FROM customers WHERE phone = ?'
+).bind(phone).first();
+
+if (existing) {
+  await env.DB.prepare(
+    'UPDATE customers SET total_orders = total_orders + 1, total_spent = total_spent + ?, loyalty_tier = ? WHERE phone = ?'
+  ).bind(body.total || 0, calcTier(existing.total_spent + (body.total||0)), phone).run();
+} else {
+  const newId = 'CUS' + Date.now().toString().slice(-6);
+  await env.DB.prepare(
+    'INSERT INTO customers (customerId, name, phone, address, loyalty_tier, total_orders, total_spent) VALUES (?,?,?,?,?,1,?)'
+  ).bind(newId, body.name, phone, body.address||'', 'Bronze', body.total||0).run();
+}
+
+// Helper tier
+function calcTier(spent) {
+  if (spent >= 10000000) return 'Platinum';
+  if (spent >= 5000000)  return 'Gold';
+  if (spent >= 1000000)  return 'Silver';
+  return 'Bronze';
+}
+```
+
+**Commit từng bước:**
+- `feat(M76-1): add customers table to D1 schema`
+- `feat(M76-2): customer CRUD API endpoints in worker`
+- `feat(M76-3): seed script for 100 demo customers`
+- `feat(M76-4): customers tab in admin dashboard`
+- `feat(M76-5): auto-upsert customer on order + tier calc`
+
+**Deploy:**
+```bash
+wrangler deploy workers/api/index.js --name beapop-api
+wrangler pages deploy . --project-name k-beauty-order
+CF_WORKER_URL=https://beapop-api.<account>.workers.dev ./tools/seed_d1_customers.sh
+```
+
+---
+
+## 🚀 Dispatch Command Sprint 18
+
+# Sprint 18 (Customer D1):
+claude -p "Đóng vai Backend/Cloud Engineer. Đọc file cto_dispatch_missions.md. Thực hiện MISSION 76: Customers Table on Cloudflare D1 + Worker API + Seed. Làm theo đúng 5 bước, mỗi bước commit riêng. Xong deploy Worker và Pages, sau đó chạy seed script." --allowedTools "Edit,Write,Bash"

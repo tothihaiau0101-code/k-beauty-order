@@ -5,12 +5,24 @@
 const JWT_EXPIRY_CUSTOMER = 7 * 24 * 3600;
 const JWT_EXPIRY_ADMIN = 8 * 3600;
 
-// Helper: SHA256 hash using WebCrypto API
+// Helper: SHA256 hash (for password hashing only — NOT for JWT signatures)
 async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Helper: proper HMAC-SHA256 for JWT signatures (S3 fix — replaces sha256(input+secret))
+async function hmacSha256Hex(message, secret) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Helper: Hash password with salt
@@ -39,7 +51,7 @@ function base64UrlEncode(buffer) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Helper: Sign JWT token with expiry
+// Helper: Sign JWT token with expiry (proper HS256 via HMAC-SHA256)
 async function signJWT(payload, env, expirySeconds = JWT_EXPIRY_CUSTOMER) {
   const secret = (env && env.JWT_SECRET) || 'beapop_secret_123';
   const now = Math.floor(Date.now() / 1000);
@@ -48,11 +60,13 @@ async function signJWT(payload, env, expirySeconds = JWT_EXPIRY_CUSTOMER) {
   const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
   const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(fullPayload)));
   const signatureInput = `${encodedHeader}.${encodedPayload}`;
-  const signature = await sha256(signatureInput + secret);
-  return `${signatureInput}.${base64UrlEncode(new Uint8Array(signature.match(/.{2}/g).map(b => parseInt(b, 16))))}`;
+  // S3 fix: use HMAC-SHA256, not sha256(input+secret)
+  const sigHex = await hmacSha256Hex(signatureInput, secret);
+  const sigBytes = new Uint8Array(sigHex.match(/.{2}/g).map(b => parseInt(b, 16)));
+  return `${signatureInput}.${base64UrlEncode(sigBytes)}`;
 }
 
-// Helper: Verify JWT token (checks signature + expiry)
+// Helper: Verify JWT token — checks HMAC signature + expiry (S3 fix)
 async function verifyJWT(token, env) {
   try {
     const secret = (env && env.JWT_SECRET) || 'beapop_secret_123';
@@ -62,16 +76,18 @@ async function verifyJWT(token, env) {
 
     const payload = JSON.parse(atob(encodedPayload.replace(/-/g, '+').replace(/_/g, '/')));
 
-    // Check expiry
+    // Check expiry before verifying signature (fail fast)
     if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
 
-    // Verify signature
+    // Verify HMAC-SHA256 signature
     const signatureInput = `${encodedHeader}.${encodedPayload}`;
-    const expectedSignature = await sha256(signatureInput + secret);
-    const actualSignature = Array.from(atob(signature.replace(/-/g, '+').replace(/_/g, '/'))
-      .split('').map(c => c.charCodeAt(0))).map(b => b.toString(16).padStart(2, '0')).join('');
+    const expectedSigHex = await hmacSha256Hex(signatureInput, secret);
+    const actualSigHex = Array.from(
+      atob(signature.replace(/-/g, '+').replace(/_/g, '/'))
+        .split('').map(c => c.charCodeAt(0))
+    ).map(b => b.toString(16).padStart(2, '0')).join('');
 
-    if (actualSignature !== expectedSignature) return null;
+    if (actualSigHex !== expectedSigHex) return null;
     return payload;
   } catch (e) {
     return null;
@@ -85,16 +101,28 @@ function getBearerToken(request) {
   return auth.slice(7);
 }
 
+// Helper: safe resource ID from URL path segment — S5 fix: prevent path traversal
+// Allows UUID format, alphanumeric+dash IDs up to 64 chars
+function safeId(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  const clean = decodeURIComponent(raw).trim();
+  if (!/^[a-zA-Z0-9_\-]{1,64}$/.test(clean)) return null;
+  return clean;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // CORS headers
+    // CORS + security headers (S6 fix: add X-Content-Type-Options, X-Frame-Options)
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-Webhook-Secret, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Webhook-Secret, Authorization, X-Seed-Secret',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
     };
 
     // Handle CORS preflight
@@ -144,7 +172,8 @@ export default {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        const id = path.split('/').pop();
+        const id = safeId(path.split('/')[3]); // S5 fix
+        if (!id) return new Response(JSON.stringify({ error: 'Invalid order id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         return await handleUpdateOrder(env, id, request, corsHeaders);
       }
       if (path.startsWith('/api/orders/') && request.method === 'DELETE') {
@@ -156,7 +185,8 @@ export default {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        const id = path.split('/').pop();
+        const id = safeId(path.split('/')[3]); // S5 fix
+        if (!id) return new Response(JSON.stringify({ error: 'Invalid order id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         return await handleDeleteOrder(env, id, corsHeaders);
       }
 
@@ -184,7 +214,8 @@ export default {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        const id = path.split('/').pop();
+        const id = safeId(path.split('/')[3]); // S5 fix
+        if (!id) return new Response(JSON.stringify({ error: 'Invalid inventory id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         return await handleUpdateInventory(env, id, request, corsHeaders);
       }
       if (path.startsWith('/api/inventory/') && request.method === 'DELETE') {
@@ -196,7 +227,8 @@ export default {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
-        const id = path.split('/').pop();
+        const id = safeId(path.split('/')[3]); // S5 fix
+        if (!id) return new Response(JSON.stringify({ error: 'Invalid inventory id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         return await handleDeleteInventory(env, id, corsHeaders);
       }
 
@@ -258,8 +290,15 @@ export default {
         }
         return await handleUpdateTier(env, path, request, corsHeaders);
       }
-      // Seed customers (dev-only)
+      // Seed customers (dev-only — S2 fix: require SEED_SECRET env var)
       if (path === '/api/seed/customers' && request.method === 'POST') {
+        const seedSecret = env.SEED_SECRET || '';
+        const provided = request.headers.get('X-Seed-Secret') || '';
+        if (!seedSecret || provided !== seedSecret) {
+          return new Response(JSON.stringify({ error: 'Forbidden' }), {
+            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
         return await handleSeedCustomers(env, request, corsHeaders);
       }
 
@@ -329,38 +368,68 @@ async function handleGetOrders(env, corsHeaders) {
 // POST /api/orders - Create new order + auto-upsert customer
 async function handleCreateOrder(env, request, corsHeaders) {
   const data = await request.json();
-  const id = data.id || crypto.randomUUID();
+
+  // S1+S4 fix: input validation — reject malformed or malicious payloads
+  const name = (data.name || '').toString().trim().slice(0, 200);
+  const phone = (data.phone || '').toString().replace(/\D/g, '').slice(0, 15);
+  const address = (data.address || '').toString().trim().slice(0, 500);
+  const note = (data.note || '').toString().trim().slice(0, 1000);
+  const total = parseFloat(data.total) || 0;
+
+  if (!name || name.length < 2) {
+    return new Response(JSON.stringify({ error: 'Tên không hợp lệ' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  if (!/^0\d{9}$/.test(phone)) {
+    return new Response(JSON.stringify({ error: 'Số điện thoại không hợp lệ' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  if (!address) {
+    return new Response(JSON.stringify({ error: 'Địa chỉ không được để trống' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  if (total < 0) {
+    return new Response(JSON.stringify({ error: 'Tổng tiền không hợp lệ' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // S1 fix: always generate server-side ID — never trust client-supplied id
+  // S1 fix: always set status='pending' — never trust client-supplied status
+  const id = crypto.randomUUID();
 
   await env.DB.prepare(`
     INSERT INTO orders (id, name, phone, address, items, total, status, note)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
   `).bind(
     id,
-    data.name,
-    data.phone,
-    data.address,
-    JSON.stringify(data.items || []),
-    data.total || 0,
-    data.status || 'pending',
-    data.note
+    name,
+    phone,
+    address,
+    JSON.stringify(Array.isArray(data.items) ? data.items : []),
+    total,
+    note
   ).run();
 
-  // ── Auto-upsert customer ──────────────────────────────────
+  // ── Auto-upsert customer (uses validated vars, not raw data) ──
   try {
     const existing = await env.DB.prepare(
       'SELECT customerId, total_spent FROM customers WHERE phone = ?'
-    ).bind(data.phone).first();
+    ).bind(phone).first();
 
     if (existing) {
-      const newSpent = (existing.total_spent || 0) + (data.total || 0);
+      const newSpent = (existing.total_spent || 0) + total;
       await env.DB.prepare(
         'UPDATE customers SET name=?, address=?, total_orders=total_orders+1, total_spent=?, loyalty_tier=? WHERE phone=?'
-      ).bind(data.name, data.address||'', newSpent, calcTier(newSpent), data.phone).run();
+      ).bind(name, address, newSpent, calcTier(newSpent), phone).run();
     } else {
       const newId = 'CUS' + Date.now().toString().slice(-6);
       await env.DB.prepare(
         'INSERT INTO customers (customerId,name,phone,address,loyalty_tier,total_orders,total_spent) VALUES (?,?,?,?,?,1,?)'
-      ).bind(newId, data.name, data.phone, data.address||'', 'Bronze', data.total||0).run();
+      ).bind(newId, name, phone, address, 'Bronze', total).run();
     }
   } catch (e) {
     // Non-blocking: order still succeeds if customer upsert fails
@@ -373,13 +442,20 @@ async function handleCreateOrder(env, request, corsHeaders) {
   });
 }
 
-// PUT /api/orders/:id - Update order status
+// PUT /api/orders/:id - Update order status (admin only — S1 fix: whitelist status)
 async function handleUpdateOrder(env, id, request, corsHeaders) {
   const data = await request.json();
+  const VALID_STATUSES = ['pending', 'confirmed', 'shipping', 'completed', 'cancelled'];
 
-  await env.DB.prepare(`
-    UPDATE orders SET status = ? WHERE id = ?
-  `).bind(data.status, id).run();
+  if (!VALID_STATUSES.includes(data.status)) {
+    return new Response(JSON.stringify({ error: 'Invalid status value' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  await env.DB.prepare(
+    'UPDATE orders SET status = ? WHERE id = ?'
+  ).bind(data.status, id).run();
 
   return new Response(JSON.stringify({ id, status: data.status }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }

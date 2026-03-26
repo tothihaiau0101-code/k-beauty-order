@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS orders (
   total REAL DEFAULT 0,
   status TEXT DEFAULT 'pending',
   note TEXT,
+  payosOrderCode INTEGER,
   created_at TEXT DEFAULT (datetime('now', 'localtime'))
 );
 

@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="ui-kit.js"></script>
   <script src="auth.js" defer></script>
+  <script src="assets/js/order-form.js" defer></script>
   <style>
     .form-section { max-width: 640px; margin: 0 auto; padding: 30px 16px 60px; }
     .form-header { text-align: center; margin-bottom: 28px; }
@@ -236,7 +237,7 @@
 
     <form id="orderForm">
       <!-- Autofill Badge -->
-      <div id="autofillBadge" style="display:none;padding:8px 14px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);color:#059669;font-size:0.78rem;font-weight:500;margin-bottom:14px;text-align:center;">✅ Thông tin đã được điền sẵn từ tài khoản</div>
+      <div id="autofillBadge" class="autofill-badge" style="display:none;">✅ Thông tin đã được điền sẵn từ tài khoản</div>
 
       <!-- Customer Info -->
       <div class="form-group" id="fg-name">
@@ -282,33 +283,33 @@
       <!-- PAYMENT GATEWAY -->
       <div class="picker-section">
         <div class="picker-title">💳 Phương thức thanh toán</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="paymentMethods">
+        <div class="payment-methods-grid" id="paymentMethods">
           <label class="pay-method active" data-method="bank" onclick="selectPayment('bank')">
-            <div style="font-size:1.4rem;margin-bottom:4px;">💳</div>
-            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">PayOS</div>
-            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">QR tự động · Xác nhận tức thì</div>
+            <div class="pay-method-icon">💳</div>
+            <div class="pay-method-title">PayOS</div>
+            <div class="pay-method-desc">QR tự động · Xác nhận tức thì</div>
           </label>
           <label class="pay-method" data-method="momo" onclick="selectPayment('momo')">
-            <div style="font-size:1.4rem;margin-bottom:4px;">📱</div>
-            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">MoMo</div>
-            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Ví điện tử MoMo</div>
+            <div class="pay-method-icon">📱</div>
+            <div class="pay-method-title">MoMo</div>
+            <div class="pay-method-desc">Ví điện tử MoMo</div>
           </label>
           <label class="pay-method" data-method="zalopay" onclick="selectPayment('zalopay')">
-            <div style="font-size:1.4rem;margin-bottom:4px;">💙</div>
-            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">ZaloPay</div>
-            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Ví ZaloPay</div>
+            <div class="pay-method-icon">💙</div>
+            <div class="pay-method-title">ZaloPay</div>
+            <div class="pay-method-desc">Ví ZaloPay</div>
           </label>
           <label class="pay-method" data-method="cod" onclick="selectPayment('cod')">
-            <div style="font-size:1.4rem;margin-bottom:4px;">🚚</div>
-            <div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">COD</div>
-            <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Thanh toán khi nhận</div>
+            <div class="pay-method-icon">🚚</div>
+            <div class="pay-method-title">COD</div>
+            <div class="pay-method-desc">Thanh toán khi nhận</div>
           </label>
         </div>
         <input type="hidden" id="paymentMethod" value="bank">
       </div>
 
       <!-- Note -->
-      <div class="form-group" style="margin-top: 8px;">
+      <div class="form-group mt-2">
         <label>Ghi chú (tuỳ chọn)</label>
         <textarea id="note" placeholder="Version album, màu son, yêu cầu đặc biệt..."></textarea>
       </div>
@@ -338,23 +339,24 @@
 
   <!-- STICKY CART BAR -->
   <div class="cart-bar" id="cartBar">
-    <div class="cart-inner">
+    <div class="cart-bar-inner">
       <div class="cart-summary">
         <span class="cart-count"><strong id="cartCount">0</strong> sản phẩm</span>
         <span class="cart-total" id="cartTotal">0₫</span>
       </div>
       <div class="cart-items-preview" id="cartPreview"></div>
-      <div style="display:flex;gap:8px;margin:8px 0;">
-        <input type="text" id="voucherCode" placeholder="Nhập mã giảm giá..." style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-family:inherit;font-size:0.8rem;outline:none;">
-        <button type="button" onclick="applyVoucher()" style="padding:10px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">Áp dụng</button>
+      <div class="voucher-input-wrap">
+        <input type="text" id="voucherCode" placeholder="Nhập mã giảm giá..." class="voucher-input">
+        <button type="button" onclick="applyVoucher()" class="voucher-btn">Áp dụng</button>
       </div>
-      <div id="voucherResult" style="display:none;padding:6px 12px;border-radius:8px;font-size:0.78rem;margin-bottom:6px;"></div>
+      <div id="voucherResult" class="voucher-result" style="display:none;"></div>
       <button type="submit" form="orderForm" class="btn-submit" id="submitBtn" disabled>🛒 Xác Nhận Đặt Hàng</button>
     </div>
   </div>
 
-  <script>
-    // ---- PRODUCT DATA ----
+  <!-- External JS: assets/js/order-form.js -->
+
+  <!-- PAYMENT MODAL -->
     const PRODUCTS = {
       beauty: [
         { id: 'cosrx-snail', img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200&h=200&q=80&fit=crop', name: 'COSRX Snail Mucin', spec: '100ml', price: 420000, oldPrice: 550000, tag: 'hot', tagLabel: '#1 Bestseller' },
@@ -854,15 +856,15 @@
   </script>
 
   <!-- PAYMENT MODAL -->
-  <div id="paymentModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:20px;padding:32px 24px;max-width:380px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.15);border:1px solid rgba(0,0,0,0.07);text-align:center;">
-      <h2 id="modalTitle" style="font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:800;color:#1a1a1a;margin-bottom:6px;">⏳ Đang chờ thanh toán</h2>
-      <p style="color:#6b6b7b;font-size:0.83rem;margin-bottom:16px;">Mã đơn: <span id="modalOrderId" style="color:#7c3aed;font-weight:700;font-family:'Outfit',monospace;">KB-0000</span></p>
+  <div id="paymentModal" class="payment-modal">
+    <div class="payment-modal-content">
+      <h2 id="modalTitle" class="payment-modal-title">⏳ Đang chờ thanh toán</h2>
+      <p class="payment-modal-desc">Mã đơn: <span id="modalOrderId" class="payment-modal-order-id">KB-0000</span></p>
       <div id="paymentInfo"></div>
-      <p style="color:#9a9aaa;font-size:0.73rem;margin-top:10px;">Ghi chú CK: <span id="modalTransferNote" style="color:#7c3aed;font-weight:600;">KB-0000</span></p>
-      <button onclick="document.getElementById('paymentModal').style.display='none'" style="margin-top:18px;width:100%;padding:13px;border:none;border-radius:10px;background:#1a8a5e;color:#fff;font-size:0.93rem;font-weight:700;cursor:pointer;transition:all 0.3s;">✓ Xác nhận</button>
-      <a href="catalog.html" style="display:block;text-align:center;margin-top:10px;color:#9a9aaa;font-size:0.78rem;text-decoration:none;">← Quay lại Catalog</a>
-      <p style="color:#9a9aaa;font-size:0.7rem;margin-top:8px;">📞 Chúng tôi sẽ liên hệ xác nhận qua SĐT của bạn</p>
+      <p class="payment-modal-note">Ghi chú CK: <span id="modalTransferNote" class="payment-modal-transfer-note">KB-0000</span></p>
+      <button onclick="document.getElementById('paymentModal').style.display='none'" class="payment-modal-confirm">✓ Xác nhận</button>
+      <a href="catalog.html" class="payment-modal-back">← Quay lại Catalog</a>
+      <p class="payment-modal-phone">📞 Chúng tôi sẽ liên hệ xác nhận qua SĐT của bạn</p>
     </div>
   </div>
 
@@ -891,16 +893,13 @@
 
       const banner = document.createElement('div');
       banner.className = 'success-banner';
-      banner.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:2000;background:#1a8a5e;color:#fff;padding:16px;text-align:center;font-weight:700;font-size:1rem;animation:slideDown 0.4s ease;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
       banner.innerHTML = `✅ Đặt hàng thành công! Mã đơn: <strong>${orderId}</strong> — Chúng tôi sẽ liên hệ sớm nhé!`;
       document.body.prepend(banner);
       // Remove param khỏi URL
       window.history.replaceState({}, '', window.location.pathname);
       // Auto-hide after 8 seconds
       setTimeout(() => {
-        banner.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
-        banner.style.transform = 'translateY(-100%)';
-        banner.style.opacity = '0';
+        banner.classList.add('success-banner-hide');
         setTimeout(() => banner.remove(), 400);
       }, 8000);
     }
@@ -975,13 +974,13 @@
   </script>
 
   <!-- FOOTER -->
-  <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid var(--border);">
-    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
-      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📦 Catalog</a>
-      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📩 Đặt Hàng</a>
-      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;">📋 Chính Sách</a>
+  <footer class="order-footer">
+    <div class="order-footer-links">
+      <a href="catalog.html" class="order-footer-link">📦 Catalog</a>
+      <a href="order-form.html" class="order-footer-link">📩 Đặt Hàng</a>
+      <a href="policy.html" class="order-footer-link">📋 Chính Sách</a>
     </div>
-    <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
+    <div class="order-footer-text">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
   </footer>
 
   <script>

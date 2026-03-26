@@ -29,11 +29,11 @@ export function formatVND(n) {
 }
 
 /**
- * Auth guard - check for admin token (stored in localStorage)
+ * Auth guard - check for admin token (stored in sessionStorage)
  * @returns {string|null} The auth token or null
  */
 export function getAuthToken() {
-  return localStorage.getItem('adminToken');
+  return sessionStorage.getItem('adminToken');
 }
 
 /**
@@ -49,7 +49,7 @@ export async function apiFetch(url, options = {}) {
   });
   const res = await fetch(url, options);
   if (res.status === 401) {
-    localStorage.removeItem('adminToken');
+    sessionStorage.removeItem('adminToken');
     window.location.href = 'login.html';
   }
   return res;

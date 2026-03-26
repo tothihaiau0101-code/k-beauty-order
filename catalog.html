@@ -66,19 +66,19 @@
         <a href="#k-pop">Pop</a>
         <a href="#combos">Combo</a>
         <a href="order-form.html">Đặt Hàng</a>
-        <a href="auth.html" id="navAuth" style="display:none;">👤 Đăng Nhập</a>
+        <a href="auth.html" id="navAuth" class="nav-auth-hidden">👤 Đăng Nhập</a>
         <a href="account.html" id="navAccount">👤 Tài Khoản</a>
         <div class="nav-cart-wrap">
-          <button onclick="toggleCartDropdown(event)" class="nav-cart" id="navCart" style="display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:6px 10px;border-radius:8px;">
-            🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
+          <button onclick="toggleCartDropdown(event)" class="nav-cart" id="navCart" style="display:flex;align-items:center;gap:4px;">
+            🛒<span class="nav-cart-badge" id="navCartBadge" class="cart-badge-hidden">0</span>
           </button>
-          <div class="cart-dropdown" id="cartDropdown" style="display:none;">
+          <div class="cart-dropdown" id="cartDropdown" class="cart-dropdown-hidden">
             <div class="cart-dropdown-title">🛒 Giỏ hàng</div>
             <div class="cart-dropdown-items" id="cartDropdownItems">
               <div class="cart-dropdown-empty">Giỏ hàng trống</div>
             </div>
             <div class="cart-dropdown-footer" id="cartDropdownFooter">
-              <div class="cart-dropdown-total" id="cartDropdownTotal" style="display:none;">
+              <div class="cart-dropdown-total" id="cartDropdownTotal" class="cart-dropdown-total-hidden">
                 <span>Tổng cộng</span>
                 <span id="cartTotalAmount">0₫</span>
               </div>
@@ -102,81 +102,74 @@
   </section>
 
   <!-- BANNER CAROUSEL -->
-  <style>
-    .banner-carousel-wrap{max-width:1200px;margin:-10px auto 0;overflow:hidden;}
-    .banner-carousel{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:12px 0;align-items:center;}
-    .banner-carousel::before,.banner-carousel::after{content:'';flex:0 0 12.5%;}
-    .banner-carousel::-webkit-scrollbar{display:none;}
-    .banner-slide{scroll-snap-align:center;flex:0 0 65%;border-radius:20px;overflow:hidden;display:flex;align-items:center;min-height:220px;position:relative;transition:transform 0.4s ease,box-shadow 0.4s ease,opacity 0.4s ease,filter 0.4s ease;transform:scale(0.82);opacity:0.5;filter:brightness(0.6) saturate(0.4) grayscale(0.3);}
-    .banner-slide.center{transform:scale(1);opacity:1;box-shadow:0 12px 40px rgba(0,0,0,0.15);filter:brightness(1.1) saturate(1.1);}
-    @media(max-width:600px){.banner-slide{flex:0 0 88%;min-height:auto;} .banner-slide .b-img{display:none;} .banner-carousel::before,.banner-carousel::after{flex:0 0 6%;}}
-  </style>
-
   <div class="banner-carousel-wrap">
   <div class="banner-carousel" id="bannerCarousel">
     <!-- 1: My Pham Chinh Hang -->
-    <div class="banner-slide center" style="background:linear-gradient(135deg,#f5ebe0,#ede0d4);">
-      <div style="flex:1;padding:28px 16px 28px 32px;">
-        <div style="font-family:'Inter',sans-serif;font-size:1.4rem;font-weight:900;color:#2b2b2b;line-height:1.2;margin-bottom:8px;">MỸ PHẨM HÀN QUỐC<br>CHÍNH HÃNG</div>
-        <div style="font-size:0.8rem;color:#7a6e62;margin-bottom:14px;line-height:1.5;">Giá gốc Olive Young, ship về tận nhà.<br>Tiết kiệm đến 50% so với Shopee.</div>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-          <div><div style="font-size:0.6rem;color:#9a8d7f;text-transform:uppercase;letter-spacing:1px;">Tiết kiệm</div><div style="font-size:1.8rem;font-weight:900;color:#2b2b2b;line-height:1;">30-50%</div></div>
-          <div style="width:1px;height:32px;background:rgba(0,0,0,0.12);"></div>
-          <div style="font-weight:800;font-size:0.9rem;color:#2b2b2b;line-height:1.3;">FREESHIP<br><span style="font-weight:500;font-size:0.72rem;color:#7a6e62;">đơn đầu tiên</span></div>
+    <div class="banner-slide center banner-slide-1">
+      <div class="b-slide-content">
+        <div class="b-slide-title">MỸ PHẨM HÀN QUỐC<br>CHÍNH HÃNG</div>
+        <div class="b-slide-desc">Giá gốc Olive Young, ship về tận nhà.<br>Tiết kiệm đến 50% so với Shopee.</div>
+        <div class="b-slide-stats">
+          <div>
+            <div class="b-slide-stat-label">Tiết kiệm</div>
+            <div class="b-slide-stat-value">30-50%</div>
+          </div>
+          <div class="b-slide-divider"></div>
+          <div class="b-slide-stat">FREESHIP<br><span class="b-slide-stat-sub">đơn đầu tiên</span></div>
         </div>
-        <a href="order-form.html" style="display:inline-block;background:#2b2b2b;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">ĐẶT HÀNG NGAY</a>
+        <a href="order-form.html" class="b-slide-btn">ĐẶT HÀNG NGAY</a>
       </div>
-      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <img src="images/banner-products.png" alt="Beauty Products" style="max-height:170px;width:100%;object-fit:contain;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      <div class="b-img">
+        <img src="images/banner-products.png" alt="Beauty Products">
       </div>
     </div>
 
     <!-- 2: Flash Sale -->
-    <div class="banner-slide" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);">
-      <div style="flex:1;padding:28px 16px 28px 32px;">
-        <div style="display:inline-block;background:#2e7d32;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">⚡ FLASH SALE</div>
-        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#1b5e20;line-height:1.2;margin-bottom:8px;">SKINCARE CUỐI TUẦN<br>GIẢM THÊM 15%</div>
-        <div style="font-size:0.8rem;color:#4a7c59;margin-bottom:14px;line-height:1.5;">Áp dụng cho COSRX, Torriden, Anua.<br>Chỉ trong 48h — Số lượng có hạn!</div>
-        <a href="order-form.html" style="display:inline-block;background:#2e7d32;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">MUA NGAY</a>
+    <div class="banner-slide banner-slide-2">
+      <div class="b-slide-content">
+        <div class="b-slide-badge b-slide-badge-green">⚡ FLASH SALE</div>
+        <div class="b-slide-title">SKINCARE CUỐI TUẦN<br>GIẢM THÊM 15%</div>
+        <div class="b-slide-desc">Áp dụng cho COSRX, Torriden, Anua.<br>Chỉ trong 48h — Số lượng có hạn!</div>
+        <a href="order-form.html" class="b-slide-btn">MUA NGAY</a>
       </div>
-      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&h=300&q=80&fit=crop" alt="Flash Sale" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      <div class="b-img">
+        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&h=300&q=80&fit=crop" alt="Flash Sale">
       </div>
     </div>
 
     <!-- 3: Pre-order KPop -->
-    <div class="banner-slide" style="background:linear-gradient(135deg,#e8eaf6,#c5cae9);">
-      <div style="flex:1;padding:28px 16px 28px 32px;">
-        <div style="display:inline-block;background:#5c6bc0;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">🎵 PRE-ORDER</div>
-        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#283593;line-height:1.2;margin-bottom:8px;">ALBUM MỚI 2026<br>TẶNG POB + POSTER</div>
-        <div style="font-size:0.8rem;color:#5c6b8a;margin-bottom:14px;line-height:1.5;">TXT, BTS, BABYMONSTER comeback.<br>Đặt trước giá ưu đãi!</div>
-        <a href="#k-pop" style="display:inline-block;background:#5c6bc0;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">ĐẶT TRƯỚC</a>
+    <div class="banner-slide banner-slide-3">
+      <div class="b-slide-content">
+        <div class="b-slide-badge b-slide-badge-purple">🎵 PRE-ORDER</div>
+        <div class="b-slide-title">ALBUM MỚI 2026<br>TẶNG POB + POSTER</div>
+        <div class="b-slide-desc">TXT, BTS, BABYMONSTER comeback.<br>Đặt trước giá ưu đãi!</div>
+        <a href="#k-pop" class="b-slide-btn">ĐẶT TRƯỚC</a>
       </div>
-      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&q=80&fit=crop" alt="KPop Album" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      <div class="b-img">
+        <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&q=80&fit=crop" alt="KPop Album">
       </div>
     </div>
 
     <!-- 4: Combo -->
-    <div class="banner-slide" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);">
-      <div style="flex:1;padding:28px 16px 28px 32px;">
-        <div style="display:inline-block;background:#e65100;color:#fff;padding:3px 10px;border-radius:6px;font-size:0.65rem;font-weight:700;letter-spacing:1px;margin-bottom:10px;">🔥 COMBO</div>
-        <div style="font-family:'Inter',sans-serif;font-size:1.3rem;font-weight:900;color:#bf360c;line-height:1.2;margin-bottom:8px;">COMBO 3 MÓN<br>TIẾT KIỆM 40%</div>
-        <div style="font-size:0.8rem;color:#8d6e63;margin-bottom:14px;line-height:1.5;">Skincare + Album + Photocard.<br>Quà tặng cho fan Hàn Quốc!</div>
-        <a href="#combos" style="display:inline-block;background:#e65100;color:#fff;padding:10px 22px;border-radius:8px;font-size:0.78rem;font-weight:700;text-decoration:none;">XEM COMBO</a>
+    <div class="banner-slide banner-slide-4">
+      <div class="b-slide-content">
+        <div class="b-slide-badge b-slide-badge-orange">🔥 COMBO</div>
+        <div class="b-slide-title">COMBO 3 MÓN<br>TIẾT KIỆM 40%</div>
+        <div class="b-slide-desc">Skincare + Album + Photocard.<br>Quà tặng cho fan Hàn Quốc!</div>
+        <a href="#combos" class="b-slide-btn">XEM COMBO</a>
       </div>
-      <div class="b-img" style="flex:0 0 220px;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <img src="https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&q=80&fit=crop" alt="Combo Deal" style="max-height:160px;width:100%;object-fit:contain;border-radius:14px;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.1));">
+      <div class="b-img">
+        <img src="https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&q=80&fit=crop" alt="Combo Deal">
       </div>
     </div>
   </div>
 
   <!-- Dot indicators -->
-  <div style="display:flex;justify-content:center;gap:8px;margin-bottom:10px;" id="bannerDots">
-    <span style="width:8px;height:8px;border-radius:50%;background:#1a1a1a;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(0)"></span>
-    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(1)"></span>
-    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(2)"></span>
-    <span style="width:8px;height:8px;border-radius:50%;background:#ccc;transition:all 0.3s;cursor:pointer;" onclick="scrollToBanner(3)"></span>
+  <div class="banner-dots" id="bannerDots">
+    <span class="banner-dot banner-dot-active" onclick="scrollToBanner(0)"></span>
+    <span class="banner-dot" onclick="scrollToBanner(1)"></span>
+    <span class="banner-dot" onclick="scrollToBanner(2)"></span>
+    <span class="banner-dot" onclick="scrollToBanner(3)"></span>
   </div>
   </div>
   <script>
@@ -223,12 +216,12 @@
   </div>
 
   <!-- SEARCH BAR -->
-  <div style="max-width:900px;margin:0 auto 8px;padding:0 16px;">
-    <input type="text" id="catalogSearch" placeholder="Tìm sản phẩm..." oninput="filterProducts()" style="width:100%;padding:12px 18px;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-primary);font-family:inherit;font-size:0.9rem;outline:none;transition:border-color 0.3s;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--border)'">
+  <div class="search-bar-wrap">
+    <input type="text" id="catalogSearch" placeholder="Tìm sản phẩm..." oninput="filterProducts()" class="search-input">
   </div>
 
   <!-- FILTER BAR (M45) -->
-  <div style="max-width:900px;margin:0 auto 16px;padding:0 16px;display:flex;gap:8px;flex-wrap:wrap;">
+  <div class="filter-bar-wrap">
     <button onclick="filterCategory('all')" class="filter-btn active" data-cat="all">Tất cả</button>
     <button onclick="filterCategory('skincare')" class="filter-btn" data-cat="skincare">Skincare</button>
     <button onclick="filterCategory('makeup')" class="filter-btn" data-cat="makeup">Makeup</button>
@@ -237,11 +230,11 @@
   </div>
 
   <!-- SOCIAL FLOATING BAR (M4) -->
-  <div style="position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;gap:10px;">
-    <a href="https://zalo.me/" target="_blank" title="Zalo" style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.7rem;font-weight:700;color:#1a1a1a;border:1px solid rgba(0,0,0,0.08);transition:all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">Z</a>
-    <a href="https://facebook.com/" target="_blank" title="Facebook" style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.7rem;font-weight:700;color:#1a1a1a;border:1px solid rgba(0,0,0,0.08);transition:all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">F</a>
-    <a href="https://instagram.com/" target="_blank" title="Instagram" style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.7rem;font-weight:700;color:#1a1a1a;border:1px solid rgba(0,0,0,0.08);transition:all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">IG</a>
-    <a href="https://tiktok.com/" target="_blank" title="TikTok" style="width:36px;height:36px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:0.7rem;font-weight:700;color:#1a1a1a;border:1px solid rgba(0,0,0,0.08);transition:all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">TT</a>
+  <div class="social-floating-bar">
+    <a href="https://zalo.me/" target="_blank" title="Zalo" class="social-btn social-btn-zalo">Z</a>
+    <a href="https://facebook.com/" target="_blank" title="Facebook" class="social-btn social-btn-fb">F</a>
+    <a href="https://instagram.com/" target="_blank" title="Instagram" class="social-btn social-btn-ig">IG</a>
+    <a href="https://tiktok.com/" target="_blank" title="TikTok" class="social-btn social-btn-tt">TT</a>
   </div>
 
   <!-- K-BEAUTY SECTION -->
@@ -567,9 +560,9 @@
     <a href="https://m.me/" class="btn-cta" style="background: var(--gradient-blue);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Inbox Facebook</a>
   </section>
 
-  <footer>
+  <footer class="catalog-footer">
     <p>© 2026 BeaPop — Hàng chính hãng từ Hàn Quốc</p>
-    <p style="margin-top:6px;">Giá gốc minh bạch · Freeship đơn đầu · Hoàn tiền nếu lỗi</p>
+    <p class="catalog-footer-secondary">Giá gốc minh bạch · Freeship đơn đầu · Hoàn tiền nếu lỗi</p>
   </footer>
 
   <script>
@@ -915,11 +908,11 @@
             total += price * qty;
             return `<div class="cart-dropdown-item">
               <span class="cart-dropdown-item-name">${PRODUCT_NAMES[id]||id}</span>
-              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-                <button onclick="cartQty('${id}',-1)" class="cart-qty-btn" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;cursor:pointer;font-size:0.95rem;font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;line-height:1;transition:all 0.15s;" onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='#f5f5f5'">−</button>
-                <span style="min-width:24px;text-align:center;font-size:0.85rem;font-weight:700;color:#1a1a1a;">${qty}</span>
-                <button onclick="cartQty('${id}',1)" class="cart-qty-btn" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;cursor:pointer;font-size:0.95rem;font-weight:700;color:#1a1a1a;display:flex;align-items:center;justify-content:center;line-height:1;transition:all 0.15s;" onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='#f5f5f5'">+</button>
-                <button onclick="cartRemove('${id}')" style="width:26px;height:26px;border-radius:6px;border:none;background:rgba(220,38,38,0.1);cursor:pointer;font-size:0.8rem;color:#dc2626;display:flex;align-items:center;justify-content:center;transition:all 0.15s;" onmouseover="this.style.background='rgba(220,38,38,0.18)'" onmouseout="this.style.background='rgba(220,38,38,0.1)'">✕</button>
+              <div class="cart-dropdown-item-actions">
+                <button onclick="cartQty('${id}',-1)" class="cart-qty-btn">−</button>
+                <span class="cart-qty-num">${qty}</span>
+                <button onclick="cartQty('${id}',1)" class="cart-qty-btn">+</button>
+                <button onclick="cartRemove('${id}')" class="cart-remove-btn">✕</button>
               </div>
             </div>`;
           }).join('');
@@ -1081,37 +1074,37 @@
   </script>
 
   <!-- PRODUCT DETAIL MODAL -->
-  <div id="productModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:200;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeProductModal()">
-    <div style="background:#ffffff;border-radius:20px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;border:1px solid rgba(0,0,0,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.12);position:relative;">
-      <button onclick="closeProductModal()" style="position:absolute;top:14px;right:18px;background:none;border:none;color:rgba(0,0,0,0.35);font-size:1.8rem;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseover="this.style.color='#1a1a1a'" onmouseout="this.style.color='rgba(0,0,0,0.35)'">×</button>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;" class="modal-grid-inner">
-        <div style="padding:24px;display:flex;align-items:center;justify-content:center;background:#f8f8f8;border-radius:20px 0 0 20px;">
-          <img id="modalImg" src="" alt="Product" style="width:100%;max-width:320px;border-radius:16px;object-fit:cover;aspect-ratio:1/1;">
+  <div id="productModal" class="product-modal-overlay" onclick="if(event.target===this)closeProductModal()">
+    <div class="product-modal">
+      <button onclick="closeProductModal()" class="product-modal-close">×</button>
+      <div class="product-modal-grid modal-grid-inner">
+        <div class="product-modal-image-wrap">
+          <img id="modalImg" src="" alt="Product" class="product-modal-image">
         </div>
-        <div style="padding:28px 28px 28px 20px;display:flex;flex-direction:column;gap:12px;">
-          <div id="modalBrand" style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#1a1a1a;">BRAND</div>
-          <h2 id="modalName" style="font-family:'Inter',sans-serif;font-size:1.35rem;font-weight:800;color:#1a1a1a;line-height:1.3;">Product</h2>
-          <div id="modalSpec" style="font-size:0.8rem;color:#6b6b7b;">spec</div>
-          <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0;">
-            <span id="modalPrice" style="font-size:1.5rem;font-weight:800;color:#1a8a5e;">0₫</span>
-            <span id="modalOldPrice" style="font-size:0.9rem;text-decoration:line-through;color:#9a9aaa;"></span>
+        <div class="product-modal-content">
+          <div id="modalBrand" class="product-modal-brand">BRAND</div>
+          <h2 id="modalName" class="product-modal-name">Product</h2>
+          <div id="modalSpec" class="product-modal-spec">spec</div>
+          <div class="product-modal-price-wrap">
+            <span id="modalPrice" class="product-modal-price">0₫</span>
+            <span id="modalOldPrice" class="product-modal-price-old"></span>
           </div>
-          <div style="border-top:1px solid rgba(0,0,0,0.07);padding-top:12px;">
-            <div style="font-size:0.8rem;font-weight:700;color:#059669;margin-bottom:6px;">✨ Mô tả chi tiết</div>
-            <p id="modalDesc" style="font-size:0.82rem;color:#6b6b7b;line-height:1.6;">...</p>
+          <div class="product-modal-section">
+            <div class="product-modal-section-title desc">✨ Mô tả chi tiết</div>
+            <p id="modalDesc" class="product-modal-section-content">...</p>
           </div>
-          <div style="border-top:1px solid rgba(0,0,0,0.07);padding-top:12px;">
-            <div style="font-size:0.8rem;font-weight:700;color:#d97706;margin-bottom:6px;">💡 Hướng dẫn sử dụng</div>
-            <p id="modalUsage" style="font-size:0.82rem;color:#6b6b7b;line-height:1.6;">...</p>
+          <div class="product-modal-section">
+            <div class="product-modal-section-title usage">💡 Hướng dẫn sử dụng</div>
+            <p id="modalUsage" class="product-modal-section-content">...</p>
           </div>
-          <div style="border-top:1px solid rgba(0,0,0,0.07);padding-top:12px;">
-            <div style="font-size:0.8rem;font-weight:700;color:#2563eb;margin-bottom:6px;">💬 Đánh giá từ khách hàng</div>
+          <div class="product-modal-section">
+            <div class="product-modal-section-title reviews">💬 Đánh giá từ khách hàng</div>
             <div id="modalReviews"></div>
-            <a id="modalReviewLink" href="#" target="_blank" style="display:inline-block;margin-top:10px;padding:8px 18px;border:1px solid rgba(37,99,235,0.2);border-radius:8px;background:rgba(37,99,235,0.05);color:#2563eb;font-size:0.78rem;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='rgba(37,99,235,0.12)'" onmouseout="this.style.background='rgba(37,99,235,0.05)'">📖 Xem thêm đánh giá →</a>
+            <a id="modalReviewLink" href="#" target="_blank" class="product-modal-review-link">📖 Xem thêm đánh giá →</a>
           </div>
-          <div style="display:flex;gap:10px;margin-top:auto;">
-            <a id="modalBuyNowBtn" href="order-form.html" style="flex:1;padding:14px;border:none;border-radius:12px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.3s;box-shadow:0 4px 15px rgba(0,0,0,0.12);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">🛒 Mua Ngay</a>
-            <button id="modalAddCartBtn" data-id="" onclick="modalAddToCart()" style="flex:1;padding:14px;border:1px solid rgba(0,0,0,0.12);border-radius:12px;background:rgba(0,0,0,0.04);color:#1a1a1a;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.3s;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='rgba(0,0,0,0.04)'">➕ Thêm Giỏ</button>
+          <div class="product-modal-actions">
+            <a id="modalBuyNowBtn" href="order-form.html" class="product-modal-btn product-modal-btn-primary">🛒 Mua Ngay</a>
+            <button id="modalAddCartBtn" data-id="" onclick="modalAddToCart()" class="product-modal-btn product-modal-btn-secondary">➕ Thêm Giỏ</button>
           </div>
         </div>
       </div>
@@ -1127,7 +1120,7 @@
 
 
   <!-- FLOATING CART -->
-  <a href="cart.html" class="floating-cart" id="floatingCart" style="display: none;">
+  <a href="cart.html" class="floating-cart" id="floatingCart">
     <div class="floating-cart-icon">
       🛒
       <div class="floating-cart-badge" id="cartBadge">0</div>
@@ -1142,13 +1135,19 @@
   <script src="chat-widget.js" defer></script>
 
   <!-- FOOTER -->
-  <footer style="text-align:center;padding:30px 16px;margin-top:40px;border-top:1px solid var(--border);">
-    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:10px;">
-      <a href="catalog.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>Catalog</a>
-      <a href="order-form.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Đặt Hàng</a>
-      <a href="policy.html" style="color:var(--text-secondary);text-decoration:none;font-size:0.78rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Chính Sách</a>
+  <footer class="catalog-footer">
+    <div class="catalog-footer-links">
+      <a href="catalog.html" class="catalog-footer-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>Catalog
+      </a>
+      <a href="order-form.html" class="catalog-footer-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Đặt Hàng
+      </a>
+      <a href="policy.html" class="catalog-footer-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Chính Sách
+      </a>
     </div>
-    <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
+    <div class="catalog-footer-text">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
   </footer>
 
 </body>

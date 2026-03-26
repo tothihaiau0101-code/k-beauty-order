@@ -170,7 +170,7 @@
 
         const data = await res.json();
         if (res.ok && data.token) {
-          localStorage.setItem('adminToken', data.token);
+          sessionStorage.setItem('adminToken', data.token);
           window.location.href = 'admin.html';
         } else {
           err.style.display = 'block';

@@ -312,37 +312,37 @@
     </div>
 
     <!-- TABS -->
-    <div class="tab-bar">
-      <button class="tab-btn active" onclick="switchTab('orders')">📋 Đơn hàng</button>
-      <button class="tab-btn" onclick="switchTab('stock')">📦 Tồn kho</button>
-      <button class="tab-btn" onclick="switchTab('customers')">👤 Khách hàng</button>
-      <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
-      <button class="tab-btn" onclick="switchTab('loyalty')">💎 Tích điểm</button>
+    <div class="admin-tab-bar">
+      <button class="admin-tab-btn active" onclick="switchTab('orders')">📋 Đơn hàng</button>
+      <button class="admin-tab-btn" onclick="switchTab('stock')">📦 Tồn kho</button>
+      <button class="admin-tab-btn" onclick="switchTab('customers')">👤 Khách hàng</button>
+      <button class="admin-tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
+      <button class="admin-tab-btn" onclick="switchTab('loyalty')">💎 Tích điểm</button>
     </div>
 
     <!-- === ORDERS TAB === -->
-    <div class="tab-content active" id="tabOrders">
+    <div class="admin-tab-content active" id="tabOrders">
     <!-- KPI CARDS -->
-    <div class="kpi-row" id="kpiRow">
-      <div class="kpi-card">
-        <div class="kpi-icon">📦</div>
-        <div class="kpi-value" id="kpiTotal">—</div>
-        <div class="kpi-label">Tổng đơn</div>
+    <div class="admin-kpi-grid" id="kpiRow">
+      <div class="admin-kpi-card">
+        <div class="admin-kpi-icon">📦</div>
+        <div class="admin-kpi-value" id="kpiTotal">—</div>
+        <div class="admin-kpi-label">Tổng đơn</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-icon">🟡</div>
-        <div class="kpi-value" id="kpiPending">—</div>
-        <div class="kpi-label">Chờ xác nhận</div>
+      <div class="admin-kpi-card">
+        <div class="admin-kpi-icon">🟡</div>
+        <div class="admin-kpi-value" id="kpiPending">—</div>
+        <div class="admin-kpi-label">Chờ xác nhận</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-icon">🚚</div>
-        <div class="kpi-value" id="kpiShipping">—</div>
-        <div class="kpi-label">Đang giao</div>
+      <div class="admin-kpi-card">
+        <div class="admin-kpi-icon">🚚</div>
+        <div class="admin-kpi-value" id="kpiShipping">—</div>
+        <div class="admin-kpi-label">Đang giao</div>
       </div>
-      <div class="kpi-card" id="kpiRevenueCard" onclick="toggleChart()" style="cursor:pointer;" title="Click để xem biểu đồ">
-        <div class="kpi-icon">💰</div>
-        <div class="kpi-value" id="kpiRevenue">—</div>
-        <div class="kpi-label">Doanh thu tháng ▼</div>
+      <div class="admin-kpi-card" id="kpiRevenueCard" onclick="toggleChart()" style="cursor:pointer;" title="Click để xem biểu đồ">
+        <div class="admin-kpi-icon">💰</div>
+        <div class="admin-kpi-value" id="kpiRevenue">—</div>
+        <div class="admin-kpi-label">Doanh thu tháng ▼</div>
       </div>
     </div>
 
@@ -358,7 +358,7 @@
     </div>
 
     <!-- TOOLBAR -->
-    <div class="toolbar">
+    <div class="admin-toolbar">
       <input type="text" id="searchInput" placeholder="🔍 Tìm tên, SĐT, mã đơn...">
       <select id="filterStatus">
         <option value="">Tất cả trạng thái</option>
@@ -375,8 +375,8 @@
     <div class="last-refresh" id="lastRefresh"></div>
 
     <!-- TABLE -->
-    <div class="order-table-wrap" id="tableWrap">
-      <table class="order-table">
+    <div class="admin-table-wrap" id="tableWrap">
+      <table class="admin-table">
         <thead>
           <tr>
             <th onclick="sortBy('orderId')"># Mã đơn ↕</th>
@@ -392,25 +392,25 @@
       <div class="empty-state" id="emptyState" style="display:none;">
         <div class="empty-icon">📭</div>
         <p>Chưa có đơn hàng nào</p>
-        <p style="font-size:0.8rem;margin-top:8px;">Khi khách đặt hàng qua form, đơn sẽ hiện ở đây</p>
+        <p class="text-sm mt-2">Khi khách đặt hàng qua form, đơn sẽ hiện ở đây</p>
       </div>
     </div>
 
     </div><!-- close tabOrders -->
 
     <!-- === STOCK TAB === -->
-    <div class="tab-content" id="tabStock">
+    <div class="admin-tab-content" id="tabStock">
       <!-- STOCK KPI -->
-      <div class="kpi-row" id="stockKpi">
-        <div class="kpi-card"><div class="kpi-icon">📦</div><div class="kpi-value" id="skuTotal">—</div><div class="kpi-label">Tổng SKU</div></div>
-        <div class="kpi-card"><div class="kpi-icon">✅</div><div class="kpi-value" id="skuInStock">—</div><div class="kpi-label">Còn hàng</div></div>
-        <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-value" id="skuLow">—</div><div class="kpi-label">Sắp hết (≤2)</div></div>
-        <div class="kpi-card"><div class="kpi-icon">🔴</div><div class="kpi-value" id="skuOut">—</div><div class="kpi-label">Hết hàng</div></div>
+      <div class="admin-kpi-grid" id="stockKpi">
+        <div class="admin-kpi-card"><div class="admin-kpi-icon">📦</div><div class="admin-kpi-value" id="skuTotal">—</div><div class="admin-kpi-label">Tổng SKU</div></div>
+        <div class="admin-kpi-card"><div class="admin-kpi-icon">✅</div><div class="admin-kpi-value" id="skuInStock">—</div><div class="admin-kpi-label">Còn hàng</div></div>
+        <div class="admin-kpi-card"><div class="admin-kpi-icon">⚠️</div><div class="admin-kpi-value" id="skuLow">—</div><div class="admin-kpi-label">Sắp hết (≤2)</div></div>
+        <div class="admin-kpi-card"><div class="admin-kpi-icon">🔴</div><div class="admin-kpi-value" id="skuOut">—</div><div class="admin-kpi-label">Hết hàng</div></div>
       </div>
 
       <!-- STOCK TABLE -->
-      <div class="order-table-wrap">
-        <table class="order-table">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
           <thead><tr>
             <th>Mã</th><th>Sản phẩm</th><th>Danh mục</th><th>Tồn kho</th><th>Giá</th><th>Hành động</th>
           </tr></thead>
@@ -419,32 +419,32 @@
       </div>
 
       <!-- HISTORY -->
-      <h3 style="margin-top:24px;font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;color:var(--text-primary);">📜 Lịch sử xuất nhập</h3>
-      <div class="order-table-wrap" style="margin-top:12px;">
-        <table class="order-table">
+      <h3 class="section-title-sm mt-6 mb-3">📜 Lịch sử xuất nhập</h3>
+      <div class="admin-table-wrap mt-3">
+        <table class="admin-table">
           <thead><tr><th>Thời gian</th><th>Sản phẩm</th><th>Loại</th><th>SL</th><th>Ghi chú</th><th>Tồn sau</th></tr></thead>
-          <tbody id="historyBody"><tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">Chưa có lịch sử</td></tr></tbody>
+          <tbody id="historyBody"><tr><td colspan="6" class="text-center text-secondary">Chưa có lịch sử</td></tr></tbody>
         </table>
       </div>
     </div><!-- close tabStock -->
 
     <!-- === CUSTOMERS TAB === -->
-    <div class="tab-content" id="tabCustomers">
+    <div class="admin-tab-content" id="tabCustomers">
       <!-- CUSTOMER KPI -->
-      <div class="kpi-row" id="customerKpi">
-        <div class="kpi-card"><div class="kpi-icon">👥</div><div class="kpi-value" id="custTotal">—</div><div class="kpi-label">Tổng khách</div></div>
-        <div class="kpi-card"><div class="kpi-icon">🆕</div><div class="kpi-value" id="custNew">—</div><div class="kpi-label">Khách mới (30 ngày)</div></div>
-        <div class="kpi-card"><div class="kpi-icon">👑</div><div class="kpi-value" id="custVip">—</div><div class="kpi-label">Khách VIP (≥3 đơn)</div></div>
+      <div class="admin-kpi-grid" id="customerKpi">
+        <div class="admin-kpi-card"><div class="admin-kpi-icon">👥</div><div class="admin-kpi-value" id="custTotal">—</div><div class="admin-kpi-label">Tổng khách</div></div>
+        <div class="admin-kpi-card"><div class="admin-kpi-icon">🆕</div><div class="admin-kpi-value" id="custNew">—</div><div class="admin-kpi-label">Khách mới (30 ngày)</div></div>
+        <div class="admin-kpi-card"><div class="admin-kpi-icon">👑</div><div class="admin-kpi-value" id="custVip">—</div><div class="admin-kpi-label">Khách VIP (≥3 đơn)</div></div>
       </div>
 
       <!-- SEARCH -->
-      <div class="toolbar">
+      <div class="admin-toolbar">
         <input type="text" id="customerSearch" placeholder="🔍 Tìm theo tên hoặc SĐT..." oninput="renderCustomers()">
       </div>
 
       <!-- CUSTOMER TABLE -->
-      <div class="order-table-wrap">
-        <table class="order-table">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
           <thead><tr>
             <th>STT</th><th>Tên</th><th>SĐT</th><th>Số đơn</th><th>Tổng chi tiêu</th><th>Lần mua cuối</th><th>Hạng</th>
           </tr></thead>
@@ -458,47 +458,47 @@
     </div><!-- close tabCustomers -->
 
     <!-- === ANALYTICS TAB (M50) === -->
-    <div class="tab-content" id="tabAnalytics">
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
-          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">📈 Conversion Rate</div>
-          <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:#10b981;" id="convRate">0%</div>
-          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Đơn hoàn thành / Tổng</div>
+    <div class="admin-tab-content" id="tabAnalytics">
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-card-label">📈 Conversion Rate</div>
+          <div class="analytics-card-value text-green" id="convRate">0%</div>
+          <div class="analytics-card-hint">Đơn hoàn thành / Tổng</div>
         </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
-          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">🚚 Giao thành công</div>
-          <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:#3b82f6;" id="deliveryRate">0%</div>
-          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Shipped → Completed</div>
+        <div class="analytics-card">
+          <div class="analytics-card-label">🚚 Giao thành công</div>
+          <div class="analytics-card-value text-blue" id="deliveryRate">0%</div>
+          <div class="analytics-card-hint">Shipped → Completed</div>
         </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
-          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">↩️ Đơn bị hoàn</div>
-          <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:#ef4444;" id="cancelRate">0%</div>
-          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Cancelled / Tổng</div>
+        <div class="analytics-card">
+          <div class="analytics-card-label">↩️ Đơn bị hoàn</div>
+          <div class="analytics-card-value text-red" id="cancelRate">0%</div>
+          <div class="analytics-card-hint">Cancelled / Tổng</div>
         </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
-          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">💰 Giá trị TB</div>
-          <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:#a855f7;" id="avgOrder">0₫</div>
-          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Trung bình mỗi đơn</div>
+        <div class="analytics-card">
+          <div class="analytics-card-label">💰 Giá trị TB</div>
+          <div class="analytics-card-value text-purple" id="avgOrder">0₫</div>
+          <div class="analytics-card-hint">Trung bình mỗi đơn</div>
         </div>
       </div>
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;margin-bottom:16px;">
-        <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:16px;">🏆 Top Sản Phẩm Bán Chạy</div>
+      <div class="admin-card mb-4">
+        <div class="admin-card-title">🏆 Top Sản Phẩm Bán Chạy</div>
         <div id="topProducts"></div>
       </div>
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;">
-        <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:16px;">📊 Đơn Hàng 7 Ngày Gần Nhất</div>
-        <div style="display:flex;align-items:flex-end;gap:8px;height:140px;" id="weeklyChart"></div>
+      <div class="admin-card">
+        <div class="admin-card-title">📊 Đơn Hàng 7 Ngày Gần Nhất</div>
+        <div class="weekly-chart" id="weeklyChart"></div>
       </div>
     </div><!-- close tabAnalytics -->
 
     <!-- === LOYALTY TAB (M51) === -->
-    <div class="tab-content" id="tabLoyalty">
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;margin-bottom:16px;">
-        <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:6px;">💎 Chương Trình Tích Điểm</div>
-        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">Mỗi <strong style="color:#fbbf24;">10,000₫</strong> chi tiêu = <strong style="color:#a855f7;">1 điểm</strong> · <strong style="color:#10b981;">100 điểm</strong> = giảm 50,000₫ đơn tiếp theo</p>
+    <div class="admin-tab-content" id="tabLoyalty">
+      <div class="admin-card mb-4">
+        <div class="admin-card-title">💎 Chương Trình Tích Điểm</div>
+        <p class="text-sm text-secondary">Mỗi <strong class="text-gold">10,000₫</strong> chi tiêu = <strong class="text-purple">1 điểm</strong> · <strong class="text-green">100 điểm</strong> = giảm 50,000₫ đơn tiếp theo</p>
       </div>
-      <div class="order-table-wrap">
-        <table class="order-table">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
           <thead>
             <tr>
               <th>Khách hàng</th>
@@ -531,18 +531,18 @@
       <input type="number" id="stockQty" min="1" value="1" placeholder="Số lượng">
       <textarea id="stockNote" placeholder="Ghi chú (VD: Nhập lot mới từ Olive Young)"></textarea>
       <div class="stock-modal-actions">
-        <button class="btn-cancel" onclick="closeStockModal()">Hủy</button>
-        <button id="stockConfirmBtn" class="btn-confirm-in" onclick="confirmStock()">✅ Xác nhận</button>
+        <button class="btn-stock-cancel" onclick="closeStockModal()">Hủy</button>
+        <button id="stockConfirmBtn" class="btn-stock-confirm-in" onclick="confirmStock()">✅ Xác nhận</button>
       </div>
     </div>
   </div>
 
   <script type="module">
     // ─── ES MODULE IMPORTS ───
-    import { getAuthToken, formatVND } from './src/admin/utils.js';
-    import { initOrders } from './src/admin/orders.js';
-    import { initStock } from './src/admin/stock.js';
-    import { initAnalytics } from './src/admin/analytics.js';
+    import { formatVND, getAuthToken } from './src/admin/admin.js';
+    import { initOrders } from './src/admin/admin.js';
+    import { initStock } from './src/admin/admin.js';
+    import { initAnalytics } from './src/admin/admin.js';
 
     // Expose utils globally for formatting
     window._utils = { formatVND };

@@ -1,6 +1,8 @@
 # Environment & secrets
 tools/.env
 .env
+.dev.vars
+workers/api/.dev.vars
 
 # Data files (orders, inventory history - private)
 tools/data/orders.json
@@ -21,3 +23,20 @@ venv/
 # IDE
 .vscode/
 .idea/
+
+# External apps (not part of this project)
+apps/
+
+# Tools (not needed for Pages deploy)
+tools/
+
+# Documentation
+*.md
+docs/
+recipes/
+
+# Tests
+tests/
+
+# Wrangler logs
+.wrangler/

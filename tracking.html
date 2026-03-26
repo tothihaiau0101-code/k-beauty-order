@@ -3,10 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tra Cứu Đơn Hàng — BeaPop</title>
-  <meta name="description" content="Tra cứu trạng thái đơn hàng BeaPop bằng mã đơn hoặc số điện thoại.">
+  <!-- SEO: Primary -->
+  <title>Tra Cứu Đơn Hàng | BeaPop</title>
+  <meta name="description" content="Tra cứu trạng thái đơn hàng mỹ phẩm K-Beauty & album K-Pop tại BeaPop bằng mã đơn hoặc số điện thoại.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://beapop.pages.dev/tracking.html">
+
+  <!-- SEO: Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BeaPop">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:url" content="https://beapop.pages.dev/tracking.html">
+  <meta property="og:title" content="Tra Cứu Đơn Hàng | BeaPop">
+  <meta property="og:description" content="Tra cứu trạng thái đơn hàng mỹ phẩm K-Beauty & album K-Pop tại BeaPop.">
+  <meta property="og:image" content="https://beapop.pages.dev/images/banner-products.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- SEO: Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Tra Cứu Đơn Hàng | BeaPop">
+  <meta name="twitter:description" content="Kiểm tra trạng thái đơn hàng mỹ phẩm K-Beauty của bạn tại BeaPop.">
+
+  <meta name="api-url" content="https://beapop-api.beapop.workers.dev">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <script src="ui-kit.js"></script>
   <style>
     .track-container { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
     .track-form { display: flex; gap: 8px; margin: 24px 0; }
@@ -70,7 +92,7 @@
       50% { box-shadow: 0 0 0 8px rgba(168,85,247,0); }
     }
     .no-result { text-align: center; color: var(--text-secondary); padding: 40px 20px; }
-    .error-msg { color: #ef4444; font-size: 0.8rem; margin-top: 8px; }
+    .error-msg { display: none; } /* Replaced by BeaUI.ErrorBoundary glass toast */
   </style>
 </head>
 <body>
@@ -110,13 +132,12 @@
   </footer>
 
   <script>
-    const API_BASE = 'https://web-production-46a5.up.railway.app';
+    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:5000'
+      : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
 
     function showError(msg) {
-      const el = document.getElementById('errorMsg');
-      el.textContent = msg;
-      el.style.display = 'block';
-      setTimeout(() => el.style.display = 'none', 3000);
+      if (window.BeaUI) window.BeaUI.ErrorBoundary.show(msg, 'warning', 3500);
     }
 
     async function searchOrders() {
@@ -124,33 +145,45 @@
       const resultEl = document.getElementById('trackResult');
 
       if (!input) {
-        showError('Nhập SĐT hoặc mã đơn hàng');
+        BeaUI.ErrorBoundary.show('Vui lòng nhập SĐT hoặc mã đơn hàng', 'warning');
         return;
       }
 
-      // Kiểm tra input là SĐT (toàn số, 9-11 số) hay mã đơn
       const isPhone = /^\d+$/.test(input) && input.length >= 9 && input.length <= 11;
       const url = isPhone
         ? `${API_BASE}/api/orders?phone=${input.replace(/\D/g, '')}`
         : `${API_BASE}/api/orders/${encodeURIComponent(input)}`;
 
-      resultEl.innerHTML = '<p style="text-align:center;color:var(--text-secondary);">🔍 Đang tìm...</p>';
+      // Skeleton loading
       resultEl.style.display = 'block';
+      resultEl.innerHTML = BeaUI.Skeleton.trackingCard() + BeaUI.Skeleton.trackingCard();
 
       try {
         const res = await fetch(url);
-        if (!res.ok) throw new Error('Không tìm thấy');
+        if (!res.ok) throw new Error('not_found');
         const data = await res.json();
-        const orders = Array.isArray(data) ? data : [data];
+        const orders = Array.isArray(data) ? data : (data && data.id ? [data] : []);
 
-        if (!orders || !orders.length) {
-          resultEl.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng nào.<br><span style="font-size:0.78rem;">Kiểm tra lại thông tin hoặc liên hệ hỗ trợ.</span></div>';
+        if (!orders || orders.length === 0) {
+          BeaUI.ErrorBoundary.inline(resultEl,
+            'Không tìm thấy đơn hàng nào.<br>Kiểm tra lại thông tin hoặc liên hệ hỗ trợ.'
+          );
           return;
         }
 
         resultEl.innerHTML = orders.map(o => renderOrder(o)).join('');
       } catch (e) {
-        resultEl.innerHTML = '<div class="no-result">❌ Không tìm thấy đơn hàng nào.<br><span style="font-size:0.78rem;">Kiểm tra lại thông tin hoặc liên hệ hỗ trợ.</span></div>';
+        if (e.message === 'not_found') {
+          BeaUI.ErrorBoundary.inline(resultEl,
+            'Không tìm thấy đơn hàng.<br><span style="font-size:0.78rem;">Kiểm tra lại SĐT / mã đơn hàng.</span>'
+          );
+        } else {
+          BeaUI.ErrorBoundary.inline(resultEl,
+            'Không thể kết nối server. Vui lòng thử lại.',
+            searchOrders
+          );
+          BeaUI.ErrorBoundary.show('Lỗi kết nối — kiểm tra mạng internet', 'error');
+        }
       }
     }
 

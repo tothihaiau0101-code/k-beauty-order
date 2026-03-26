@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- SEO: Primary -->
   <title>Tài Khoản — BeaPop</title>
-  <meta name="description" content="Quản lý tài khoản, tích điểm và lịch sử đơn hàng BeaPop.">
+  <meta name="description" content="Quản lý tài khoản, tích điểm loyalty và xem lịch sử đơn hàng mỹ phẩm K-Beauty tại BeaPop.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://beapop.pages.dev/account.html">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <script src="ui-kit.js"></script>
   <script src="auth.js" defer></script>
   <style>
     .account-section { max-width: 640px; margin: 0 auto; padding: 30px 16px 60px; }
@@ -136,7 +140,6 @@
         <a href="catalog.html#k-pop">Pop</a>
         <a href="catalog.html#combos">Combo</a>
         <a href="order-form.html">Đặt Hàng</a>
-        <a href="tester.html">🎁 Tester</a>
         <div class="nav-cart-wrap">
           <a href="order-form.html" class="nav-cart" id="navCart" style="display:flex;">
             🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
@@ -193,9 +196,12 @@
         document.getElementById('oldPassword').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
+        if (window.BeaUI) BeaUI.ErrorBoundary.show('Đổi mật khẩu thành công!', 'success', 3000);
       } else {
-        resultEl.textContent = r.error === 'WRONG_PASSWORD' ? '❌ Mật khẩu cũ không đúng' : '❌ Có lỗi xảy ra';
+        const msg = r.error === 'WRONG_PASSWORD' ? 'Mật khẩu cũ không đúng' : r.error === 'NETWORK_ERROR' ? 'Không thể kết nối server' : 'Có lỗi xảy ra';
+        resultEl.textContent = '❌ ' + msg;
         resultEl.className = 'form-result error';
+        if (window.BeaUI) BeaUI.ErrorBoundary.show(msg, 'error', 4000);
       }
     });
   }
@@ -252,8 +258,12 @@
     });
   }
 
-  function renderAccount() {
+  async function renderAccount() {
     const container = document.getElementById('accountContent');
+
+    // Show skeleton while waiting for auth.js to hydrate
+    if (window.BeaUI) container.innerHTML = '<div class="account-section">' + BeaUI.Skeleton.profile() + '</div>';
+
     const user = window.BeaPop?.Auth?.getUser();
 
     if (!user) {

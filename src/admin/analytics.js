@@ -10,10 +10,12 @@ let chartLoaded = false;
  * @param {Function} getOrders - Function to get all orders from orders module
  * @returns {Object} Analytics functions
  */
+let _getOrders = () => [];
+
 export function initAnalytics(getOrders) {
   customerData = [];
   chartLoaded = false;
-  this._getOrders = getOrders;
+  _getOrders = getOrders || (() => []);
 
   return {
     loadAnalytics,
@@ -30,7 +32,7 @@ export function initAnalytics(getOrders) {
  * Load analytics data
  */
 function loadAnalytics() {
-  const orders = this._getOrders ? this._getOrders() : [];
+  const orders = _getOrders();
   const total = orders.length || 1;
   const completed = orders.filter(o => o.status === 'completed').length;
 
@@ -85,7 +87,7 @@ function loadAnalytics() {
     const d = new Date(); d.setDate(d.getDate() - i);
     const key = d.toISOString().slice(0, 10);
     const label = d.toLocaleDateString('vi', {weekday:'short'});
-    const count = orders.filter(o => (o.date || '').startsWith(key)).length;
+    const count = orders.filter(o => (o.created_at || '').startsWith(key)).length;
     days.push({label, count});
   }
   const maxD = Math.max(...days.map(d => d.count), 1);
@@ -107,7 +109,7 @@ function loadAnalytics() {
  * Load loyalty data
  */
 function loadLoyalty() {
-  const orders = this._getOrders ? this._getOrders() : [];
+  const orders = _getOrders();
   const cust = {};
 
   orders.forEach(o => {
@@ -140,13 +142,45 @@ function loadLoyalty() {
 }
 
 /**
- * Load customers data
+ * Load customers — ưu tiên D1 /api/customers, fallback aggregate từ orders
  */
 async function loadCustomers() {
   try {
+    // 1. Thử D1 customers endpoint trước
+    const res = await apiFetch(`${API}/api/customers`);
+    if (res.ok) {
+      const d1Data = await res.json();
+      if (Array.isArray(d1Data) && d1Data.length > 0) {
+        // Map D1 schema → internal format
+        customerData = d1Data.map(c => ({
+          customerId:   c.customerId,
+          phone:        c.phone,
+          name:         c.name,
+          address:      c.address || '',
+          email:        c.email || '',
+          orders:       c.total_orders || 0,
+          totalSpent:   c.total_spent  || 0,
+          loyalty_tier: c.loyalty_tier || 'Bronze',
+          joined_at:    c.joined_at,
+          isNew:        c.joined_at
+            ? (new Date() - new Date(c.joined_at)) < 30 * 86400000
+            : false,
+          lastOrder:    null // D1 không lưu lastOrder trực tiếp
+        }));
+        renderCustomers();
+        return;
+      }
+    }
+  } catch(e) {
+    // fallthrough to orders aggregation
+  }
+
+  // 2. Fallback: aggregate từ /api/orders
+  try {
     const res = await apiFetch(`${API}/api/orders`);
     if (!res.ok) return;
-    const orders = await res.json();
+    const payload = await res.json();
+    const orders = Array.isArray(payload) ? payload : (payload.orders || []);
 
     const customerMap = new Map();
     const thirtyDaysAgo = new Date();
@@ -155,54 +189,48 @@ async function loadCustomers() {
     for (const o of orders) {
       const phone = o.phone || '';
       if (!phone) continue;
-
       if (!customerMap.has(phone)) {
         customerMap.set(phone, {
-          phone: phone,
-          name: o.name || o.customer_name || '—',
-          orders: 0,
-          totalSpent: 0,
-          lastOrder: null
+          phone, name: o.name || '—', orders: 0,
+          totalSpent: 0, lastOrder: null, loyalty_tier: 'Bronze', isNew: false
         });
       }
-
       const cust = customerMap.get(phone);
-      cust.orders += 1;
-      cust.totalSpent += parseFloat(o.total || o.total_amount || 0);
-
+      cust.orders    += 1;
+      cust.totalSpent += parseFloat(o.total || 0);
       const orderDate = o.created_at ? new Date(o.created_at) : null;
       if (orderDate && (!cust.lastOrder || orderDate > cust.lastOrder)) {
         cust.lastOrder = orderDate;
       }
-
-      if (orderDate && orderDate < thirtyDaysAgo) {
-        cust.isNew = false;
-      }
     }
 
     for (const cust of customerMap.values()) {
-      if (!cust.lastOrder || cust.lastOrder >= thirtyDaysAgo) {
-        cust.isNew = true;
-      }
+      cust.isNew = !cust.lastOrder || cust.lastOrder >= thirtyDaysAgo;
+      // tier tính từ chi tiêu
+      const s = cust.totalSpent;
+      cust.loyalty_tier = s >= 10000000 ? 'Platinum' : s >= 5000000 ? 'Gold' : s >= 1000000 ? 'Silver' : 'Bronze';
     }
 
     customerData = Array.from(customerMap.values());
     renderCustomers();
   } catch(e) {
-    console.error('Load customers error', e);
+    /* Load customers error */
     const customerEmpty = document.getElementById('customerEmpty');
     if (customerEmpty) customerEmpty.style.display = 'block';
   }
 }
 
 /**
- * Get tier by orders count
- * @param {number} orders - Number of orders
- * @returns {Object} Tier info
+ * Get tier by loyalty_tier string or orders count
  */
-function getTier(orders) {
-  if (orders >= 6) return { label: '🥇 Gold', cls: 'tier-gold' };
-  if (orders >= 3) return { label: '🥈 Silver', cls: 'tier-silver' };
+function getTier(c) {
+  const tier = c.loyalty_tier || '';
+  if (tier === 'Platinum') return { label: '💎 Platinum', cls: 'tier-gold' };
+  if (tier === 'Gold')     return { label: '🥇 Gold',     cls: 'tier-gold' };
+  if (tier === 'Silver')   return { label: '🥈 Silver',   cls: 'tier-silver' };
+  // fallback by orders count
+  if ((c.orders || 0) >= 6) return { label: '🥇 Gold',   cls: 'tier-gold' };
+  if ((c.orders || 0) >= 3) return { label: '🥈 Silver', cls: 'tier-silver' };
   return { label: '🥉 Bronze', cls: 'tier-bronze' };
 }
 
@@ -219,16 +247,16 @@ function renderCustomers() {
   });
 
   const totalCustomers = customerData.length;
-  const newCustomers = customerData.filter(c => c.isNew).length;
-  const vipCustomers = customerData.filter(c => c.orders >= 3).length;
+  const newCustomers   = customerData.filter(c => c.isNew).length;
+  const vipCustomers   = customerData.filter(c => (c.orders || 0) >= 3).length;
 
   const custTotalEl = document.getElementById('custTotal');
-  const custNewEl = document.getElementById('custNew');
-  const custVipEl = document.getElementById('custVip');
+  const custNewEl   = document.getElementById('custNew');
+  const custVipEl   = document.getElementById('custVip');
 
   if (custTotalEl) custTotalEl.textContent = totalCustomers;
-  if (custNewEl) custNewEl.textContent = newCustomers;
-  if (custVipEl) custVipEl.textContent = vipCustomers;
+  if (custNewEl)   custNewEl.textContent   = newCustomers;
+  if (custVipEl)   custVipEl.textContent   = vipCustomers;
 
   const tbody = document.getElementById('customerBody');
   const empty = document.getElementById('customerEmpty');
@@ -245,19 +273,22 @@ function renderCustomers() {
   filtered.sort((a, b) => b.totalSpent - a.totalSpent);
 
   tbody.innerHTML = filtered.map((c, i) => {
-    const tier = getTier(c.orders);
-    const lastOrderStr = c.lastOrder ? c.lastOrder.toISOString().slice(0, 16).replace('T', ' ') : '—';
+    const tier = getTier(c);
+    const lastOrderStr = c.lastOrder
+      ? c.lastOrder.toISOString().slice(0, 16).replace('T', ' ')
+      : (c.joined_at ? c.joined_at.slice(0, 10) : '—');
     return `<tr>
       <td>${i + 1}</td>
-      <td>${c.name}</td>
+      <td style="font-weight:600">${c.name}</td>
       <td>${c.phone}</td>
-      <td>${c.orders}</td>
+      <td style="text-align:center">${c.orders}</td>
       <td style="color:var(--accent-pink);font-weight:600">${formatVND(c.totalSpent)}</td>
-      <td style="color:var(--text-secondary)">${lastOrderStr}</td>
+      <td style="color:var(--text-secondary);font-size:0.82rem">${lastOrderStr}</td>
       <td><span class="tier-badge ${tier.cls}">${tier.label}</span></td>
     </tr>`;
   }).join('');
 }
+
 
 /**
  * Toggle revenue chart

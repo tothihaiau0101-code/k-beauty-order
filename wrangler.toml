@@ -1,2 +1,12 @@
-name = "beapop"
+name = "k-beauty-order"
+compatibility_date = "2026-03-25"
 pages_build_output_dir = "."
+
+[vars]
+ENVIRONMENT = "production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "beapop-db"
+database_id = "14faa8ad-f761-4828-bfae-df769007bd07"
+preview_database_id = "14faa8ad-f761-4828-bfae-df769007bd07"

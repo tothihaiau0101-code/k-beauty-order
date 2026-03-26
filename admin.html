@@ -3,13 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- SEO: Primary -->
   <title>Admin Dashboard — BeaPop</title>
-  <meta name="description" content="Quản lý đơn hàng BeaPop">
-  <meta property="og:title" content="Admin Dashboard — BeaPop">
-  <meta property="og:description" content="Quản lý đơn hàng BeaPop">
+  <meta name="title" content="Admin Dashboard — BeaPop">
+  <meta name="description" content="Quản lý đơn hàng, sản phẩm và khách hàng BeaPop">
+  <meta name="keywords" content="admin dashboard, quản lý đơn hàng, beapop admin, k-beauty admin">
+  <meta name="author" content="BeaPop">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <link rel="canonical" href="https://beapop.pages.dev/admin.html">
+
+  <!-- SEO: Open Graph -->
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+  <meta property="og:site_name" content="BeaPop">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:url" content="https://beapop.pages.dev/admin.html">
+  <meta property="og:title" content="Admin Dashboard — BeaPop">
+  <meta property="og:description" content="Quản lý đơn hàng, sản phẩm và khách hàng BeaPop">
+  <meta property="og:image" content="https://beapop.pages.dev/images/banner-products.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- SEO: Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://beapop.pages.dev/admin.html">
+  <meta name="twitter:title" content="Admin Dashboard — BeaPop">
+  <meta name="twitter:description" content="Quản lý đơn hàng, sản phẩm và khách hàng BeaPop">
+  <meta name="twitter:image" content="https://beapop.pages.dev/images/banner-products.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2020/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+  <meta name="theme-color" content="#d63384">
+
+  <!-- API Config -->
+  <meta name="api-url" content="https://beapop-api.beapop.workers.dev">
   <link rel="stylesheet" href="styles.css">
+  <script src="ui-kit.js"></script>
   <style>
     /* ─── ADMIN LAYOUT ─── */
     .admin-wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
@@ -261,7 +291,7 @@
     .btn-confirm-out { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
   </style>
 </head>
-<body>
+<body data-theme="dark">
   <!-- NAV -->
   <nav class="nav-bar">
     <div class="nav-inner">

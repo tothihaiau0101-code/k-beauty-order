@@ -3,13 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đặt Hàng — BeaPop</title>
-  <meta name="description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút.">
-  <meta property="og:title" content="Đặt Hàng — BeaPop">
-  <meta property="og:description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút.">
+  <!-- SEO: Primary -->
+  <title>Đặt Hàng Mỹ Phẩm K-Beauty | BeaPop</title>
+  <meta name="description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng tại BeaPop. Xác nhận trong 30 phút, giao hàng toàn quốc.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://beapop.pages.dev/order-form.html">
+
+  <!-- SEO: Open Graph (for share links) -->
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BeaPop">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:url" content="https://beapop.pages.dev/order-form.html">
+  <meta property="og:title" content="Đặt Hàng Mỹ Phẩm K-Beauty | BeaPop">
+  <meta property="og:description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút, giao hàng toàn quốc.">
+  <meta property="og:image" content="https://beapop.pages.dev/images/banner-products.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- SEO: Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Đặt Hàng Mỹ Phẩm K-Beauty | BeaPop">
+  <meta name="twitter:description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút.">
+  <meta name="twitter:image" content="https://beapop.pages.dev/images/banner-products.png">
+
+  <meta name="api-url" content="https://beapop-api.beapop.workers.dev">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <script src="ui-kit.js"></script>
   <script src="auth.js" defer></script>
   <style>
     .form-section { max-width: 640px; margin: 0 auto; padding: 30px 16px 60px; }
@@ -197,7 +217,8 @@
         <a href="catalog.html#k-pop">Pop</a>
         <a href="catalog.html#combos">Combo</a>
         <a href="#" class="active">Đặt Hàng</a>
-        <a href="tester.html">🎁 Tester</a>
+        <a href="auth.html" id="navAuth" style="display:none;">👤 Đăng Nhập</a>
+        <a href="account.html" id="navAccount">👤 Tài Khoản</a>
         <div class="nav-cart-wrap">
           <a href="cart.html" class="nav-cart" id="navCart">
             🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
@@ -527,18 +548,25 @@
     function applyVoucher() {
       const code = document.getElementById('voucherCode').value.trim().toUpperCase();
       const el = document.getElementById('voucherResult');
-      if (!code) { el.style.display = 'none'; return; }
-      const v = VOUCHERS[code];
+      if (!code) { el.style.display = 'none'; activeVoucher = null; updateUI(); return; }
+
+      // Check static vouchers first
+      let v = VOUCHERS[code];
+      if (!v && window.BeaPop && window.BeaPop.Auth.isLoggedIn()) {
+        // Check user loyalty vouchers
+        const lv = window.BeaPop.Auth.findVoucher(code);
+        if (lv) v = { ...lv, _loyalty: true, _code: lv.code };
+      }
+
+      el.style.display = 'block';
       if (v) {
         activeVoucher = v;
-        el.style.display = 'block';
         el.style.background = 'rgba(16,185,129,0.15)';
         el.style.color = '#10b981';
         el.textContent = '✅ ' + v.label + ' — Mã: ' + code;
         updateUI();
       } else {
         activeVoucher = null;
-        el.style.display = 'block';
         el.style.background = 'rgba(239,68,68,0.15)';
         el.style.color = '#ef4444';
         el.textContent = '❌ Mã không hợp lệ';
@@ -609,7 +637,7 @@
       if (paymentMethod === 'bank') {
         try {
           const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:5000' : 'https://web-production-46a5.up.railway.app';
+            ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
           const desc = `BeaPop ${orderId}`.slice(0, 25);
           const resp = await fetch(_API + '/api/payos/create', {
             method: 'POST',
@@ -622,7 +650,7 @@
             payosOrderCode = result.orderCode;
           }
         } catch (err) {
-          console.warn('PayOS create payment failed, falling back to static QR:', err.message);
+          /* PayOS create payment failed, falling back to static QR */
         }
       }
 
@@ -640,22 +668,37 @@
         timestamp: new Date().toISOString()
       };
 
-      // Send order webhook
+      // Submit order to D1 via Worker API
+      const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
       try {
-        const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:5000' : 'https://web-production-46a5.up.railway.app';
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-        await fetch(_API + '/webhook/order', {
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(_API + '/api/orders', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Webhook-Secret': '' },
-          body: JSON.stringify(data),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: orderId,
+            name: data.name,
+            phone: data.phone,
+            address: data.address,
+            items: data.items,
+            total: finalTotal,
+            status: 'pending',
+            note: data.note ? `[${paymentMethod.toUpperCase()}] ${data.note}` : `[${paymentMethod.toUpperCase()}]`
+          }),
           signal: controller.signal
         });
         clearTimeout(timeout);
-        console.log('✅ Order webhook sent');
+        if (res.ok) {
+          if (window.BeaUI) BeaUI.ErrorBoundary.show('Đơn hàng đã được ghi nhận!', 'success', 3000);
+        } else {
+          /* Order API error */
+          if (window.BeaUI) BeaUI.ErrorBoundary.show('Lưu đơn hàng thất bại — vui lòng liên hệ hỗ trợ', 'warning', 6000);
+        }
       } catch (err) {
-        console.warn('⚠️ Webhook skip:', err.message);
+        /* Order API skip */
+        if (window.BeaUI) BeaUI.ErrorBoundary.show('Không thể kết nối server — đơn hàng vẫn được xử lý qua hotline', 'warning', 6000);
       }
 
       // Show payment modal
@@ -666,9 +709,17 @@
       document.getElementById('orderForm').style.display = 'none';
       document.getElementById('cartBar').style.display = 'none';
 
-      // Save address for logged-in user
+      // Post-order: save address + earn loyalty points for logged-in user
       if (window.BeaPop && window.BeaPop.Auth.isLoggedIn()) {
         window.BeaPop.Auth.saveAddress(data.address);
+        const newVouchers = window.BeaPop.Auth.earnPoints(finalTotal);
+        // Mark loyalty voucher as used if applied
+        if (activeVoucher && activeVoucher._loyalty) {
+          window.BeaPop.Auth.useVoucher(activeVoucher._code);
+        }
+        if (newVouchers && newVouchers.length > 0) {
+          setTimeout(() => window.BeaPop.toast('🎁 Bạn nhận được voucher mới: ' + newVouchers.map(v => v.label).join(', ')), 2000);
+        }
       }
 
       // Clear Cart
@@ -762,7 +813,7 @@
       'ALB004': 'kissoflife', 'ALB005': 'nctwish'
     };
     const _API2 = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000' : 'https://web-production-46a5.up.railway.app';
+      ? 'http://localhost:5000' : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
     fetch(_API2 + '/api/inventory').then(r => r.json()).then(stock => {
       stock.forEach(item => {
         const pickerId = STOCK_TO_PICKER[item.id];
@@ -781,6 +832,25 @@
         }
       });
     }).catch(() => {});
+
+    // Auth state check (M77)
+    (function() {
+      const navAuth = document.getElementById('navAuth');
+      const navAccount = document.getElementById('navAccount');
+      const token = localStorage.getItem('customerToken');
+      const user = JSON.parse(localStorage.getItem('customerUser') || '{}');
+
+      if (token && user.name) {
+        if (navAuth) navAuth.style.display = 'none';
+        if (navAccount) {
+          navAccount.style.display = 'block';
+          navAccount.textContent = '👤 ' + user.name.split(' ').pop();
+        }
+      } else {
+        if (navAuth) navAuth.style.display = 'block';
+        if (navAccount) navAccount.style.display = 'none';
+      }
+    })();
   </script>
 
   <!-- PAYMENT MODAL -->
@@ -914,5 +984,26 @@
     <div style="font-size:0.7rem;color:var(--text-secondary);">© 2026 BeaPop • Mỹ phẩm Hàn Quốc chính hãng</div>
   </footer>
 
+  <script>
+    // M79 — Offline order sync listener
+    navigator.serviceWorker?.addEventListener('message', (e) => {
+      if (e.data?.type === 'ORDER_QUEUED') {
+        _swToast('📦 ' + (e.data.message || 'Đơn hàng đã lưu offline. Sẽ gửi khi có mạng.'));
+      }
+      if (e.data?.type === 'ORDERS_SYNCED') {
+        _swToast('✅ ' + (e.data.message || `${e.data.synced} đơn hàng đã gửi!`), '#059669');
+      }
+    });
+    function _swToast(msg, bg = '#1a1a1a') {
+      const old = document.getElementById('_swToast');
+      if (old) old.remove();
+      const t = document.createElement('div');
+      t.id = '_swToast';
+      t.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:${bg};color:#fff;padding:12px 22px;border-radius:10px;font-size:0.85rem;font-weight:600;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.3);max-width:90%;text-align:center;`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 350); }, 4000);
+    }
+  </script>
 </body>
 </html>

@@ -11,7 +11,10 @@
 (function() {
   'use strict';
 
-  const CHAT_API = 'https://web-production-46a5.up.railway.app/api/chat';
+  const _API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000'
+    : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
+  const CHAT_API = _API_BASE + '/api/chat';
   const STORAGE_KEY = 'beapop_chat_session';
   const USER_KEY = 'beapop_user';
 
@@ -34,7 +37,7 @@
         user = JSON.parse(stored);
       }
     } catch (e) {
-      console.warn('Failed to parse user info:', e);
+      /* Failed to parse user info */
     }
     return user;
   }
@@ -512,7 +515,7 @@
         }
       })
       .catch(err => {
-        console.error('Chat send error:', err);
+        /* Chat send error */
         addMessageToUI('⚠️ Gửi tin nhắn thất bại. Vui lòng thử lại.', 'support');
       });
     }
@@ -596,7 +599,7 @@
         }
       })
       .catch(err => {
-        console.warn('Chat poll error:', err);
+        /* Chat poll error */
       });
   }
 

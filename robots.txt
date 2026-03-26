@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Block private/utility pages
+Disallow: /admin.html
+Disallow: /login.html
+Disallow: /account.html
+Disallow: /cart.html
+Disallow: /order-form.html
+Disallow: /tracking.html
+Disallow: /offline.html
+
+# Block backend/tool directories
+Disallow: /workers/
+Disallow: /tools/
+Disallow: /data/
+Disallow: /tests/
+Disallow: /docs/
+Disallow: /apps/
+
+Sitemap: https://beapop.pages.dev/sitemap.xml

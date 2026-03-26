@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- SEO: Primary -->
+  <title>Admin Login — BeaPop</title>
+  <meta name="title" content="Admin Login — BeaPop">
+  <meta name="description" content="Đăng nhập quản trị viên BeaPop">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BeaPop">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:url" content="https://beapop.pages.dev/login.html">
+  <meta property="og:title" content="Admin Login — BeaPop">
+  <meta property="og:description" content="Đăng nhập quản trị viên BeaPop">
+  <meta property="og:image" content="https://beapop.pages.dev/images/banner-products.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://beapop.pages.dev/login.html">
+  <meta name="twitter:title" content="Admin Login — BeaPop">
+  <meta name="twitter:description" content="Đăng nhập quản trị viên BeaPop">
+  <meta name="twitter:image" content="https://beapop.pages.dev/images/banner-products.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+  <meta name="theme-color" content="#d63384">
+  <style>
+    :root {
+      --bg-dark: #0f0f13;
+      --bg-card: #18181f;
+      --text-primary: #f0f0f5;
+      --text-secondary: #9a9aaa;
+      --accent-purple: #a855f7;
+      --border: rgba(255, 255, 255, 0.08);
+      --gradient-pink: linear-gradient(135deg, #a855f7 0%, #ff5a92 100%);
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg-dark);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .login-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 30px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .login-container h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin: 0 0 8px;
+      background: var(--gradient-pink);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .login-container p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+    .input-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .input-group label {
+      display: block;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--accent-purple);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: var(--gradient-pink);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-login:hover {
+      opacity: 0.9;
+    }
+    .error-msg {
+      color: #ef4444;
+      font-size: 0.85rem;
+      margin-top: 12px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>🇰🇷 BeaPop Admin</h1>
+    <p>Vui lòng đăng nhập để truy cập quản trị</p>
+
+    <div class="input-group">
+      <label for="username">Tên đăng nhập</label>
+      <input type="text" id="username" placeholder="Nhập tên đăng nhập..." required onkeydown="if(event.key === 'Enter') doLogin()">
+    </div>
+
+    <div class="input-group">
+      <label for="password">Mật khẩu</label>
+      <input type="password" id="password" placeholder="Nhập mật khẩu..." required onkeydown="if(event.key === 'Enter') doLogin()">
+    </div>
+
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">Đăng Nhập</button>
+    <div class="error-msg" id="errorMsg">Sai tên đăng nhập hoặc mật khẩu, vui lòng thử lại!</div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://beapop-api.beapop.workers.dev';
+
+    async function doLogin() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('loginBtn');
+      const err = document.getElementById('errorMsg');
+
+      if (!username || !password) {
+        err.style.display = 'block';
+        err.textContent = 'Vui lòng nhập đầy đủ thông tin';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Đang kiểm tra...';
+      err.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('adminToken', data.token);
+          window.location.href = 'admin.html';
+        } else {
+          err.style.display = 'block';
+          err.textContent = data.error || 'Sai tên đăng nhập hoặc mật khẩu!';
+        }
+      } catch (e) {
+        err.style.display = 'block';
+        err.textContent = 'Không thể kết nối đến server';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Đăng Nhập';
+      }
+    }
+  </script>
+</body>
+</html>

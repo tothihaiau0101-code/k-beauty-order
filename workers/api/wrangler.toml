@@ -1,0 +1,26 @@
+name = "beapop-api"
+main = "index.js"
+compatibility_date = "2026-03-25"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "beapop-db"
+database_id = "14faa8ad-f761-4828-bfae-df769007bd07"
+
+# KV namespace for rate limiting (M80)
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "53c1b1aaef49488fa883a273b601f190"
+preview_id = "7fad9b8f0b4645bc895239dbd55f3284"
+
+# AI binding for LLM inference (M80)
+[ai]
+binding = "AI"
+
+# Environment variables for runtime config
+[vars]
+ENVIRONMENT = "production"
+
+# Runtime overrides (set via Wrangler or dashboard)
+# ALLOWED_ORIGINS: Comma-separated list of allowed CORS origins
+# Example: https://beapop.pages.dev,https://k-beauty-order.pages.dev

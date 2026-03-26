@@ -41,31 +41,53 @@ export function initOrders(options = {}) {
  * Load orders and stats from API
  */
 async function loadData() {
+  // Skeleton: KPI row + table rows
+  const kpiRow = document.getElementById('kpiRow');
+  const tbody = document.getElementById('orderBody');
+  if (kpiRow && window.BeaUI) kpiRow.innerHTML = BeaUI.Skeleton.kpiRow();
+  if (tbody && window.BeaUI) tbody.innerHTML = `<tr class="bea-sk-dark">${
+    Array(6).fill('<td style="padding:12px 14px"><div class="bea-sk" style="height:13px;border-radius:6px"></div></td>').join('')
+  }</tr>`.repeat(5);
+
   try {
     const [ordersRes, statsRes] = await Promise.all([
       apiFetch(`${API}/api/orders`),
       apiFetch(`${API}/api/stats`)
     ]);
     if (ordersRes.ok) {
-      allOrders = await ordersRes.json();
+      const data = await ordersRes.json();
+      allOrders = data.orders || data;
       renderTable();
       if (window._ordersCallback) window._ordersCallback(allOrders);
+    } else {
+      throw new Error('orders_' + ordersRes.status);
     }
     if (statsRes.ok) {
       const s = await statsRes.json();
-      if (window._statsCallback) window._statsCallback(s);
+      if (window._statsCallback) window._statsCallback({
+        total_orders: s.totalOrders || s.total_orders || 0,
+        pending: s.pendingOrders || s.pending || 0,
+        shipping: s.shippingOrders || s.shipping || 0,
+        revenue: s.totalRevenue || s.revenue || 0
+      });
     }
     const lastRefreshEl = document.getElementById('lastRefresh');
-    if (lastRefreshEl) {
-      lastRefreshEl.textContent = `Cập nhật: ${new Date().toLocaleTimeString('vi')}`;
-    }
+    if (lastRefreshEl) lastRefreshEl.textContent = `Cập nhật: ${new Date().toLocaleTimeString('vi')}`;
   } catch (e) {
-    const emptyState = document.getElementById('emptyState');
-    if (emptyState && window._emptyStateCallback) {
+    if (e.message === 'orders_401') {
+      // Token expired — redirect to login
+      if (window.BeaUI) BeaUI.ErrorBoundary.show('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại', 'warning', 3000);
+      setTimeout(() => window.location.href = 'login.html', 3000);
+      return;
+    }
+    if (window.BeaUI) {
+      BeaUI.ErrorBoundary.show('Không thể tải dữ liệu đơn hàng', 'error', 6000);
+    }
+    if (window._emptyStateCallback) {
       window._emptyStateCallback({
         type: 'error',
         message: 'Không kết nối được server',
-        hint: 'Chạy <code>cd tools && python telegram_bot.py</code> trước'
+        hint: 'Kiểm tra kết nối mạng và thử lại'
       });
     }
   }

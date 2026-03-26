@@ -1,11 +1,9 @@
 // Utils - Common utilities for admin panel
 
 /**
- * API base URL - determined by environment
+ * API base URL - Cloudflare Worker URL
  */
-export const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? 'http://localhost:5000'
-  : '';
+export const API_BASE = 'https://beapop-api.beapop.workers.dev';
 
 /**
  * Status mapping for order statuses
@@ -31,11 +29,11 @@ export function formatVND(n) {
 }
 
 /**
- * Auth guard - check for admin token
+ * Auth guard - check for admin token (stored in localStorage)
  * @returns {string|null} The auth token or null
  */
 export function getAuthToken() {
-  return sessionStorage.getItem('admin_token');
+  return localStorage.getItem('adminToken');
 }
 
 /**
@@ -47,11 +45,11 @@ export function getAuthToken() {
 export async function apiFetch(url, options = {}) {
   const token = getAuthToken();
   options.headers = Object.assign({}, options.headers || {}, {
-    'Authorization': 'Bearer ' + token
+    'Authorization': token ? 'Bearer ' + token : ''
   });
   const res = await fetch(url, options);
   if (res.status === 401) {
-    sessionStorage.removeItem('admin_token');
+    localStorage.removeItem('adminToken');
     window.location.href = 'login.html';
   }
   return res;

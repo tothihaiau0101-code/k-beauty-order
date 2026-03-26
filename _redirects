@@ -1,1 +1,9 @@
+# Cloudflare Pages SPA Redirects
+# Documentation: https://developers.cloudflare.com/pages/platform/redirects/
+
+# Root route -> catalog page (landing)
 /  /catalog.html  302
+
+# SPA fallback — all unknown routes serve index.html for client-side routing
+# This must be last to allow static assets to be served directly
+/*  /index.html  200

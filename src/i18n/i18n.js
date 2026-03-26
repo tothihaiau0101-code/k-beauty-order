@@ -52,7 +52,7 @@ export function getSupportedLanguages() {
  */
 export function setLanguage(lang) {
   if (!SUPPORTED_LANGUAGES.includes(lang)) {
-    console.warn(`Language '${lang}' is not supported. Falling back to '${DEFAULT_LANGUAGE}'`);
+    /* Language not supported, fallback to default */
     lang = DEFAULT_LANGUAGE;
   }
   
@@ -157,7 +157,7 @@ function notifyLanguageChange(lang) {
     try {
       callback(lang);
     } catch (error) {
-      console.error('Error in language change listener:', error);
+      /* Error in language change listener */
     }
   });
 }

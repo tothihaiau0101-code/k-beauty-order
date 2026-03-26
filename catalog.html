@@ -3,13 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeaPop — Mỹ Phẩm & Album Hàn Quốc Chính Hãng</title>
-  <meta name="description" content="Order mỹ phẩm Hàn Quốc chính hãng từ Olive Young & album KPop từ Ktown4u. Giá gốc minh bạch, freeship đơn đầu tiên.">
-  <meta property="og:title" content="BeaPop — Mỹ Phẩm & Album Hàn Quốc Chính Hãng">
-  <meta property="og:description" content="Order mỹ phẩm Hàn Quốc chính hãng từ Olive Young & album KPop từ Ktown4u. Giá gốc minh bạch, freeship đơn đầu tiên.">
+  <!-- SEO: Primary -->
+  <title>Mua Sắm Mỹ Phẩm & Album K-Pop Chính Hãng | BeaPop</title>
+  <meta name="description" content="Khám phá mỹ phẩm Hàn Quốc chính hãng: COSRX, BOJ Sun, Anua, Torriden, SKIN1004 và album TXT, BABYMONSTER. Giá gốc Olive Young & Ktown4u, giao hàng nhanh.">
+  <meta name="keywords" content="mua mỹ phẩm hàn quốc, cosrx snail mucin, boj sun spf50, anua heartleaf toner, torriden serum, skin1004, album txt, babymonster, k-beauty việt nam">
+  <meta name="author" content="BeaPop">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://beapop.pages.dev/catalog.html">
+
+  <!-- SEO: Open Graph -->
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BeaPop">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:url" content="https://beapop.pages.dev/catalog.html">
+  <meta property="og:title" content="Mua Sắm Mỹ Phẩm & Album K-Pop Chính Hãng | BeaPop">
+  <meta property="og:description" content="COSRX, BOJ Sun, Anua, Torriden, SKIN1004 và album TXT, BABYMONSTER. Giá gốc Olive Young & Ktown4u, giao hàng nhanh toàn quốc.">
+  <meta property="og:image" content="https://beapop.pages.dev/images/banner-products.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Catalog mỹ phẩm K-Beauty và album K-Pop tại BeaPop">
+
+  <!-- SEO: Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mua Sắm Mỹ Phẩm & Album K-Pop Chính Hãng | BeaPop">
+  <meta name="twitter:description" content="COSRX, BOJ Sun, Anua, Torriden, SKIN1004, album TXT & BABYMONSTER. Giá gốc, freeship đơn đầu tiên.">
+  <meta name="twitter:image" content="https://beapop.pages.dev/images/banner-products.png">
+
+  <!-- SEO: JSON-LD Product ItemList -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "BeaPop — Mỹ Phẩm K-Beauty & Album K-Pop",
+    "url": "https://beapop.pages.dev/catalog.html",
+    "description": "Danh sách sản phẩm mỹ phẩm Hàn Quốc chính hãng và album K-Pop tại BeaPop",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "COSRX Snail Mucin 96% Power Repairing Essence",   "url": "https://beapop.pages.dev/catalog.html#cosrx-snail" },
+      { "@type": "ListItem", "position": 2, "name": "BOJ Relief Sun: Rice + Probiotics SPF50+",        "url": "https://beapop.pages.dev/catalog.html#boj-sun" },
+      { "@type": "ListItem", "position": 3, "name": "Anua Heartleaf 77% Soothing Toner",              "url": "https://beapop.pages.dev/catalog.html#anua-toner" },
+      { "@type": "ListItem", "position": 4, "name": "Torriden DIVE-IN Low Molecular Hyaluronic Acid",  "url": "https://beapop.pages.dev/catalog.html#torriden-serum" },
+      { "@type": "ListItem", "position": 5, "name": "SKIN1004 Madagascar Centella Ampoule",            "url": "https://beapop.pages.dev/catalog.html#skin1004" },
+      { "@type": "ListItem", "position": 6, "name": "TXT minisode 3: TOMORROW Album",                 "url": "https://beapop.pages.dev/catalog.html#txt-7th" },
+      { "@type": "ListItem", "position": 7, "name": "BABYMONSTER BABYMONS7ER Album",                  "url": "https://beapop.pages.dev/catalog.html#babymonster" }
+    ]
+  }
+  </script>
+
+  <meta name="api-url" content="https://beapop-api.beapop.workers.dev">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <script src="ui-kit.js"></script>
   <script src="auth.js" defer></script>
 </head>
 <body>
@@ -23,7 +66,8 @@
         <a href="#k-pop">Pop</a>
         <a href="#combos">Combo</a>
         <a href="order-form.html">Đặt Hàng</a>
-        <a href="tester.html">🎁 Tester</a>
+        <a href="auth.html" id="navAuth" style="display:none;">👤 Đăng Nhập</a>
+        <a href="account.html" id="navAccount">👤 Tài Khoản</a>
         <div class="nav-cart-wrap">
           <button onclick="toggleCartDropdown(event)" class="nav-cart" id="navCart" style="display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:6px 10px;border-radius:8px;">
             🛒<span class="nav-cart-badge" id="navCartBadge" style="display:none;">0</span>
@@ -600,32 +644,48 @@
       'roundlab': 'KB007', 'romand': 'KB008'
     };
     const _API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000' : 'https://web-production-46a5.up.railway.app';
-    fetch(_API + '/api/inventory').then(r => r.json()).then(stock => {
-      const stockById = {};
-      stock.forEach(s => stockById[s.id] = s.stock);
-      document.querySelectorAll('.btn-order').forEach(btn => {
-        const href = btn.getAttribute('href') || '';
-        const m = href.match(/select=([^&]+)/);
-        if (!m) return;
-        const stockId = STOCK_MAP[m[1]];
-        if (!stockId) return;
-        const qty = stockById[stockId];
-        const card = btn.closest('.product-card');
-        if (qty === 0) {
-          btn.textContent = 'Hết hàng';
-          btn.style.cssText = 'pointer-events:none;opacity:0.4;background:#555;';
-          if (card) {
-            const badge = card.querySelector('.card-badge');
-            if (badge) { badge.textContent = 'Hết hàng'; badge.style.background = '#ef4444'; }
-            else { const b = document.createElement('span'); b.className = 'card-badge'; b.textContent = 'Hết hàng'; b.style.background = '#ef4444'; card.prepend(b); }
+      ? 'http://localhost:5000'
+      : (document.querySelector('meta[name="api-url"]')?.content || 'https://beapop-api.beapop.workers.dev');
+    // Show loading pulse on all order buttons while fetching stock
+    const _orderBtns = document.querySelectorAll('.btn-order');
+    _orderBtns.forEach(b => b.setAttribute('data-orig', b.textContent));
+
+    fetch(_API + '/api/inventory')
+      .then(r => { if (!r.ok) throw new Error('inventory_err'); return r.json(); })
+      .then(data => {
+        const stockById = {};
+        const items = data.inventory || data;
+        items.forEach(s => stockById[s.id] = s.stock);
+        document.querySelectorAll('.btn-order').forEach(btn => {
+          btn.textContent = btn.getAttribute('data-orig') || btn.textContent;
+          const href = btn.getAttribute('href') || '';
+          const m = href.match(/select=([^&]+)/);
+          if (!m) return;
+          const stockId = STOCK_MAP[m[1]];
+          if (stockId == null) return;
+          const qty = stockById[stockId];
+          const card = btn.closest('.product-card');
+          if (qty === 0) {
+            btn.textContent = 'Hết hàng';
+            btn.style.cssText = 'pointer-events:none;opacity:0.4;background:#555;';
+            if (card) {
+              const badge = card.querySelector('.card-badge');
+              if (badge) { badge.textContent = 'Hết hàng'; badge.style.background = '#ef4444'; }
+              else { const b = document.createElement('span'); b.className = 'card-badge'; b.textContent = 'Hết hàng'; b.style.background = '#ef4444'; card.prepend(b); }
+            }
+          } else if (qty != null && qty <= 2 && card) {
+            const existing = card.querySelector('.card-badge');
+            if (!existing) { const b = document.createElement('span'); b.className = 'card-badge'; b.textContent = `Còn ${qty} sp`; b.style.background = '#eab308'; card.prepend(b); }
           }
-        } else if (qty <= 2 && card) {
-          const existing = card.querySelector('.card-badge');
-          if (!existing) { const b = document.createElement('span'); b.className = 'card-badge'; b.textContent = `Còn ${qty} sp`; b.style.background = '#eab308'; card.prepend(b); }
-        }
+        });
+      })
+      .catch(() => {
+        // Silently restore buttons — don't block shopping
+        document.querySelectorAll('.btn-order').forEach(b => {
+          b.textContent = b.getAttribute('data-orig') || b.textContent;
+        });
+        if (window.BeaUI) BeaUI.ErrorBoundary.show('Không thể tải thông tin tồn kho', 'info', 3000);
       });
-    }).catch(() => {});
 
     // ─── PRODUCT DETAIL DATA ───
     const PRODUCT_DATA = {
@@ -997,6 +1057,27 @@
 
     // Init
     updateCartUI();
+
+    // Auth state check (M77)
+    (function() {
+      const navAuth = document.getElementById('navAuth');
+      const navAccount = document.getElementById('navAccount');
+      const token = localStorage.getItem('customerToken');
+      const user = JSON.parse(localStorage.getItem('customerUser') || '{}');
+
+      if (token && user.name) {
+        // Logged in - show account, hide auth
+        if (navAuth) navAuth.style.display = 'none';
+        if (navAccount) {
+          navAccount.style.display = 'block';
+          navAccount.textContent = '👤 ' + user.name.split(' ').pop();
+        }
+      } else {
+        // Not logged in - show auth, hide account
+        if (navAuth) navAuth.style.display = 'block';
+        if (navAccount) navAccount.style.display = 'none';
+      }
+    })();
   </script>
 
   <!-- PRODUCT DETAIL MODAL -->

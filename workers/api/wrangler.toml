@@ -8,12 +8,10 @@ database_name = "beapop-db"
 database_id = "14faa8ad-f761-4828-bfae-df769007bd07"
 
 # KV namespace for rate limiting (M80)
-# Create with: wrangler kv:namespace create "RATE_LIMIT"
-# Then replace the id below with the output ID
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"
+id = "53c1b1aaef49488fa883a273b601f190"
+preview_id = "7fad9b8f0b4645bc895239dbd55f3284"
 
 # AI binding for LLM inference (M80)
 [ai]

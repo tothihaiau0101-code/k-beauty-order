@@ -12,7 +12,8 @@ exclude = [
   "data/**",
   "docs/**",
   "recipes/**",
-  "node_modules/**"
+  "node_modules/**",
+  ".wrangler/**"
 ]
 
 [vars]
@@ -22,3 +23,4 @@ ENVIRONMENT = "production"
 binding = "DB"
 database_name = "beapop-db"
 database_id = "14faa8ad-f761-4828-bfae-df769007bd07"
+preview_database_id = "14faa8ad-f761-4828-bfae-df769007bd07"

@@ -1,6 +1,8 @@
 # Environment & secrets
 tools/.env
 .env
+.dev.vars
+workers/api/.dev.vars
 
 # Data files (orders, inventory history - private)
 tools/data/orders.json

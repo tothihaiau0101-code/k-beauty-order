@@ -2,20 +2,6 @@ name = "k-beauty-order"
 compatibility_date = "2026-03-25"
 pages_build_output_dir = "."
 
-# Exclude non-essential files from deployment
-exclude = [
-  "apps/**",
-  "tools/**",
-  "*.md",
-  ".github/**",
-  "tests/**",
-  "data/**",
-  "docs/**",
-  "recipes/**",
-  "node_modules/**",
-  ".wrangler/**"
-]
-
 [vars]
 ENVIRONMENT = "production"
 

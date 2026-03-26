@@ -47,7 +47,7 @@ async function loadStock() {
       renderHistory(history.history || history);
     }
   } catch(e) {
-    console.error('Load stock error', e);
+    /* Load stock error */
     if (window.BeaUI) BeaUI.ErrorBoundary.show('Không thể tải dữ liệu kho hàng', 'error', 5000);
     if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:rgba(255,255,255,0.4)">⚠️ Không thể tải dữ liệu</td></tr>';
   }

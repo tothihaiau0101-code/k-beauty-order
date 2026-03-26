@@ -3,11 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đặt Hàng — BeaPop</title>
-  <meta name="description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút.">
-  <meta property="og:title" content="Đặt Hàng — BeaPop">
-  <meta property="og:description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút.">
+  <!-- SEO: Primary -->
+  <title>Đặt Hàng Mỹ Phẩm K-Beauty | BeaPop</title>
+  <meta name="description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng tại BeaPop. Xác nhận trong 30 phút, giao hàng toàn quốc.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://beapop.pages.dev/order-form.html">
+
+  <!-- SEO: Open Graph (for share links) -->
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BeaPop">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:url" content="https://beapop.pages.dev/order-form.html">
+  <meta property="og:title" content="Đặt Hàng Mỹ Phẩm K-Beauty | BeaPop">
+  <meta property="og:description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút, giao hàng toàn quốc.">
+  <meta property="og:image" content="https://beapop.pages.dev/images/banner-products.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- SEO: Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Đặt Hàng Mỹ Phẩm K-Beauty | BeaPop">
+  <meta name="twitter:description" content="Đặt hàng mỹ phẩm Hàn Quốc & album K-Pop chính hãng. Xác nhận trong 30 phút.">
+  <meta name="twitter:image" content="https://beapop.pages.dev/images/banner-products.png">
+
   <meta name="api-url" content="https://beapop-api.beapop.workers.dev">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
   <link rel="stylesheet" href="styles.css">
@@ -630,7 +648,7 @@
             payosOrderCode = result.orderCode;
           }
         } catch (err) {
-          console.warn('PayOS create payment failed, falling back to static QR:', err.message);
+          /* PayOS create payment failed, falling back to static QR */
         }
       }
 
@@ -671,14 +689,13 @@
         });
         clearTimeout(timeout);
         if (res.ok) {
-          console.log('✅ Order saved to D1');
           if (window.BeaUI) BeaUI.ErrorBoundary.show('Đơn hàng đã được ghi nhận!', 'success', 3000);
         } else {
-          console.warn('⚠️ Order API error:', res.status);
+          /* Order API error */
           if (window.BeaUI) BeaUI.ErrorBoundary.show('Lưu đơn hàng thất bại — vui lòng liên hệ hỗ trợ', 'warning', 6000);
         }
       } catch (err) {
-        console.warn('⚠️ Order API skip:', err.message);
+        /* Order API skip */
         if (window.BeaUI) BeaUI.ErrorBoundary.show('Không thể kết nối server — đơn hàng vẫn được xử lý qua hotline', 'warning', 6000);
       }
 

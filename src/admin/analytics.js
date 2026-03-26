@@ -214,7 +214,7 @@ async function loadCustomers() {
     customerData = Array.from(customerMap.values());
     renderCustomers();
   } catch(e) {
-    console.error('Load customers error', e);
+    /* Load customers error */
     const customerEmpty = document.getElementById('customerEmpty');
     if (customerEmpty) customerEmpty.style.display = 'block';
   }

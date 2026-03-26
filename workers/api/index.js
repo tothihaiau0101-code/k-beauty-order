@@ -82,7 +82,6 @@ async function checkRateLimit(env, ip, category) {
     return { limited: false, remaining, resetIn };
   } catch (e) {
     // KV error — fail open, do not block legitimate traffic
-    console.error('Rate limit KV error:', e.message);
     return { limited: false, remaining: 999, resetIn: 60 };
   }
 }
@@ -480,7 +479,6 @@ export default {
       });
 
     } catch (error) {
-      console.error('API Error:', error);
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -568,7 +566,6 @@ async function handleCreateOrder(env, request, corsHeaders) {
     }
   } catch (e) {
     // Non-blocking: order still succeeds if customer upsert fails
-    console.error('Customer upsert failed:', e.message);
   }
 
   return new Response(JSON.stringify({ id, message: 'Order created' }), {
@@ -827,7 +824,6 @@ async function handleRegister(env, request, corsHeaders) {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Register error:', error);
     return new Response(JSON.stringify({ error: 'Registration failed' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -887,7 +883,6 @@ async function handleLogin(env, request, corsHeaders) {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Login error:', error);
     return new Response(JSON.stringify({ error: 'Login failed' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -935,7 +930,6 @@ async function handleAdminLogin(env, request, corsHeaders) {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Admin login error:', error);
     return new Response(JSON.stringify({ error: 'Login failed' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -1060,7 +1054,6 @@ async function handleChangePassword(env, request, corsHeaders) {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Change password error:', error);
     return new Response(JSON.stringify({ error: 'Change password failed' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

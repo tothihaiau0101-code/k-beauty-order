@@ -1,45 +1,156 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline - K-Beauty</title>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f0f13;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .container {
-            max-width: 500px;
-        }
-        h1 { color: #d63384; font-size: 2rem; margin-bottom: 1rem; }
-        p { color: #a0a0a0; line-height: 1.5; margin-bottom: 2rem; }
-        .btn {
-            background-color: #d63384;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            text-decoration: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mất kết nối — BeaPop</title>
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --card: #18181f;
+      --pink: #d63384;
+      --text: #f0f0f5;
+      --muted: #9a9aaa;
+      --border: rgba(255,255,255,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+    }
+    .icon { font-size: 4rem; margin-bottom: 16px; }
+    h1 { font-size: 1.6rem; font-weight: 800; color: var(--pink); margin-bottom: 10px; }
+    p { color: var(--muted); line-height: 1.6; max-width: 360px; margin-bottom: 24px; }
+    .btn {
+      display: inline-block;
+      background: var(--pink);
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      text-decoration: none;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      margin-left: 10px;
+    }
+    .pending-box {
+      display: none;
+      margin-top: 28px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 22px;
+      max-width: 380px;
+      text-align: left;
+    }
+    .pending-box h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+    .pending-box p  { font-size: 0.8rem; margin-bottom: 12px; }
+    .sync-btn {
+      font-size: 0.82rem;
+      padding: 8px 18px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a1a;
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      max-width: 90%;
+      text-align: center;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>You are offline</h1>
-        <p>It seems your internet connection was lost. Please check your connection and try again to continue shopping for your favorite K-Beauty products.</p>
-        <button class="btn" onclick="window.location.reload()">Try Again</button>
-    </div>
+  <div class="icon">📡</div>
+  <h1>Mất kết nối mạng</h1>
+  <p>Không thể kết nối đến internet. Kiểm tra WiFi hoặc dữ liệu di động và thử lại nhé.</p>
+
+  <div>
+    <button class="btn" onclick="window.location.reload()">🔄 Thử lại</button>
+    <a class="btn btn-outline" href="./index.html">🏠 Trang chủ</a>
+  </div>
+
+  <div class="pending-box" id="pendingBox">
+    <h3>🛒 Có đơn hàng chờ gửi</h3>
+    <p id="pendingMsg">Bạn đã đặt hàng khi mất mạng. Đơn hàng sẽ tự động gửi khi có kết nối.</p>
+    <button class="btn sync-btn" onclick="trySyncOrders()">📤 Gửi ngay</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function showToast(msg, duration = 3000) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), duration);
+    }
+
+    // Check for pending offline orders via SW
+    async function checkPending() {
+      if (!('serviceWorker' in navigator)) return;
+      const sw = await navigator.serviceWorker.ready;
+      sw.active?.postMessage({ type: 'SYNC_ORDERS' });
+    }
+
+    function trySyncOrders() {
+      if (!navigator.onLine) {
+        showToast('❌ Vẫn đang mất mạng, thử lại sau nhé.');
+        return;
+      }
+      checkPending();
+      showToast('⏳ Đang gửi đơn hàng...');
+    }
+
+    // Listen for SW messages
+    navigator.serviceWorker?.addEventListener('message', (e) => {
+      if (e.data?.type === 'ORDER_QUEUED') {
+        document.getElementById('pendingBox').style.display = 'block';
+        showToast('📦 ' + (e.data.message || 'Đơn hàng đã lưu offline.'));
+      }
+      if (e.data?.type === 'ORDERS_SYNCED') {
+        document.getElementById('pendingBox').style.display = 'none';
+        showToast('✅ ' + (e.data.message || `${e.data.synced} đơn hàng đã gửi!`), 4000);
+        setTimeout(() => window.location.replace('./index.html'), 4500);
+      }
+      if (e.data?.type === 'SYNC_DONE' && e.data.synced === 0) {
+        document.getElementById('pendingBox').style.display = 'block';
+        document.getElementById('pendingMsg').textContent = 'Vẫn chưa gửi được. Vui lòng kết nối mạng và thử lại.';
+      }
+    });
+
+    // Auto-retry when connection is restored
+    window.addEventListener('online', () => {
+      showToast('✅ Đã có mạng! Đang kết nối lại...');
+      setTimeout(() => window.location.reload(), 1200);
+    });
+  </script>
 </body>
 </html>

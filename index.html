@@ -3,18 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Premium K-Beauty Order System">
     <meta name="theme-color" content="#d63384">
-    
-    <title>K-Beauty Order</title>
+
+    <!-- SEO: Primary -->
+    <title>BeaPop — Mỹ Phẩm Hàn Quốc & K-Pop Album Chính Hãng</title>
+    <meta name="title" content="BeaPop — Mỹ Phẩm Hàn Quốc & K-Pop Album Chính Hãng">
+    <meta name="description" content="BeaPop — Mua mỹ phẩm Hàn Quốc chính hãng từ Olive Young, album K-Pop từ Ktown4u. Giá gốc minh bạch, giao hàng nhanh, freeship đơn đầu tiên.">
+    <meta name="keywords" content="mỹ phẩm hàn quốc, k-beauty, cosrx, anua, torriden, skin1004, album kpop, txt, babymonster, olive young việt nam, ktown4u">
+    <meta name="author" content="BeaPop">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+    <link rel="canonical" href="https://beapop.pages.dev/">
+
+    <!-- SEO: Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="BeaPop">
+    <meta property="og:locale" content="vi_VN">
+    <meta property="og:url" content="https://beapop.pages.dev/">
+    <meta property="og:title" content="BeaPop — Mỹ Phẩm Hàn Quốc & K-Pop Album Chính Hãng">
+    <meta property="og:description" content="Mua mỹ phẩm Hàn Quốc chính hãng từ Olive Young, album K-Pop từ Ktown4u. Giá gốc minh bạch, giao hàng nhanh, freeship đơn đầu tiên.">
+    <meta property="og:image" content="https://beapop.pages.dev/images/banner-products.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="BeaPop — Mỹ phẩm K-Beauty và album K-Pop chính hãng">
+
+    <!-- SEO: Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://beapop.pages.dev/">
+    <meta name="twitter:title" content="BeaPop — Mỹ Phẩm Hàn Quốc & K-Pop Album Chính Hãng">
+    <meta name="twitter:description" content="Mua mỹ phẩm Hàn Quốc chính hãng từ Olive Young, album K-Pop từ Ktown4u. Giá gốc minh bạch, freeship đơn đầu tiên.">
+    <meta name="twitter:image" content="https://beapop.pages.dev/images/banner-products.png">
+    <meta name="twitter:creator" content="@beapop">
+    <meta name="twitter:site" content="@beapop">
+
+    <!-- SEO: JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://beapop.pages.dev/#organization",
+          "name": "BeaPop",
+          "url": "https://beapop.pages.dev",
+          "logo": "https://beapop.pages.dev/images/banner-products.png",
+          "description": "Cửa hàng mỹ phẩm Hàn Quốc chính hãng và album K-Pop tại Việt Nam",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "availableLanguage": "Vietnamese"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://beapop.pages.dev/#website",
+          "url": "https://beapop.pages.dev",
+          "name": "BeaPop",
+          "publisher": { "@id": "https://beapop.pages.dev/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://beapop.pages.dev/catalog.html?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
-    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+
     <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="K-Beauty">
+    <meta name="apple-mobile-web-app-title" content="BeaPop">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
 
     <!-- Fonts & Styles -->
@@ -151,13 +214,12 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then(registration => {
-                        console.log('[SW] Service Worker registered:', registration.scope);
                         document.getElementById('sw-status').textContent = 'Service Worker Active';
                         document.getElementById('sw-status').style.background = 'rgba(46, 204, 113, 0.2)';
                         document.getElementById('sw-status').style.color = '#2ecc71';
                     })
                     .catch(error => {
-                        console.error('[SW] Registration failed:', error);
+                        /* Service Worker registration failed */
                         document.getElementById('sw-status').textContent = 'Service Worker Failed';
                         document.getElementById('sw-status').style.background = 'rgba(231, 76, 60, 0.2)';
                         document.getElementById('sw-status').style.color = '#e74c3c';
@@ -178,11 +240,29 @@
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     const { outcome } = await deferredPrompt.userChoice;
-                    console.log(`[PWA] User response to install prompt: ${outcome}`);
                     deferredPrompt = null;
                     installBtn.style.display = 'none';
                 }
             });
+
+            // M79 — Offline order sync notifications
+            navigator.serviceWorker.addEventListener('message', (e) => {
+                if (e.data?.type === 'ORDERS_SYNCED') {
+                    _swToast('✅ ' + (e.data.message || `${e.data.synced} đơn hàng đã gửi thành công!`), '#059669');
+                }
+            });
+        }
+
+        function _swToast(msg, bg) {
+            bg = bg || '#1a1a1a';
+            const old = document.getElementById('_swToast');
+            if (old) old.remove();
+            const t = document.createElement('div');
+            t.id = '_swToast';
+            t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:' + bg + ';color:#fff;padding:12px 22px;border-radius:10px;font-size:0.85rem;font-weight:600;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.3);max-width:90%;text-align:center;';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(function() { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(function() { t.remove(); }, 350); }, 4000);
         }
     </script>
 </body>

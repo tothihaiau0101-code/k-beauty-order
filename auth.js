@@ -72,7 +72,7 @@
           return { success: false, error: data.error || 'LOGIN_FAILED', needsPassword: data.needsPassword };
         }
       } catch (e) {
-        console.error('Login error:', e);
+        /* Login error */
         return { success: false, error: 'NETWORK_ERROR' };
       }
     },
@@ -100,7 +100,7 @@
           return { success: false, error: data.error || 'REGISTER_FAILED' };
         }
       } catch (e) {
-        console.error('Register error:', e);
+        /* Register error */
         return { success: false, error: 'NETWORK_ERROR' };
       }
     },
